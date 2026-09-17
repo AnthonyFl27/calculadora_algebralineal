@@ -10,7 +10,7 @@ etc.). Aquí solo se capturan datos y se muestran resultados.
 import math
 import tkinter as tk
 import tkinter.font as tkfont
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 
 from metodos.general_metodos import matriz_texto, texto_comprobacion
 from metodos.gauss_jordan import resolver as resolver_gauss_jordan
@@ -19,6 +19,19 @@ from metodos.conversion import (
     NOMBRES_BASE,
     resolver as resolver_conversion,
     procedimiento_texto as procedimiento_conversion_texto,
+)
+from metodos.vectores_matrices import (
+    combinacion_lineal,
+    ecuacion_matricial,
+    multiplicar_matrices,
+    multiplicar_matriz_escalar,
+    multiplicar_vector_escalar,
+    parsear_numero,
+    procedimiento_texto as procedimiento_vectores_matrices_texto,
+    resta_matrices,
+    resta_vectores,
+    suma_matrices,
+    suma_vectores,
 )
 
 
@@ -928,6 +941,365 @@ class VistaConversion(VistaBase):
 
 
 # ======================================================
+# VISTA DE VECTORES Y MATRICES
+# ======================================================
+
+class VistaVectoresMatrices(VistaBase):
+    """Interfaz para operaciones vectoriales, matriciales y A·X = B."""
+
+    def construir(self):
+        tk.Label(
+            self.padre,
+            text="Vectores y matrices",
+            font=FUENTE_TITULO,
+            bg=COLOR_FONDO,
+        ).pack(pady=(10, 5))
+
+        self.pestanas = ttk.Notebook(self.padre)
+        self.pestanas.pack(fill="x", padx=15, pady=5)
+
+        self.tab_vectores = tk.Frame(self.pestanas, bg=COLOR_FONDO)
+        self.tab_matrices = tk.Frame(self.pestanas, bg=COLOR_FONDO)
+        self.tab_ecuacion = tk.Frame(self.pestanas, bg=COLOR_FONDO)
+        self.pestanas.add(self.tab_vectores, text="Vectores")
+        self.pestanas.add(self.tab_matrices, text="Matrices")
+        self.pestanas.add(self.tab_ecuacion, text="Ecuación A·X = B")
+
+        self._construir_tab_vectores()
+        self._construir_tab_matrices()
+        self._construir_tab_ecuacion()
+
+        formato = tk.Frame(self.padre, bg=COLOR_FONDO)
+        formato.pack(pady=3)
+        tk.Label(
+            formato, text="Mostrar resultados en:", bg=COLOR_FONDO
+        ).pack(side="left", padx=5)
+        self.modo = tk.StringVar(value="fraccion")
+        tk.Radiobutton(
+            formato, text="Fracciones", variable=self.modo,
+            value="fraccion", bg=COLOR_FONDO,
+        ).pack(side="left", padx=5)
+        tk.Radiobutton(
+            formato, text="Decimales", variable=self.modo,
+            value="decimal", bg=COLOR_FONDO,
+        ).pack(side="left", padx=5)
+
+        self.salida = tk.Text(
+            self.padre, width=105, height=14, font=FUENTE_MONO,
+            bg="white", state="disabled",
+        )
+        self.salida.pack(fill="both", expand=True, padx=15, pady=(3, 10))
+
+    def _entrada_dimension(self, padre, texto, columna, valor="2"):
+        tk.Label(padre, text=texto, bg=COLOR_FONDO).grid(
+            row=0, column=columna, padx=(5, 2), pady=5
+        )
+        entrada = tk.Entry(padre, width=4, justify="center")
+        entrada.grid(row=0, column=columna + 1, padx=(2, 5), pady=5)
+        entrada.insert(0, valor)
+        return entrada
+
+    def _entero_positivo(self, entrada, nombre):
+        try:
+            valor = int(entrada.get())
+            if valor < 1:
+                raise ValueError
+            return valor
+        except ValueError:
+            raise ValueError(f"{nombre} debe ser un entero mayor que cero.")
+
+    def _crear_tabla(self, padre, filas, columnas, titulo, columna_inicial=0):
+        marco = tk.Frame(padre, bg=COLOR_FONDO)
+        marco.grid(row=0, column=columna_inicial, padx=12, pady=4, sticky="n")
+        tk.Label(
+            marco, text=titulo, font=FUENTE_SUBTIT, bg=COLOR_FONDO
+        ).grid(row=0, column=0, columnspan=columnas, pady=(0, 3))
+
+        entradas = []
+        for i in range(filas):
+            fila = []
+            for j in range(columnas):
+                entrada = tk.Entry(marco, width=7, justify="center")
+                entrada.grid(row=i + 1, column=j, padx=2, pady=2)
+                fila.append(entrada)
+            entradas.append(fila)
+        return entradas
+
+    def _leer_vector(self, entradas):
+        return [parsear_numero(entrada.get().strip()) for entrada in entradas]
+
+    def _leer_matriz(self, entradas):
+        return [self._leer_vector(fila) for fila in entradas]
+
+    def _mostrar_resultado(self, resultado):
+        self.limpiar_salida()
+        self.escribir(
+            procedimiento_vectores_matrices_texto(resultado, self.modo.get())
+        )
+
+    def _construir_tab_vectores(self):
+        controles = tk.Frame(self.tab_vectores, bg=COLOR_FONDO)
+        controles.pack(pady=3)
+        tk.Label(controles, text="Operación:", bg=COLOR_FONDO).grid(
+            row=0, column=0, padx=4
+        )
+        self.operacion_vector = tk.StringVar(value="Suma")
+        tk.OptionMenu(
+            controles, self.operacion_vector, "Suma", "Resta",
+            "Vector por escalar", "Combinación lineal",
+            command=lambda _: self._crear_campos_vectores(),
+        ).grid(row=0, column=1, padx=4)
+        self.dimension_vector = self._entrada_dimension(
+            controles, "Dimensión:", 2, "3"
+        )
+        self.cantidad_vectores = self._entrada_dimension(
+            controles, "Vectores:", 4, "2"
+        )
+        RoundedButton(
+            controles, text="Crear campos", command=self._crear_campos_vectores,
+            width=115,
+        ).grid(row=0, column=6, padx=5)
+        RoundedButton(
+            controles, text="Calcular", command=self._calcular_vectores,
+            width=105,
+        ).grid(row=0, column=7, padx=5)
+
+        self.marco_vectores = tk.Frame(self.tab_vectores, bg=COLOR_FONDO)
+        self.marco_vectores.pack(pady=3)
+        self._crear_campos_vectores()
+
+    def _crear_campos_vectores(self):
+        try:
+            dimension = self._entero_positivo(
+                self.dimension_vector, "La dimensión"
+            )
+            operacion = self.operacion_vector.get()
+            if operacion in ("Suma", "Combinación lineal"):
+                cantidad = self._entero_positivo(
+                    self.cantidad_vectores, "La cantidad de vectores"
+                )
+            else:
+                cantidad = 2
+        except ValueError as error:
+            messagebox.showerror("Error", str(error))
+            return
+
+        for widget in self.marco_vectores.winfo_children():
+            widget.destroy()
+
+        if operacion in ("Suma", "Combinación lineal"):
+            total = cantidad
+        elif operacion == "Vector por escalar":
+            total = 1
+        else:
+            total = 2
+        self.entradas_vectores = []
+
+        for j in range(total):
+            columna = []
+            tk.Label(
+                self.marco_vectores, text=f"v{j + 1}",
+                font=FUENTE_SUBTIT, bg=COLOR_FONDO,
+            ).grid(row=0, column=j, padx=10)
+            for i in range(dimension):
+                entrada = tk.Entry(
+                    self.marco_vectores, width=8, justify="center"
+                )
+                entrada.grid(row=i + 1, column=j, padx=6, pady=2)
+                columna.append(entrada)
+            self.entradas_vectores.append(columna)
+
+        self.entradas_objetivo = []
+        self.entrada_escalar_vector = None
+        if operacion == "Combinación lineal":
+            tk.Label(
+                self.marco_vectores, text="objetivo",
+                font=FUENTE_SUBTIT, bg=COLOR_FONDO,
+            ).grid(row=0, column=total, padx=10)
+            for i in range(dimension):
+                entrada = tk.Entry(
+                    self.marco_vectores, width=8, justify="center"
+                )
+                entrada.grid(row=i + 1, column=total, padx=6, pady=2)
+                self.entradas_objetivo.append(entrada)
+        elif operacion == "Vector por escalar":
+            tk.Label(
+                self.marco_vectores, text="Escalar:", bg=COLOR_FONDO
+            ).grid(row=1, column=1, padx=(15, 3))
+            self.entrada_escalar_vector = tk.Entry(
+                self.marco_vectores, width=8, justify="center"
+            )
+            self.entrada_escalar_vector.grid(row=1, column=2, padx=3)
+
+    def _calcular_vectores(self):
+        try:
+            vectores = [self._leer_vector(columna)
+                        for columna in self.entradas_vectores]
+            operacion = self.operacion_vector.get()
+            if operacion == "Suma":
+                resultado = suma_vectores(vectores)
+            elif operacion == "Resta":
+                resultado = resta_vectores(vectores[0], vectores[1])
+            elif operacion == "Vector por escalar":
+                resultado = multiplicar_vector_escalar(
+                    vectores[0], self.entrada_escalar_vector.get().strip()
+                )
+            else:
+                resultado = combinacion_lineal(
+                    vectores, self._leer_vector(self.entradas_objetivo),
+                    self.modo.get(),
+                )
+        except ValueError as error:
+            messagebox.showerror("Error", str(error))
+            return
+        self._mostrar_resultado(resultado)
+
+    def _construir_tab_matrices(self):
+        controles = tk.Frame(self.tab_matrices, bg=COLOR_FONDO)
+        controles.pack(pady=3)
+        tk.Label(controles, text="Operación:", bg=COLOR_FONDO).grid(
+            row=0, column=0, padx=3
+        )
+        self.operacion_matriz = tk.StringVar(value="Suma")
+        tk.OptionMenu(
+            controles, self.operacion_matriz, "Suma", "Resta",
+            "Matriz por escalar", "Multiplicación A × B",
+            command=lambda _: self._crear_campos_matrices(),
+        ).grid(row=0, column=1, padx=3)
+        self.filas_a = self._entrada_dimension(controles, "A filas:", 2)
+        self.columnas_a = self._entrada_dimension(controles, "A cols:", 4)
+        self.filas_b = self._entrada_dimension(controles, "B filas:", 6)
+        self.columnas_b = self._entrada_dimension(controles, "B cols:", 8)
+        RoundedButton(
+            controles, text="Crear", command=self._crear_campos_matrices,
+            width=80,
+        ).grid(row=0, column=10, padx=4)
+        RoundedButton(
+            controles, text="Calcular", command=self._calcular_matrices,
+            width=90,
+        ).grid(row=0, column=11, padx=4)
+
+        self.marco_matrices = tk.Frame(self.tab_matrices, bg=COLOR_FONDO)
+        self.marco_matrices.pack(pady=3)
+        self._crear_campos_matrices()
+
+    def _crear_campos_matrices(self):
+        try:
+            filas_a = self._entero_positivo(self.filas_a, "Las filas de A")
+            columnas_a = self._entero_positivo(
+                self.columnas_a, "Las columnas de A"
+            )
+            operacion = self.operacion_matriz.get()
+            if operacion != "Matriz por escalar":
+                filas_b = self._entero_positivo(
+                    self.filas_b, "Las filas de B"
+                )
+                columnas_b = self._entero_positivo(
+                    self.columnas_b, "Las columnas de B"
+                )
+        except ValueError as error:
+            messagebox.showerror("Error", str(error))
+            return
+
+        for widget in self.marco_matrices.winfo_children():
+            widget.destroy()
+        self.entradas_matriz_a = self._crear_tabla(
+            self.marco_matrices, filas_a, columnas_a, "Matriz A", 0
+        )
+        self.entradas_matriz_b = []
+        self.entrada_escalar_matriz = None
+
+        if operacion == "Matriz por escalar":
+            tk.Label(
+                self.marco_matrices, text="Escalar:", bg=COLOR_FONDO
+            ).grid(row=0, column=1, padx=(15, 3), pady=12)
+            self.entrada_escalar_matriz = tk.Entry(
+                self.marco_matrices, width=8, justify="center"
+            )
+            self.entrada_escalar_matriz.grid(row=0, column=2, padx=3, pady=12)
+        else:
+            self.entradas_matriz_b = self._crear_tabla(
+                self.marco_matrices, filas_b, columnas_b, "Matriz B", 1
+            )
+
+    def _calcular_matrices(self):
+        try:
+            matriz_a = self._leer_matriz(self.entradas_matriz_a)
+            operacion = self.operacion_matriz.get()
+            if operacion == "Matriz por escalar":
+                resultado = multiplicar_matriz_escalar(
+                    matriz_a, self.entrada_escalar_matriz.get().strip()
+                )
+            else:
+                matriz_b = self._leer_matriz(self.entradas_matriz_b)
+                if operacion == "Suma":
+                    resultado = suma_matrices(matriz_a, matriz_b)
+                elif operacion == "Resta":
+                    resultado = resta_matrices(matriz_a, matriz_b)
+                else:
+                    resultado = multiplicar_matrices(matriz_a, matriz_b)
+        except ValueError as error:
+            messagebox.showerror("Error", str(error))
+            return
+        self._mostrar_resultado(resultado)
+
+    def _construir_tab_ecuacion(self):
+        controles = tk.Frame(self.tab_ecuacion, bg=COLOR_FONDO)
+        controles.pack(pady=3)
+        self.ec_filas_a = self._entrada_dimension(controles, "A filas:", 0)
+        self.ec_columnas_a = self._entrada_dimension(controles, "A cols:", 2)
+        self.ec_columnas_b = self._entrada_dimension(
+            controles, "B cols:", 4, "1"
+        )
+        RoundedButton(
+            controles, text="Crear campos", command=self._crear_campos_ecuacion,
+            width=115,
+        ).grid(row=0, column=6, padx=5)
+        RoundedButton(
+            controles, text="Resolver", command=self._calcular_ecuacion,
+            width=100,
+        ).grid(row=0, column=7, padx=5)
+
+        self.marco_ecuacion = tk.Frame(self.tab_ecuacion, bg=COLOR_FONDO)
+        self.marco_ecuacion.pack(pady=3)
+        self._crear_campos_ecuacion()
+
+    def _crear_campos_ecuacion(self):
+        try:
+            filas = self._entero_positivo(self.ec_filas_a, "Las filas de A")
+            columnas_a = self._entero_positivo(
+                self.ec_columnas_a, "Las columnas de A"
+            )
+            columnas_b = self._entero_positivo(
+                self.ec_columnas_b, "Las columnas de B"
+            )
+        except ValueError as error:
+            messagebox.showerror("Error", str(error))
+            return
+
+        for widget in self.marco_ecuacion.winfo_children():
+            widget.destroy()
+        self.entradas_ecuacion_a = self._crear_tabla(
+            self.marco_ecuacion, filas, columnas_a, "Matriz A", 0
+        )
+        self.entradas_ecuacion_b = self._crear_tabla(
+            self.marco_ecuacion, filas, columnas_b, "Matriz B", 1
+        )
+
+    def _calcular_ecuacion(self):
+        try:
+            resultado = ecuacion_matricial(
+                self._leer_matriz(self.entradas_ecuacion_a),
+                self._leer_matriz(self.entradas_ecuacion_b),
+                self.modo.get(),
+            )
+        except ValueError as error:
+            messagebox.showerror("Error", str(error))
+            return
+        self._mostrar_resultado(resultado)
+
+
+# ======================================================
 # REGISTRO DE MÉTODOS
 # ======================================================
 
@@ -947,6 +1319,10 @@ METODOS = [
     (
         "Conversión de bases",
         lambda p: VistaConversion(p),
+    ),
+    (
+        "Vectores y matrices",
+        lambda p: VistaVectoresMatrices(p),
     ),
 ]
 

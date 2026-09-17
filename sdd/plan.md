@@ -71,8 +71,8 @@ depender de recordarlas spec por spec.)
 |---|------|--------|--------|
 | 000 | — | Gauss-Jordan | implementado (previo a SDD) |
 | 000 | — | Pivoteo | implementado (previo a SDD) |
-| 001 | `sdd/001-conversion.md` | Conversión de bases numéricas | implementado |
-| 002 | `sdd/002-vectores-matrices.md` | Operaciones vectoriales y matriciales | pendiente |
+| 001 | `sdd/specs/001-conversion.md` | Conversión de bases numéricas | implementado |
+| 002 | `sdd/specs/002-vectores-matrices.md` | Operaciones vectoriales y matriciales | implementado |
 
 Esta tabla se actualiza cada vez que se agrega una spec nueva o se cierra el
 ciclo de una existente.

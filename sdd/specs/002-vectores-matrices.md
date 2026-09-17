@@ -1,4 +1,4 @@
-Estado: pendiente
+Estado: implementado
 
 # 002 — Operaciones vectoriales y matriciales
 
