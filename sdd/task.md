@@ -152,3 +152,67 @@ Spec: `sdd/specs/002-vectores-matrices.md`
 - [x] Marcar `Estado: implementado` en `sdd/specs/002-vectores-matrices.md`.
 - [x] Actualizar la fila del módulo 002 en la tabla de seguimiento de
       `sdd/plan.md`.
+
+---
+
+## 003 — Diseño visual web (index.html)
+
+Spec: `sdd/specs/003-diseño-visual-html.md`
+
+### Servidor local (`server.py`)
+
+- [x] Crear `server.py` con docstring de módulo (propósito: exponer
+      `metodos/` vía HTTP usando solo librería estándar, sin lógica
+      matemática propia).
+- [x] Implementar el servidor HTTP (basado en `http.server`) que sirve
+      `index.html` como archivo estático.
+- [x] Definir los endpoints JSON necesarios, uno por método: Gauss-Jordan,
+      Pivoteo, Conversión de bases, y Vectores y matrices (vectores,
+      matrices, ecuación `A·X = B`), reutilizando directamente las funciones
+      de `metodos/` ya existentes.
+- [x] Implementar la serialización de resultados a JSON, incluyendo la
+      conversión de objetos `Fraction` a texto sin alterar el cálculo.
+- [x] Manejar errores de los módulos de `metodos/` (por ejemplo
+      `ValueError`) devolviendo una respuesta JSON de error clara, sin
+      tracebacks crudos.
+
+### Implementación (`index.html`)
+
+- [x] Crear `index.html` como archivo único autocontenido (HTML, CSS y
+      JavaScript inline, sin frameworks ni dependencias externas).
+- [x] Reproducir el layout general de `gui.py`: sidebar fija con la lista de
+      métodos y panel derecho con formulario + área de resultados
+      monoespaciada.
+- [x] Reproducir en CSS la paleta de colores y tipografías equivalentes a
+      las definidas en `gui.py` (`COLOR_FONDO`, `COLOR_SIDEBAR`,
+      `COLOR_BOTON`, `COLOR_BOTON_ACT`, fuentes de título/normal/mono).
+- [x] Construir la vista de Gauss-Jordan / Pivoteo: captura de ecuaciones y
+      variables, generación dinámica de la matriz aumentada, selector de
+      formato fracción/decimal, resolución, mostrar pasos y comprobación de
+      resultado, todo vía `fetch` al servidor local.
+- [x] Construir la vista de Conversión de bases: selector de dirección y
+      base, campo de número, procedimiento y resultado.
+- [x] Construir la vista de Vectores y matrices con sus tres sub-vistas
+      (vectores, matrices, ecuación `A·X = B`), replicando el
+      comportamiento de `VistaVectoresMatrices` en `gui.py`.
+- [x] Agregar validación de errores amigable en la propia página (mensajes
+      claros ante campos vacíos, dimensiones incompatibles, respuestas de
+      error del servidor, etc.), sin tracebacks ni JSON crudo visible. Se
+      implementó un modal propio (equivalente a `messagebox`) para errores y
+      avisos.
+
+### Cierre
+
+- [x] Levantar `server.py` y probar todos los endpoints con `curl`:
+      Gauss-Jordan (caso única), Pivoteo (caso incompatible), Conversión
+      decimal→hexadecimal y caso de dígito inválido, Vectores (suma y
+      combinación lineal), Matrices (multiplicación incompatible), y
+      Ecuación matricial (solución única); además de la ruta estática `/`
+      y una ruta 404. Todos los resultados coinciden con la lógica de
+      `metodos/` ya validada en los cierres de 001 y 002. Falta una pasada
+      visual del usuario en su propia máquina (abrir el navegador) para el
+      visto bueno final de estética, ya que la skill de automatización de
+      navegador no estaba disponible en esta sesión.
+- [x] Marcar `Estado: implementado` en `sdd/specs/003-diseño-visual-html.md`.
+- [x] Actualizar la fila del módulo 003 en la tabla de seguimiento de
+      `sdd/plan.md`.

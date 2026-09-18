@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Matrices</title>
+<style>
+  :root {
+    --color-fondo: #f5f5f5;
+    --color-sidebar: #2c3e50;
+    --color-boton: #34495e;
+    --color-boton-act: #1abc9c;
+    --color-texto-sb: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--color-fondo);
+    font-family: Arial, Helvetica, sans-serif;
+    color: #1c1c1c;
+  }
+
+  .app {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ---------- SIDEBAR ---------- */
+
+  .sidebar {
+    width: 210px;
+    flex-shrink: 0;
+    background: var(--color-sidebar);
+    color: var(--color-texto-sb);
+    display: flex;
+    flex-direction: column;
+    padding: 16px 10px;
+    gap: 6px;
+  }
+
+  .sidebar h1 {
+    font-size: 15px;
+    font-weight: bold;
+    margin: 0 0 14px 6px;
+  }
+
+  .nav-btn {
+    background: var(--color-boton);
+    color: var(--color-texto-sb);
+    border: none;
+    border-radius: 12px;
+    padding: 11px 12px;
+    text-align: left;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .nav-btn:hover { background: var(--color-boton-act); }
+  .nav-btn.active { background: var(--color-boton-act); font-weight: bold; }
+
+  .sidebar-nota {
+    margin-top: auto;
+    font-size: 10px;
+    color: #cfd8dc;
+    padding: 6px;
+    line-height: 1.4;
+  }
+
+  /* ---------- PANEL PRINCIPAL ---------- */
+
+  .panel {
+    flex: 1;
+    padding: 10px 24px 30px;
+    overflow-y: auto;
+  }
+
+  .titulo {
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+    margin: 14px 0;
+  }
+
+  .subtitulo {
+    font-size: 14px;
+    font-weight: bold;
+  }
+
+  .controles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 8px 0;
+  }
+
+  .controles label {
+    font-size: 13px;
+  }
+
+  input[type="text"], input[type="number"], select {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 5px 7px;
+    border: 1px solid #b7b7b7;
+    border-radius: 4px;
+    text-align: center;
+    background: #fff;
+  }
+
+  .btn {
+    background: var(--color-boton);
+    color: var(--color-texto-sb);
+    border: none;
+    border-radius: 12px;
+    padding: 9px 18px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .btn:hover:not(:disabled) { background: var(--color-boton-act); }
+
+  .btn:disabled {
+    background: #b0b0b0;
+    color: #9e9e9e;
+    cursor: default;
+  }
+
+  .btn-grande {
+    font-size: 14px;
+    font-weight: bold;
+    padding: 10px 22px;
+  }
+
+  .botones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 12px 0;
+  }
+
+  .formato {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    margin: 8px 0;
+    font-size: 13px;
+  }
+
+  .formato label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+
+  /* ---------- MATRIZ ---------- */
+
+  .marco-matriz {
+    display: flex;
+    justify-content: center;
+    margin: 16px 0;
+    overflow-x: auto;
+  }
+
+  .grid-matriz {
+    display: grid;
+    gap: 6px;
+    align-items: center;
+    justify-items: center;
+  }
+
+  .grid-matriz .encabezado {
+    font-size: 12px;
+    font-weight: normal;
+  }
+
+  .grid-matriz .separador {
+    font-size: 15px;
+    font-weight: bold;
+    padding: 0 4px;
+  }
+
+  .grid-matriz input {
+    width: 62px;
+  }
+
+  .marco-tabla {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 4px 12px;
+  }
+
+  .marco-tabla .titulo-tabla {
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 6px;
+  }
+
+  .tabla-genérica {
+    display: grid;
+    gap: 4px;
+  }
+
+  .tabla-genérica input { width: 56px; }
+
+  .grupo-tablas {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 10px 0;
+  }
+
+  .grupo-vectores {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin: 12px 0;
+    flex-wrap: wrap;
+  }
+
+  .columna-vector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .columna-vector .titulo-tabla {
+    font-size: 13px;
+    font-weight: bold;
+  }
+
+  .columna-vector input { width: 68px; }
+
+  .campo-escalar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 10px 0;
+  }
+
+  /* ---------- SALIDA ---------- */
+
+  .salida {
+    display: block;
+    width: 100%;
+    max-width: 960px;
+    min-height: 260px;
+    margin: 10px auto 0;
+    background: #ffffff;
+    border: 1px solid #c9c9c9;
+    border-radius: 4px;
+    padding: 14px;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 13px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+
+  /* ---------- PESTAÑAS (Vectores y matrices) ---------- */
+
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin: 10px 0 0;
+  }
+
+  .tab-btn {
+    padding: 8px 20px;
+    border: 1px solid #c9c9c9;
+    border-bottom: none;
+    background: #e6e6e6;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    font-size: 13px;
+  }
+
+  .tab-btn.active {
+    background: #ffffff;
+    font-weight: bold;
+  }
+
+  .tab-panel {
+    border: 1px solid #c9c9c9;
+    border-radius: 0 4px 4px 4px;
+    background: #ffffff;
+    padding: 12px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .tab-contenido { display: none; }
+  .tab-contenido.activa { display: block; }
+
+  /* ---------- MODAL (equivalente a messagebox) ---------- */
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+
+  .modal-box {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 20px 24px;
+    min-width: 280px;
+    max-width: 440px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .modal-box h2 {
+    margin: 0 0 10px;
+    font-size: 16px;
+  }
+
+  .modal-box h2.error { color: #c0392b; }
+  .modal-box h2.aviso { color: #b9770e; }
+
+  .modal-box p {
+    margin: 0 0 18px;
+    font-size: 13px;
+    white-space: pre-wrap;
+    line-height: 1.4;
+  }
+
+  .modal-box .btn {
+    display: block;
+    margin-left: auto;
+  }
+
+  .aviso-servidor {
+    max-width: 960px;
+    margin: 6px auto 0;
+    font-size: 11px;
+    color: #7a7a7a;
+    text-align: center;
+  }
+
+  @media (max-width: 720px) {
+    .sidebar { width: 150px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="sidebar" id="sidebar">
+    <h1>Calculadora</h1>
+    <!-- Botones de navegación insertados por JS -->
+  </nav>
+
+  <main class="panel" id="panel">
+    <!-- Vista actual insertada por JS -->
+  </main>
+</div>
+
+<div id="modal-root"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ==========================================================
+     UTILIDADES GENERALES
+     ========================================================== */
+
+  function el(tag, atributos, hijos) {
+    const nodo = document.createElement(tag);
+    if (atributos) {
+      for (const [clave, valor] of Object.entries(atributos)) {
+        if (clave === "texto") nodo.textContent = valor;
+        else if (clave === "html") nodo.innerHTML = valor;
+        else if (clave.startsWith("on") && typeof valor === "function") {
+          nodo.addEventListener(clave.slice(2), valor);
+        } else {
+          nodo.setAttribute(clave, valor);
+        }
+      }
+    }
+    if (hijos) {
+      for (const hijo of hijos) {
+        if (hijo) nodo.appendChild(hijo);
+      }
+    }
+    return nodo;
+  }
+
+  function mostrarModal(titulo, mensaje, claseTitulo) {
+    const raiz = document.getElementById("modal-root");
+    raiz.innerHTML = "";
+
+    const cerrar = () => { raiz.innerHTML = ""; };
+
+    const caja = el("div", { class: "modal-box" }, [
+      el("h2", { texto: titulo, class: claseTitulo || "error" }),
+      el("p", { texto: mensaje }),
+      el("button", { class: "btn", texto: "Aceptar", onclick: cerrar }),
+    ]);
+
+    const overlay = el("div", { class: "modal-overlay", onclick: (e) => {
+      if (e.target === overlay) cerrar();
+    } }, [caja]);
+
+    raiz.appendChild(overlay);
+  }
+
+  function mostrarError(mensaje) {
+    mostrarModal("Error", mensaje, "error");
+  }
+
+  function mostrarAviso(mensaje) {
+    mostrarModal("Aviso", mensaje, "aviso");
+  }
+
+  async function llamarApi(ruta, cuerpo) {
+    let respuesta;
+    try {
+      respuesta = await fetch(ruta, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cuerpo),
+      });
+    } catch (error) {
+      throw new Error(
+        "No se pudo conectar con el servidor. ¿Está corriendo " +
+        "'python server.py'?"
+      );
+    }
+
+    let datos;
+    try {
+      datos = await respuesta.json();
+    } catch (error) {
+      throw new Error("El servidor devolvió una respuesta inválida.");
+    }
+
+    if (!respuesta.ok || datos.error) {
+      throw new Error(datos.error || "Ocurrió un error en el servidor.");
+    }
+
+    return datos;
+  }
+
+  function enteroPositivo(valorTexto, nombre) {
+    const valor = parseInt(valorTexto, 10);
+    if (Number.isNaN(valor) || valor < 1 || String(valor) !== String(valorTexto).trim()) {
+      throw new Error(`${nombre} debe ser un entero mayor que cero.`);
+    }
+    return valor;
+  }
+
+  const TIPO_MENSAJE = {
+    unica: "Sistema compatible determinado.\nTiene una única solución.\n\n",
+    infinitas: "Sistema compatible indeterminado.\nTiene infinitas soluciones.\n\n",
+    incompatible: "Sistema incompatible o inconsistente.\nNo tiene solución.\n\n",
+  };
+
+  const LINEA = "========================================";
+
+  /* ==========================================================
+     REGISTRO DE MÉTODOS (equivalente a METODOS en gui.py)
+     ========================================================== */
+
+  const METODOS = [
+    { nombre: "Gauss-Jordan", vista: () => vistaSistemaLineal("gauss-jordan", "Gauss-Jordan") },
+    { nombre: "Pivoteo", vista: () => vistaSistemaLineal("pivoteo", "Pivoteo") },
+    { nombre: "Conversión de bases", vista: vistaConversion },
+    { nombre: "Vectores y matrices", vista: vistaVectoresMatrices },
+  ];
+
+  const panel = document.getElementById("panel");
+  const sidebar = document.getElementById("sidebar");
+
+  function construirSidebar() {
+    for (const metodo of METODOS) {
+      const boton = el("button", {
+        class: "nav-btn",
+        texto: metodo.nombre,
+        onclick: () => mostrarVista(metodo),
+      });
+      boton.dataset.nombre = metodo.nombre;
+      sidebar.appendChild(boton);
+    }
+
+    const nota = el("div", {
+      class: "sidebar-nota",
+      texto: "Requiere: python server.py",
+    });
+    sidebar.appendChild(nota);
+  }
+
+  function mostrarVista(metodo) {
+    for (const boton of sidebar.querySelectorAll(".nav-btn")) {
+      boton.classList.toggle("active", boton.dataset.nombre === metodo.nombre);
+    }
+    panel.innerHTML = "";
+    panel.appendChild(metodo.vista());
+  }
+
+  /* ==========================================================
+     VISTA: SISTEMA LINEAL (Gauss-Jordan / Pivoteo)
+     ========================================================== */
+
+  function vistaSistemaLineal(metodo, titulo) {
+    let entradasMatriz = [];
+    let ultimoResultado = null;
+    let modo = "fraccion";
+
+    const marcoMatriz = el("div", { class: "marco-matriz" });
+    const salida = el("pre", { class: "salida" });
+
+    const entradaEcuaciones = el("input", { type: "number", min: "1", value: "3" });
+    entradaEcuaciones.style.width = "60px";
+    const entradaVariables = el("input", { type: "number", min: "1", value: "3" });
+    entradaVariables.style.width = "60px";
+
+    const botonComprobar = el("button", {
+      class: "btn",
+      texto: "Comprobar resultado",
+      disabled: "disabled",
+      onclick: comprobarResultado,
+    });
+
+    function limpiarSalida() { salida.textContent = ""; }
+    function escribir(texto) { salida.textContent += texto; }
+
+    function crearMatriz() {
+      let ecuaciones, variables;
+      try {
+        ecuaciones = enteroPositivo(entradaEcuaciones.value, "Ecuaciones");
+        variables = enteroPositivo(entradaVariables.value, "Variables");
+      } catch (error) {
+        mostrarError("Ingrese números enteros mayores que cero.");
+        return;
+      }
+
+      marcoMatriz.innerHTML = "";
+      entradasMatriz = [];
+      ultimoResultado = null;
+      botonComprobar.disabled = true;
+      limpiarSalida();
+
+      const columnasTotales = variables + 2; // variables + separador + b
+      const grid = el("div", {
+        class: "grid-matriz",
+        style: `grid-template-columns: repeat(${columnasTotales}, auto);`,
+      });
+
+      for (let j = 0; j < variables; j++) {
+        grid.appendChild(el("div", { class: "encabezado", texto: `x${j + 1}` }));
+      }
+      grid.appendChild(el("div", { class: "separador", texto: "│" }));
+      grid.appendChild(el("div", { class: "encabezado", texto: "b" }));
+
+      for (let i = 0; i < ecuaciones; i++) {
+        const filaEntradas = [];
+        for (let j = 0; j < variables; j++) {
+          const entrada = el("input", { type: "text" });
+          grid.appendChild(entrada);
+          filaEntradas.push(entrada);
+        }
+        grid.appendChild(el("div", { class: "separador", texto: "│" }));
+        const entradaB = el("input", { type: "text" });
+        grid.appendChild(entradaB);
+        filaEntradas.push(entradaB);
+        entradasMatriz.push(filaEntradas);
+      }
+
+      marcoMatriz.appendChild(grid);
+    }
+
+    function limpiarMatriz() {
+      for (const fila of entradasMatriz) {
+        for (const entrada of fila) entrada.value = "";
+      }
+      ultimoResultado = null;
+      botonComprobar.disabled = true;
+      limpiarSalida();
+    }
+
+    function obtenerMatriz() {
+      const matriz = [];
+      for (const filaEntradas of entradasMatriz) {
+        const fila = [];
+        for (const entrada of filaEntradas) {
+          const texto = entrada.value.trim();
+          if (texto === "") throw new Error("vacio");
+          fila.push(texto);
+        }
+        matriz.push(fila);
+      }
+      return matriz;
+    }
+
+    function bloqueTipo(tipo) {
+      return TIPO_MENSAJE[tipo] || "";
+    }
+
+    async function resolverInterno() {
+      let matriz;
+      try {
+        matriz = obtenerMatriz();
+      } catch (error) {
+        mostrarError("Complete todos los campos de la matriz con números.");
+        return null;
+      }
+
+      try {
+        const resultado = await llamarApi("/api/sistema", { metodo, matriz, modo });
+        ultimoResultado = resultado;
+        botonComprobar.disabled = false;
+        return resultado;
+      } catch (error) {
+        mostrarError(error.message);
+        return null;
+      }
+    }
+
+    async function resolverSistema() {
+      const resultado = await resolverInterno();
+      if (!resultado) return;
+
+      limpiarSalida();
+      escribir(`${LINEA}\nRESULTADO\n${LINEA}\n`);
+      escribir(bloqueTipo(resultado.tipo));
+      escribir(resultado.soluciones);
+    }
+
+    async function mostrarPasos() {
+      let resultado = ultimoResultado;
+      if (!resultado) {
+        resultado = await resolverInterno();
+        if (!resultado) return;
+      }
+
+      limpiarSalida();
+      escribir(`${LINEA}\nMATRIZ AUMENTADA INICIAL\n${LINEA}\n\n`);
+      escribir(resultado.matriz_inicial);
+
+      escribir(`\n\n${LINEA}\nPROCEDIMIENTO ${titulo.toUpperCase()}\n${LINEA}\n`);
+      for (const paso of resultado.pasos) {
+        escribir(`\n${paso.operacion}\n\n`);
+        escribir(paso.matriz);
+      }
+
+      escribir(`\n\n${LINEA}\nMATRIZ FINAL\n${LINEA}\n\n`);
+      escribir(resultado.matriz_final);
+
+      escribir(`\n\n${LINEA}\nRESULTADO\n${LINEA}\n\n`);
+      escribir(bloqueTipo(resultado.tipo));
+      escribir(resultado.soluciones);
+    }
+
+    function comprobarResultado() {
+      if (!ultimoResultado) {
+        mostrarAviso("Primero resuelva el sistema para poder comprobarlo.");
+        return;
+      }
+      limpiarSalida();
+      escribir(
+        `${LINEA}\nCOMPROBACIÓN (A_original @ X vs B_original)\n${LINEA}\n\n`
+      );
+      escribir(ultimoResultado.comprobacion);
+    }
+
+    const controles = el("div", { class: "controles" }, [
+      el("label", { texto: "Ecuaciones:" }),
+      entradaEcuaciones,
+      el("label", { texto: "Variables:" }),
+      entradaVariables,
+      el("button", { class: "btn", texto: "Crear matriz", onclick: crearMatriz }),
+      el("button", { class: "btn", texto: "Limpiar", onclick: limpiarMatriz }),
+    ]);
+
+    const radioFraccion = el("input", { type: "radio", name: `modo-${metodo}`, value: "fraccion", checked: "checked" });
+    const radioDecimal = el("input", { type: "radio", name: `modo-${metodo}`, value: "decimal" });
+    radioFraccion.addEventListener("change", () => { modo = "fraccion"; });
+    radioDecimal.addEventListener("change", () => { modo = "decimal"; });
+
+    const formato = el("div", { class: "formato" }, [
+      el("span", { texto: "Mostrar resultados en:" }),
+      el("label", {}, [radioFraccion, document.createTextNode(" Fracciones")]),
+      el("label", {}, [radioDecimal, document.createTextNode(" Decimales")]),
+    ]);
+
+    const botones = el("div", { class: "botones" }, [
+      el("button", { class: "btn btn-grande", texto: "Resolver", onclick: resolverSistema }),
+      el("button", { class: "btn btn-grande", texto: "Mostrar pasos", onclick: mostrarPasos }),
+      botonComprobar,
+    ]);
+
+    const contenedor = el("div", {}, [
+      el("div", { class: "titulo", texto: titulo }),
+      controles,
+      marcoMatriz,
+      formato,
+      botones,
+      salida,
+    ]);
+
+    crearMatriz();
+    return contenedor;
+  }
+
+  /* ==========================================================
+     VISTA: CONVERSIÓN DE BASES
+     ========================================================== */
+
+  function vistaConversion() {
+    const BASES_A_OTRA = ["binario", "octal", "hexadecimal"];
+    const BASES_A_DECIMAL = ["binario", "octal", "decimal"];
+    const NOMBRE_A_BASE = { binario: 2, octal: 8, decimal: 10, hexadecimal: 16 };
+
+    let direccion = "a_otra_base";
+
+    const salida = el("pre", { class: "salida" });
+    const selectBase = el("select", {});
+
+    function actualizarOpcionesBase() {
+      const opciones = direccion === "a_otra_base" ? BASES_A_OTRA : BASES_A_DECIMAL;
+      selectBase.innerHTML = "";
+      for (const opcion of opciones) {
+        selectBase.appendChild(el("option", { value: opcion, texto: opcion }));
+      }
+    }
+
+    const radioAOtra = el("input", { type: "radio", name: "direccion-conv", value: "a_otra_base", checked: "checked" });
+    const radioADecimal = el("input", { type: "radio", name: "direccion-conv", value: "a_decimal" });
+    radioAOtra.addEventListener("change", () => { direccion = "a_otra_base"; actualizarOpcionesBase(); });
+    radioADecimal.addEventListener("change", () => { direccion = "a_decimal"; actualizarOpcionesBase(); });
+
+    const direccionMarco = el("div", { class: "controles" }, [
+      el("span", { texto: "Dirección:" }),
+      el("label", {}, [radioAOtra, document.createTextNode(" Decimal → otra base")]),
+      el("label", {}, [radioADecimal, document.createTextNode(" Otra base → Decimal")]),
+    ]);
+
+    const entradaNumero = el("input", { type: "text", placeholder: "Número" });
+    entradaNumero.style.width = "220px";
+
+    async function convertir() {
+      const numero = entradaNumero.value.trim();
+      const baseNombre = selectBase.value;
+      const baseNumero = NOMBRE_A_BASE[baseNombre];
+
+      let baseEntrada, baseSalida;
+      if (direccion === "a_otra_base") {
+        baseEntrada = 10; baseSalida = baseNumero;
+      } else {
+        baseEntrada = baseNumero; baseSalida = 10;
+      }
+
+      let resultado;
+      try {
+        resultado = await llamarApi("/api/conversion", {
+          numero, base_entrada: baseEntrada, base_salida: baseSalida,
+        });
+      } catch (error) {
+        mostrarError(error.message);
+        return;
+      }
+
+      salida.textContent = "";
+      salida.textContent += `${LINEA}\nPROCEDIMIENTO\n${LINEA}\n\n`;
+      salida.textContent += resultado.procedimiento;
+      salida.textContent += `\n\n${LINEA}\nRESULTADO\n${LINEA}\n\n`;
+      salida.textContent +=
+        `${resultado.numero_entrada} (${resultado.nombre_base_entrada}) = ` +
+        `${resultado.resultado} (${resultado.nombre_base_salida})`;
+    }
+
+    const controles = el("div", { class: "controles" }, [
+      el("label", { texto: "Base:" }),
+      selectBase,
+      el("label", { texto: "Número:" }),
+      entradaNumero,
+      el("button", { class: "btn btn-grande", texto: "Convertir", onclick: convertir }),
+    ]);
+
+    actualizarOpcionesBase();
+
+    return el("div", {}, [
+      el("div", { class: "titulo", texto: "Conversión de bases" }),
+      direccionMarco,
+      controles,
+      salida,
+    ]);
+  }
+
+  /* ==========================================================
+     VISTA: VECTORES Y MATRICES
+     ========================================================== */
+
+  function vistaVectoresMatrices() {
+    let modo = "fraccion";
+    const salida = el("pre", { class: "salida" });
+
+    function mostrarResultado(procedimiento) {
+      salida.textContent = procedimiento;
+    }
+
+    /* ---------- Sub-vista: Vectores ---------- */
+
+    let entradasVectores = [];
+    let entradasObjetivo = [];
+    let entradaEscalarVector = null;
+
+    const operacionVector = el("select", {}, [
+      el("option", { value: "Suma", texto: "Suma" }),
+      el("option", { value: "Resta", texto: "Resta" }),
+      el("option", { value: "Vector por escalar", texto: "Vector por escalar" }),
+      el("option", { value: "Combinación lineal", texto: "Combinación lineal" }),
+    ]);
+
+    const dimensionVector = el("input", { type: "number", min: "1", value: "3" });
+    dimensionVector.style.width = "55px";
+    const cantidadVectores = el("input", { type: "number", min: "1", value: "2" });
+    cantidadVectores.style.width = "55px";
+
+    const marcoVectores = el("div", { class: "grupo-vectores" });
+
+    operacionVector.addEventListener("change", crearCamposVectores);
+
+    function crearCamposVectores() {
+      let dimension, cantidad;
+      try {
+        dimension = enteroPositivo(dimensionVector.value, "La dimensión");
+      } catch (error) {
+        mostrarError(error.message);
+        return;
+      }
+
+      const operacion = operacionVector.value;
+
+      if (operacion === "Suma" || operacion === "Combinación lineal") {
+        try {
+          cantidad = enteroPositivo(cantidadVectores.value, "La cantidad de vectores");
+        } catch (error) {
+          mostrarError(error.message);
+          return;
+        }
+      } else {
+        cantidad = 2;
+      }
+
+      marcoVectores.innerHTML = "";
+      entradasVectores = [];
+      entradasObjetivo = [];
+      entradaEscalarVector = null;
+
+      let total;
+      if (operacion === "Suma" || operacion === "Combinación lineal") total = cantidad;
+      else if (operacion === "Vector por escalar") total = 1;
+      else total = 2;
+
+      for (let j = 0; j < total; j++) {
+        const columnaEntradas = [];
+        const columna = el("div", { class: "columna-vector" });
+        columna.appendChild(el("div", { class: "titulo-tabla", texto: `v${j + 1}` }));
+        for (let i = 0; i < dimension; i++) {
+          const entrada = el("input", { type: "text" });
+          columna.appendChild(entrada);
+          columnaEntradas.push(entrada);
+        }
+        entradasVectores.push(columnaEntradas);
+        marcoVectores.appendChild(columna);
+      }
+
+      if (operacion === "Combinación lineal") {
+        const columna = el("div", { class: "columna-vector" });
+        columna.appendChild(el("div", { class: "titulo-tabla", texto: "objetivo" }));
+        for (let i = 0; i < dimension; i++) {
+          const entrada = el("input", { type: "text" });
+          columna.appendChild(entrada);
+          entradasObjetivo.push(entrada);
+        }
+        marcoVectores.appendChild(columna);
+      } else if (operacion === "Vector por escalar") {
+        entradaEscalarVector = el("input", { type: "text" });
+        const columna = el("div", { class: "columna-vector" });
+        columna.appendChild(el("div", { class: "titulo-tabla", texto: "Escalar" }));
+        columna.appendChild(entradaEscalarVector);
+        marcoVectores.appendChild(columna);
+      }
+    }
+
+    function leerVector(entradas) {
+      return entradas.map((entrada) => entrada.value.trim());
+    }
+
+    async function calcularVectores() {
+      const operacion = operacionVector.value;
+      const vectores = entradasVectores.map(leerVector);
+
+      let cuerpo;
+      if (operacion === "Suma") {
+        cuerpo = { operacion, vectores, modo };
+      } else if (operacion === "Resta") {
+        cuerpo = { operacion, vectores: [vectores[0], vectores[1]], modo };
+      } else if (operacion === "Vector por escalar") {
+        cuerpo = {
+          operacion,
+          vectores: [vectores[0]],
+          escalar: entradaEscalarVector.value.trim(),
+          modo,
+        };
+      } else {
+        cuerpo = { operacion, vectores, objetivo: leerVector(entradasObjetivo), modo };
+      }
+
+      try {
+        const resultado = await llamarApi("/api/vectores", cuerpo);
+        mostrarResultado(resultado.procedimiento);
+      } catch (error) {
+        mostrarError(error.message);
+      }
+    }
+
+    const controlesVectores = el("div", { class: "controles" }, [
+      el("label", { texto: "Operación:" }),
+      operacionVector,
+      el("label", { texto: "Dimensión:" }),
+      dimensionVector,
+      el("label", { texto: "Vectores:" }),
+      cantidadVectores,
+      el("button", { class: "btn", texto: "Crear campos", onclick: crearCamposVectores }),
+      el("button", { class: "btn", texto: "Calcular", onclick: calcularVectores }),
+    ]);
+
+    const tabVectores = el("div", {}, [controlesVectores, marcoVectores]);
+
+    /* ---------- Sub-vista: Matrices ---------- */
+
+    let entradasMatrizA = [];
+    let entradasMatrizB = [];
+    let entradaEscalarMatriz = null;
+
+    const operacionMatriz = el("select", {}, [
+      el("option", { value: "Suma", texto: "Suma" }),
+      el("option", { value: "Resta", texto: "Resta" }),
+      el("option", { value: "Matriz por escalar", texto: "Matriz por escalar" }),
+      el("option", { value: "Multiplicación A × B", texto: "Multiplicación A × B" }),
+    ]);
+
+    const filasA = el("input", { type: "number", min: "1", value: "2" });
+    filasA.style.width = "50px";
+    const columnasA = el("input", { type: "number", min: "1", value: "2" });
+    columnasA.style.width = "50px";
+    const filasB = el("input", { type: "number", min: "1", value: "2" });
+    filasB.style.width = "50px";
+    const columnasB = el("input", { type: "number", min: "1", value: "2" });
+    columnasB.style.width = "50px";
+
+    const marcoMatrices = el("div", { class: "grupo-tablas" });
+
+    operacionMatriz.addEventListener("change", crearCamposMatrices);
+
+    function crearTabla(padre, filas, columnas, titulo) {
+      const marco = el("div", { class: "marco-tabla" });
+      marco.appendChild(el("div", { class: "titulo-tabla", texto: titulo }));
+      const grid = el("div", {
+        class: "tabla-genérica",
+        style: `grid-template-columns: repeat(${columnas}, auto);`,
+      });
+      const entradas = [];
+      for (let i = 0; i < filas; i++) {
+        const fila = [];
+        for (let j = 0; j < columnas; j++) {
+          const entrada = el("input", { type: "text" });
+          grid.appendChild(entrada);
+          fila.push(entrada);
+        }
+        entradas.push(fila);
+      }
+      marco.appendChild(grid);
+      padre.appendChild(marco);
+      return entradas;
+    }
+
+    function crearCamposMatrices() {
+      let fa, ca, fb, cb;
+      try {
+        fa = enteroPositivo(filasA.value, "Las filas de A");
+        ca = enteroPositivo(columnasA.value, "Las columnas de A");
+      } catch (error) {
+        mostrarError(error.message);
+        return;
+      }
+
+      const operacion = operacionMatriz.value;
+
+      if (operacion !== "Matriz por escalar") {
+        try {
+          fb = enteroPositivo(filasB.value, "Las filas de B");
+          cb = enteroPositivo(columnasB.value, "Las columnas de B");
+        } catch (error) {
+          mostrarError(error.message);
+          return;
+        }
+      }
+
+      marcoMatrices.innerHTML = "";
+      entradasMatrizA = crearTabla(marcoMatrices, fa, ca, "Matriz A");
+      entradasMatrizB = [];
+      entradaEscalarMatriz = null;
+
+      if (operacion === "Matriz por escalar") {
+        const marco = el("div", { class: "marco-tabla" });
+        marco.appendChild(el("div", { class: "titulo-tabla", texto: "Escalar" }));
+        entradaEscalarMatriz = el("input", { type: "text" });
+        marco.appendChild(entradaEscalarMatriz);
+        marcoMatrices.appendChild(marco);
+      } else {
+        entradasMatrizB = crearTabla(marcoMatrices, fb, cb, "Matriz B");
+      }
+    }
+
+    function leerMatriz(entradas) {
+      return entradas.map((fila) => fila.map((entrada) => entrada.value.trim()));
+    }
+
+    async function calcularMatrices() {
+      const operacion = operacionMatriz.value;
+      const matrizA = leerMatriz(entradasMatrizA);
+
+      let cuerpo;
+      if (operacion === "Matriz por escalar") {
+        cuerpo = { operacion, matriz_a: matrizA, escalar: entradaEscalarMatriz.value.trim(), modo };
+      } else {
+        cuerpo = { operacion, matriz_a: matrizA, matriz_b: leerMatriz(entradasMatrizB), modo };
+      }
+
+      try {
+        const resultado = await llamarApi("/api/matrices", cuerpo);
+        mostrarResultado(resultado.procedimiento);
+      } catch (error) {
+        mostrarError(error.message);
+      }
+    }
+
+    const controlesMatrices = el("div", { class: "controles" }, [
+      el("label", { texto: "Operación:" }),
+      operacionMatriz,
+      el("label", { texto: "A filas:" }), filasA,
+      el("label", { texto: "A cols:" }), columnasA,
+      el("label", { texto: "B filas:" }), filasB,
+      el("label", { texto: "B cols:" }), columnasB,
+      el("button", { class: "btn", texto: "Crear", onclick: crearCamposMatrices }),
+      el("button", { class: "btn", texto: "Calcular", onclick: calcularMatrices }),
+    ]);
+
+    const tabMatrices = el("div", {}, [controlesMatrices, marcoMatrices]);
+
+    /* ---------- Sub-vista: Ecuación A·X = B ---------- */
+
+    let entradasEcuacionA = [];
+    let entradasEcuacionB = [];
+
+    const ecFilasA = el("input", { type: "number", min: "1", value: "2" });
+    ecFilasA.style.width = "50px";
+    const ecColumnasA = el("input", { type: "number", min: "1", value: "2" });
+    ecColumnasA.style.width = "50px";
+    const ecColumnasB = el("input", { type: "number", min: "1", value: "1" });
+    ecColumnasB.style.width = "50px";
+
+    const marcoEcuacion = el("div", { class: "grupo-tablas" });
+
+    function crearCamposEcuacion() {
+      let filas, ca, cb;
+      try {
+        filas = enteroPositivo(ecFilasA.value, "Las filas de A");
+        ca = enteroPositivo(ecColumnasA.value, "Las columnas de A");
+        cb = enteroPositivo(ecColumnasB.value, "Las columnas de B");
+      } catch (error) {
+        mostrarError(error.message);
+        return;
+      }
+
+      marcoEcuacion.innerHTML = "";
+      entradasEcuacionA = crearTabla(marcoEcuacion, filas, ca, "Matriz A");
+      entradasEcuacionB = crearTabla(marcoEcuacion, filas, cb, "Matriz B");
+    }
+
+    async function calcularEcuacion() {
+      const cuerpo = {
+        matriz_a: leerMatriz(entradasEcuacionA),
+        matriz_b: leerMatriz(entradasEcuacionB),
+        modo,
+      };
+
+      try {
+        const resultado = await llamarApi("/api/ecuacion-matricial", cuerpo);
+        mostrarResultado(resultado.procedimiento);
+      } catch (error) {
+        mostrarError(error.message);
+      }
+    }
+
+    const controlesEcuacion = el("div", { class: "controles" }, [
+      el("label", { texto: "A filas:" }), ecFilasA,
+      el("label", { texto: "A cols:" }), ecColumnasA,
+      el("label", { texto: "B cols:" }), ecColumnasB,
+      el("button", { class: "btn", texto: "Crear campos", onclick: crearCamposEcuacion }),
+      el("button", { class: "btn", texto: "Resolver", onclick: calcularEcuacion }),
+    ]);
+
+    const tabEcuacion = el("div", {}, [controlesEcuacion, marcoEcuacion]);
+
+    /* ---------- Ensamblado de pestañas ---------- */
+
+    const contenidoVectores = el("div", { class: "tab-contenido activa" }, [tabVectores]);
+    const contenidoMatrices = el("div", { class: "tab-contenido" }, [tabMatrices]);
+    const contenidoEcuacion = el("div", { class: "tab-contenido" }, [tabEcuacion]);
+
+    const botonTabVectores = el("button", { class: "tab-btn active", texto: "Vectores" });
+    const botonTabMatrices = el("button", { class: "tab-btn", texto: "Matrices" });
+    const botonTabEcuacion = el("button", { class: "tab-btn", texto: "Ecuación A·X = B" });
+
+    function activarPestana(boton, contenido) {
+      for (const [b, c] of [
+        [botonTabVectores, contenidoVectores],
+        [botonTabMatrices, contenidoMatrices],
+        [botonTabEcuacion, contenidoEcuacion],
+      ]) {
+        b.classList.toggle("active", b === boton);
+        c.classList.toggle("activa", c === contenido);
+      }
+    }
+
+    botonTabVectores.addEventListener("click", () => activarPestana(botonTabVectores, contenidoVectores));
+    botonTabMatrices.addEventListener("click", () => activarPestana(botonTabMatrices, contenidoMatrices));
+    botonTabEcuacion.addEventListener("click", () => activarPestana(botonTabEcuacion, contenidoEcuacion));
+
+    const tabs = el("div", { class: "tabs" }, [botonTabVectores, botonTabMatrices, botonTabEcuacion]);
+    const panelTabs = el("div", { class: "tab-panel" }, [
+      contenidoVectores, contenidoMatrices, contenidoEcuacion,
+    ]);
+
+    const radioFraccion = el("input", { type: "radio", name: "modo-vm", value: "fraccion", checked: "checked" });
+    const radioDecimal = el("input", { type: "radio", name: "modo-vm", value: "decimal" });
+    radioFraccion.addEventListener("change", () => { modo = "fraccion"; });
+    radioDecimal.addEventListener("change", () => { modo = "decimal"; });
+
+    const formato = el("div", { class: "formato" }, [
+      el("span", { texto: "Mostrar resultados en:" }),
+      el("label", {}, [radioFraccion, document.createTextNode(" Fracciones")]),
+      el("label", {}, [radioDecimal, document.createTextNode(" Decimales")]),
+    ]);
+
+    crearCamposVectores();
+    crearCamposMatrices();
+    crearCamposEcuacion();
+
+    return el("div", {}, [
+      el("div", { class: "titulo", texto: "Vectores y matrices" }),
+      tabs,
+      panelTabs,
+      formato,
+      salida,
+    ]);
+  }
+
+  /* ==========================================================
+     INICIO
+     ========================================================== */
+
+  construirSidebar();
+  mostrarVista(METODOS[0]);
+})();
+</script>
+</body>
+</html>
