@@ -216,3 +216,134 @@ Spec: `sdd/specs/003-diseño-visual-html.md`
 - [x] Marcar `Estado: implementado` en `sdd/specs/003-diseño-visual-html.md`.
 - [x] Actualizar la fila del módulo 003 en la tabla de seguimiento de
       `sdd/plan.md`.
+
+---
+
+## 003 (continuación) — Mejora visual e interactividad de los pasos
+
+Spec: `sdd/specs/003-diseño-visual-html.md`, sección
+"Cambios posteriores — Mejora visual e interactividad de los pasos".
+
+### Formato de transporte (`server.py`)
+
+- [x] Cambiar la respuesta de `/api/sistema` (y de los demás endpoints que
+      devuelven procedimiento paso a paso) para incluir, además o en vez
+      del texto ya formateado, una representación **estructurada** de cada
+      matriz (filas/celdas como listas, no un string ya alineado con
+      espacios), reutilizando `formatear()` de
+      `metodos/general_metodos.py` para el valor de cada celda. Se agregó
+      `_formatear_matriz()` (grillas numéricas puras) y
+      `_formatear_estructura()` (pasos/entradas con metadatos mezclados,
+      p. ej. índices de fila/columna) en `server.py`, y se creó
+      `_armar_bloque_sistema()`/`_armar_bloque_operacion()` para dar forma
+      a la respuesta de cada endpoint. Todos los endpoints (`/api/sistema`,
+      `/api/conversion`, `/api/vectores`, `/api/matrices`,
+      `/api/ecuacion-matricial`) ya devuelven datos estructurados en vez de
+      texto pre-renderizado. Verificado con `curl` y comparando contra la
+      lógica ya validada de `metodos/`.
+- [x] Incluir en cada paso la información necesaria para resaltar el
+      pivote y la(s) fila(s)/celda(s) afectadas por esa operación
+      (columna/fila del pivote, filas involucradas en "eliminar" o
+      "intercambio"), sin recalcular nada nuevo: esta información ya se
+      conoce en `metodos/gauss_jordan.py` y `metodos/pivote.py` a partir
+      de la tupla de operación (`intercambio`, `normalizar`, `eliminar`).
+      Se agregó el índice de columna del pivote a la tupla interna de cada
+      paso (sin tocar ningún cálculo) y se expone junto con `tipo`,
+      `fila`/`fila_pivote`/`fila_a`/`fila_b` en `resultado["pasos"]`.
+      `combinacion_lineal` y `ecuacion_matricial` reutilizan esta misma
+      estructura para sus resoluciones internas vía
+      `_armar_bloque_sistema()`.
+- [x] Mantener la validación y el manejo de errores ya existente
+      (`ValueError` -> JSON de error, sin tracebacks); este cambio es solo
+      de serialización, no debe tocar ninguna función de cálculo. Se
+      volvió a probar con `curl`: dígito inválido en conversión,
+      dimensiones incompatibles en matrices, y campo vacío en el sistema
+      lineal siguen devolviendo el mismo JSON de error de siempre. Los 17
+      tests unitarios/de integración existentes siguen en verde.
+
+### Implementación (`index.html`)
+
+- [x] Reemplazar el `<pre>` de "Mostrar pasos" (Gauss-Jordan/Pivoteo) por
+      una secuencia de pasos navegable (tarjetas o timeline), donde cada
+      paso muestre su operación destacada y su matriz como una tabla HTML
+      real, con el pivote y las celdas afectadas resaltados visualmente.
+      Se implementó como un "stepper" con puntos de navegación clicables
+      más botones Anterior/Siguiente (`crearStepperGenerico()`), y cada
+      paso resalta la celda de pivote (`.celda-pivote`) y las filas
+      involucradas (`.fila-resaltada`) usando la metadata `columna`/
+      `fila`/`fila_pivote` que ahora expone `server.py`.
+- [x] Rediseñar el bloque de "Resultado" (tipo de sistema + solución) como
+      una tarjeta/resumen visual diferenciado, en vez de texto plano al
+      final del área de resultados. Tarjeta con ícono, color por tipo
+      (verde=única, ámbar=infinitas, rojo=incompatible) y borde de acento
+      (`tarjetaResultadoSistema()`).
+- [x] Rediseñar el bloque de "Comprobación" agregando un indicador visual
+      de correcto/incorrecto (color o ícono), conservando el detalle
+      numérico de `A_original · X` vs `B_original` que ya se muestra
+      (`tarjetaComprobacion()`; usa el nuevo campo `comprobacion.correcto`
+      que devuelve `server.py`).
+- [x] Aplicar el mismo criterio (pasos como secuencia visual, no bloque de
+      texto plano) al procedimiento de la vista de Conversión de bases
+      (divisiones sucesivas o combinación lineal de dígitos). Cada paso se
+      muestra como una tarjeta de división (`÷`) o de término (`dígito ×
+      base^exponente`) dentro del mismo stepper navegable.
+- [x] Aplicar el mismo criterio a la vista de Vectores y matrices: pasos
+      por componente/elemento en suma/resta/escalar, planteamiento y
+      resolución de la combinación lineal, y resolución de la ecuación
+      matricial `A·X = B`, sin perder ningún detalle del cálculo que se
+      muestra actualmente en texto. Suma/resta/escalar y multiplicación de
+      matrices usan una lista compacta de filas (`crearListaPasos()`);
+      combinación lineal reutiliza el stepper de sistema lineal para su
+      resolución interna y muestra los escalares como chips; ecuación
+      matricial agrupa la resolución de cada columna de B en un acordeón
+      (`crearAccordion()`) para no saturar la pantalla cuando B tiene
+      varias columnas.
+- [x] Agregar transiciones o animaciones CSS sutiles (por ejemplo al
+      avanzar entre pasos o al revelar el resultado/comprobación),
+      cuidando que sigan siendo livianas y no interfieran con la
+      funcionalidad ni con la lectura del procedimiento. Se agregaron los
+      keyframes `apareceSuave` (tarjetas, tablas, pasos) y
+      `aparecerDesdeIzquierda` (filas de la lista compacta, con
+      `animation-delay` escalonado), más transición de color/escala en los
+      puntos del stepper.
+- [x] Mantener `index.html` como archivo único autocontenido (sin
+      frameworks ni dependencias externas por CDN) y sin alterar el
+      layout general de sidebar + panel ni la paleta de colores base ya
+      definidos. Verificado: sigue siendo un solo archivo HTML con CSS/JS
+      inline, mismas variables de color (`--color-sidebar`,
+      `--color-boton`, `--color-boton-act`, etc.) y mismo layout de
+      sidebar + panel.
+- [x] Revisar que el nuevo diseño de pasos siga siendo legible en pantallas
+      angostas (el proyecto ya contempla un ajuste responsive básico para
+      el sidebar). Las tablas de matriz van envueltas en un contenedor con
+      `overflow-x: auto`, el stepper y sus controles usan `flex-wrap`, y
+      la lista compacta de pasos apila en columna en pantallas angostas;
+      se mantiene la media query existente que angosta el sidebar.
+
+### Cierre
+
+- [x] Probar el nuevo diseño de pasos en los cuatro métodos (Gauss-Jordan,
+      Pivoteo, Conversión de bases, Vectores y matrices) con
+      `server.py` corriendo de verdad. Como la skill de automatización de
+      navegador no estaba disponible, se armó un arnés de pruebas con
+      `jsdom` (Node) que carga `index.html` tal cual, ejecuta su
+      JavaScript real y simula clics/entradas de usuario contra el
+      servidor real por `fetch`. Se cubrieron: solución única (con
+      navegación del stepper y celda de pivote resaltada), sistema
+      incompatible (tarjeta roja + "No es posible comprobar"), infinitas
+      soluciones (tarjeta ámbar, variable libre `t`), comprobación
+      correcta, conversión decimal→hexadecimal, combinación lineal
+      positiva (stepper anidado + chips de escalares), multiplicación de
+      matrices, ecuación matricial con acordeón por columna de B, y la
+      validación de error por campo vacío (modal). Todas las pruebas
+      pasaron. Los 17 tests unitarios/de integración de Python siguen en
+      verde. Falta una pasada visual real del usuario en su propia
+      máquina para el visto bueno final de estética (jsdom valida
+      comportamiento del DOM, no la apariencia).
+- [ ] Confirmar con el usuario el visto bueno estético antes de cerrar el
+      ciclo (esta mejora es explícitamente de percepción visual, no solo
+      funcional).
+- [x] Actualizar esta sección de `sdd/task.md` marcando las tareas
+      completadas; la spec ya documenta el cambio en su sección "Cambios
+      posteriores", así que no requiere un nuevo archivo ni cambiar su
+      `Estado`.

@@ -198,6 +198,7 @@ def comprobar_solucion(matriz_original, matriz_final, tipo, pivotes):
     tolerancia_relativa = Fraction(1, 10 ** 9)
 
     comparaciones = []
+    correctas = []
     correcto = True
 
     for i in range(filas):
@@ -210,14 +211,17 @@ def comprobar_solucion(matriz_original, matriz_final, tipo, pivotes):
 
         diferencia = abs(ax_i - b_i)
         limite = tolerancia_absoluta + tolerancia_relativa * abs(b_i)
+        fila_correcta = diferencia <= limite
 
-        if diferencia > limite:
+        if not fila_correcta:
             correcto = False
 
         comparaciones.append((ax_i, b_i))
+        correctas.append(fila_correcta)
 
     return {
         "correcto": correcto,
+        "correctas": correctas,
         "X": X,
         "comparaciones": comparaciones,
         "matriz_original": matriz_original,

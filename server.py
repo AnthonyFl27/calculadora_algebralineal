@@ -20,21 +20,16 @@ from fractions import Fraction
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from metodos.general_metodos import matriz_texto, texto_comprobacion
+from metodos.general_metodos import formatear
 from metodos.gauss_jordan import resolver as resolver_gauss_jordan
 from metodos.pivote import resolver as resolver_pivote
-from metodos.conversion import (
-    NOMBRES_BASE,
-    resolver as resolver_conversion,
-    procedimiento_texto as procedimiento_conversion_texto,
-)
+from metodos.conversion import NOMBRES_BASE, resolver as resolver_conversion
 from metodos.vectores_matrices import (
     combinacion_lineal,
     ecuacion_matricial,
     multiplicar_matrices,
     multiplicar_matriz_escalar,
     multiplicar_vector_escalar,
-    procedimiento_texto as procedimiento_vectores_matrices_texto,
     resta_matrices,
     resta_vectores,
     suma_matrices,
@@ -51,7 +46,8 @@ RESOLVER_SISTEMA = {
 
 
 def _serializar(valor):
-    """Convierte Fraction (y estructuras anidadas) a texto serializable."""
+    """Red de seguridad final: convierte cualquier Fraction que haya
+    quedado sin formatear a texto plano, para que json.dumps no falle."""
 
     if isinstance(valor, Fraction):
         return str(valor)
@@ -59,6 +55,34 @@ def _serializar(valor):
         return [_serializar(v) for v in valor]
     if isinstance(valor, dict):
         return {k: _serializar(v) for k, v in valor.items()}
+    return valor
+
+
+def _formatear_matriz(matriz, modo):
+    """Formatea una matriz numérica pura (celdas float, int o Fraction,
+    sin metadatos mezclados) como una grilla de texto ya formateado.
+    Se usa para matriz_inicial/matriz_final/paso['matriz'], donde
+    metodos/gauss_jordan.py y metodos/pivote.py pueden devolver la matriz
+    de entrada tal cual la capturó el usuario (floats) y no como
+    Fraction."""
+
+    return [[formatear(celda, modo) for celda in fila] for fila in matriz]
+
+
+def _formatear_estructura(valor, modo):
+    """Recorre listas/diccionarios anidados y formatea cada Fraction con
+    `formatear()` (fracción o decimal, según `modo`), dejando enteros e
+    índices (columna, fila, componente, etc.) intactos. Es la versión
+    consciente del modo de visualización que usa `_armar_bloque_*` para
+    poder mostrar los mismos datos que ya calcula metodos/ como celdas de
+    tabla en vez de como un bloque de texto ya alineado."""
+
+    if isinstance(valor, Fraction):
+        return formatear(valor, modo)
+    if isinstance(valor, (list, tuple)):
+        return [_formatear_estructura(v, modo) for v in valor]
+    if isinstance(valor, dict):
+        return {k: _formatear_estructura(v, modo) for k, v in valor.items()}
     return valor
 
 
@@ -91,6 +115,68 @@ def _matriz_desde_texto(filas):
     return matriz
 
 
+def _armar_bloque_sistema(resultado, modo):
+    """Convierte el diccionario de gauss_jordan/pivote.resolver(...) en una
+    estructura de celdas ya formateadas (sin texto pre-alineado), lista
+    para que index.html renderice una tabla real por paso y resalte el
+    pivote de cada uno."""
+
+    pasos = []
+
+    for paso in resultado["pasos"]:
+        pasos.append({
+            "tipo": paso["tipo"],
+            "columna": paso["columna"],
+            "operacion": paso["operacion"],
+            "fila_a": paso.get("fila_a"),
+            "fila_b": paso.get("fila_b"),
+            "fila": paso.get("fila"),
+            "fila_pivote": paso.get("fila_pivote"),
+            "matriz": _formatear_matriz(paso["matriz"], modo),
+        })
+
+    comprobacion_datos = resultado["comprobacion"]
+
+    if comprobacion_datos is None:
+        comprobacion = {"correcto": None}
+    else:
+        variables = len(comprobacion_datos["matriz_original"][0]) - 1
+        comprobacion = {
+            "correcto": comprobacion_datos["correcto"],
+            "tipo_sistema": comprobacion_datos["tipo"],
+            "matriz_a": _formatear_matriz(
+                [fila[:variables] for fila in comprobacion_datos["matriz_original"]],
+                modo,
+            ),
+            "vector_x": [formatear(x, modo) for x in comprobacion_datos["X"]],
+            "vector_b": [
+                formatear(fila[variables], modo)
+                for fila in comprobacion_datos["matriz_original"]
+            ],
+            "filas": [
+                {
+                    "ax": formatear(ax_i, modo),
+                    "b": formatear(b_i, modo),
+                    "correcta": correcta,
+                }
+                for (ax_i, b_i), correcta in zip(
+                    comprobacion_datos["comparaciones"],
+                    comprobacion_datos["correctas"],
+                )
+            ],
+        }
+
+    return {
+        "tipo": resultado["tipo"],
+        "soluciones": resultado["soluciones"],
+        "matriz_inicial": _formatear_matriz(resultado["matriz_inicial"], modo),
+        "matriz_final": _formatear_matriz(resultado["matriz_final"], modo),
+        "pivotes": resultado["pivotes"],
+        "pasos": pasos,
+        "comprobacion": comprobacion,
+    }
+
+
 def _resolver_sistema(datos):
     metodo = datos.get("metodo")
     funcion = RESOLVER_SISTEMA.get(metodo)
@@ -102,20 +188,7 @@ def _resolver_sistema(datos):
     matriz = _matriz_desde_texto(datos.get("matriz", []))
     resultado = funcion(matriz, modo)
 
-    return {
-        "tipo": resultado["tipo"],
-        "soluciones": resultado["soluciones"],
-        "matriz_inicial": matriz_texto(resultado["matriz_inicial"], modo),
-        "matriz_final": matriz_texto(resultado["matriz_final"], modo),
-        "pasos": [
-            {
-                "operacion": paso["operacion"],
-                "matriz": matriz_texto(paso["matriz"], modo),
-            }
-            for paso in resultado["pasos"]
-        ],
-        "comprobacion": texto_comprobacion(resultado["comprobacion"], modo),
-    }
+    return _armar_bloque_sistema(resultado, modo)
 
 
 def _resolver_conversion(datos):
@@ -126,12 +199,54 @@ def _resolver_conversion(datos):
     resultado = resolver_conversion(numero, base_entrada, base_salida)
 
     return {
-        "procedimiento": procedimiento_conversion_texto(resultado),
+        "tipo": resultado["tipo"],
         "numero_entrada": resultado["numero_entrada"],
         "resultado": resultado["resultado"],
+        "base_entrada": resultado["base_entrada"],
+        "base_salida": resultado["base_salida"],
         "nombre_base_entrada": NOMBRES_BASE[resultado["base_entrada"]],
         "nombre_base_salida": NOMBRES_BASE[resultado["base_salida"]],
+        "pasos": resultado["pasos"],
     }
+
+
+def _armar_bloque_operacion(resultado, modo):
+    """Convierte cualquier resultado de metodos/vectores_matrices.py en una
+    estructura de datos ya formateada (celdas/componentes), sin colapsarla
+    a un único bloque de texto. `combinacion_lineal` y `ecuacion_matricial`
+    reutilizan `_armar_bloque_sistema` para su(s) resolución(es) internas,
+    de modo que el navegador pueda mostrar esos pasos con la misma vista
+    de tabla/tarjeta que Gauss-Jordan y Pivoteo."""
+
+    tipo = resultado["operacion"]
+
+    bloque = {
+        "tipo": tipo,
+        "entradas": _formatear_estructura(resultado["entradas"], modo),
+        "pasos": _formatear_estructura(resultado["pasos"], modo),
+        "resultado": _formatear_estructura(resultado["resultado"], modo),
+    }
+
+    if tipo == "combinacion_lineal":
+        bloque["sistema"] = _formatear_estructura(resultado["sistema"], modo)
+        bloque["es_combinacion"] = resultado["es_combinacion"]
+        bloque["tipo_solucion"] = resultado["tipo_solucion"]
+        bloque["escalares"] = _formatear_estructura(resultado["escalares"], modo)
+        bloque["sistema_resuelto"] = _armar_bloque_sistema(
+            resultado["resolucion"], modo
+        )
+
+    if tipo == "ecuacion_matricial":
+        bloque["matriz_aumentada"] = _formatear_estructura(
+            resultado["matriz_aumentada"], modo
+        )
+        bloque["tipo_solucion"] = resultado["tipo_solucion"]
+        bloque["columnas"] = [
+            _armar_bloque_sistema(resolucion, modo)
+            for resolucion in resultado["resoluciones"]
+        ]
+
+    return bloque
 
 
 def _resolver_vectores(datos):
@@ -154,7 +269,7 @@ def _resolver_vectores(datos):
     else:
         raise ValueError(f"Operación de vectores no soportada: {operacion}")
 
-    return {"procedimiento": procedimiento_vectores_matrices_texto(resultado, modo)}
+    return _armar_bloque_operacion(resultado, modo)
 
 
 def _resolver_matrices(datos):
@@ -176,7 +291,7 @@ def _resolver_matrices(datos):
         else:
             raise ValueError(f"Operación de matrices no soportada: {operacion}")
 
-    return {"procedimiento": procedimiento_vectores_matrices_texto(resultado, modo)}
+    return _armar_bloque_operacion(resultado, modo)
 
 
 def _resolver_ecuacion_matricial(datos):
@@ -185,7 +300,7 @@ def _resolver_ecuacion_matricial(datos):
         datos.get("matriz_a", []), datos.get("matriz_b", []), modo
     )
 
-    return {"procedimiento": procedimiento_vectores_matrices_texto(resultado, modo)}
+    return _armar_bloque_operacion(resultado, modo)
 
 
 RUTAS = {

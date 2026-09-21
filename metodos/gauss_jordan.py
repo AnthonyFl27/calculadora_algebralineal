@@ -66,6 +66,7 @@ def gauss_jordan(matriz):
                 "intercambio",
                 fila_pivote + 1,
                 fila_intercambio + 1,
+                columna,
                 [fila[:] for fila in A],
             ))
 
@@ -80,6 +81,7 @@ def gauss_jordan(matriz):
                 "normalizar",
                 fila_pivote + 1,
                 pivote,
+                columna,
                 [fila[:] for fila in A],
             ))
 
@@ -102,6 +104,7 @@ def gauss_jordan(matriz):
                     i + 1,
                     fila_pivote + 1,
                     factor,
+                    columna,
                     [fila[:] for fila in A],
                 ))
 
@@ -162,12 +165,24 @@ def resolver(matriz, modo="fraccion"):
     }
 
     for paso in pasos:
-        operacion = paso[:-1]
+        operacion = paso[:-2]
+        columna_pivote = paso[-2]
         matriz_paso = paso[-1]
+        tipo_paso = operacion[0]
+
+        if tipo_paso == "intercambio":
+            filas_afectadas = {"fila_a": operacion[1], "fila_b": operacion[2]}
+        elif tipo_paso == "normalizar":
+            filas_afectadas = {"fila": operacion[1]}
+        else:  # "eliminar"
+            filas_afectadas = {"fila": operacion[1], "fila_pivote": operacion[2]}
 
         resultado["pasos"].append({
+            "tipo": tipo_paso,
+            "columna": columna_pivote,
             "operacion": formatear_operacion(operacion, modo),
             "matriz": matriz_paso,
+            **filas_afectadas,
         })
 
     return resultado
