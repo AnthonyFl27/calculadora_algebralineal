@@ -340,6 +340,8 @@ class Manejador(BaseHTTPRequestHandler):
 
         if ruta in ("/", "/index.html"):
             self._enviar_archivo(RAIZ / "index.html", "text/html; charset=utf-8")
+        elif ruta == "/api/estado":
+            self._enviar_json({"ok": True})
         else:
             self.send_error(404, "Ruta no encontrada")
 

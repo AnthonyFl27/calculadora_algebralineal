@@ -45,3 +45,28 @@ base) que da origen a cada número, no solo el resultado.
   entrada/salida (signo-magnitud es suficiente, no se pide complemento a 2).
 - No hay número de dígitos fijo: el módulo debe funcionar para cualquier
   cantidad de dígitos que el usuario ingrese.
+
+## Cambios posteriores
+
+### Habilitar hexadecimal → decimal en la interfaz (GUI y web)
+
+`metodos/conversion.py` (`base_a_decimal()` / `resolver()`) ya soportaba
+hexadecimal como base de entrada desde la implementación original: es
+genérico sobre cualquier base definida en `NOMBRES_BASE` (2, 8, 10, 16), sin
+necesitar ningún cambio de lógica. El bug estaba solo en las interfaces, que
+restringían manualmente las opciones del selector de base cuando la
+dirección era "otra base → decimal":
+
+- `gui.py` (`VistaConversion.BASES_A_DECIMAL`) listaba
+  `["binario", "octal", "decimal"]`, sin `"hexadecimal"`.
+- `index.html` (`vistaConversion()`, constante `BASES_A_DECIMAL`) tenía la
+  misma lista incompleta, duplicada en JavaScript.
+
+Se agregó `"hexadecimal"` a ambas listas. Con esto, la dirección
+"Otra base → Decimal" ahora ofrece binario, octal, hexadecimal y decimal por
+igual, tanto en la GUI de Tkinter como en la versión web, reutilizando el
+mismo `resolver()` y el mismo endpoint `/api/conversion` de `server.py` (que
+tampoco tenía restricción propia: recibe `base_entrada`/`base_salida` como
+enteros y delega directo en `metodos/conversion.py`). Verificado con
+`curl -X POST /api/conversion` (`"2F"` en base 16 → `47` en decimal) y
+revisando el árbol de sintaxis de `gui.py`/`server.py`.

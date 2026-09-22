@@ -68,11 +68,39 @@
   .nav-btn.active { background: var(--color-boton-act); font-weight: bold; }
 
   .sidebar-nota {
-    margin-top: auto;
     font-size: 10px;
     color: #cfd8dc;
     padding: 6px;
     line-height: 1.4;
+  }
+
+  .estado-servidor {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    color: #cfd8dc;
+    padding: 8px 6px 2px;
+  }
+
+  .estado-punto {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--color-neutro);
+    flex-shrink: 0;
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .estado-punto.conectado {
+    background: var(--color-exito);
+    box-shadow: 0 0 5px var(--color-exito);
+  }
+
+  .estado-punto.desconectado {
+    background: var(--color-error);
+    box-shadow: 0 0 5px var(--color-error);
   }
 
   /* ---------- PANEL PRINCIPAL ---------- */
@@ -1017,10 +1045,37 @@
       sidebar.appendChild(boton);
     }
 
+    const puntoEstado = el("div", { class: "estado-punto" });
+    const textoEstado = el("span", { texto: "Verificando servidor..." });
+
+    sidebar.appendChild(el("div", { class: "estado-servidor" }, [
+      puntoEstado,
+      textoEstado,
+    ]));
+
     sidebar.appendChild(el("div", {
       class: "sidebar-nota",
       texto: "Requiere: python server.py",
     }));
+
+    iniciarMonitorEstado(puntoEstado, textoEstado);
+  }
+
+  async function verificarEstadoServidor(puntoEstado, textoEstado) {
+    try {
+      const respuesta = await fetch("/api/estado", { cache: "no-store" });
+      if (!respuesta.ok) throw new Error("estado no-ok");
+      puntoEstado.className = "estado-punto conectado";
+      textoEstado.textContent = "Server connected";
+    } catch (error) {
+      puntoEstado.className = "estado-punto desconectado";
+      textoEstado.textContent = "Server disconnected";
+    }
+  }
+
+  function iniciarMonitorEstado(puntoEstado, textoEstado) {
+    verificarEstadoServidor(puntoEstado, textoEstado);
+    setInterval(() => verificarEstadoServidor(puntoEstado, textoEstado), 5000);
   }
 
   function mostrarVista(metodo) {
@@ -1421,7 +1476,7 @@
 
   function vistaConversion() {
     const BASES_A_OTRA = ["binario", "octal", "hexadecimal"];
-    const BASES_A_DECIMAL = ["binario", "octal", "decimal"];
+    const BASES_A_DECIMAL = ["binario", "octal", "hexadecimal", "decimal"];
     const NOMBRE_A_BASE = { binario: 2, octal: 8, decimal: 10, hexadecimal: 16 };
 
     let direccion = "a_otra_base";

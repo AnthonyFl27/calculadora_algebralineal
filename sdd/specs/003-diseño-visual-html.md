@@ -124,3 +124,23 @@ dependencias externas, sin tocar la lógica matemática de `metodos/`).
 - La calculadora de escritorio (`gui.py`) no se toca ni se le exige
   replicar esta mejora visual; ambas interfaces pueden divergir en
   presentación siempre que compartan la misma lógica de `metodos/`.
+
+## Cambios posteriores — Indicador de estado del servidor
+
+Como `index.html` depende por completo de `server.py` (no funciona en modo
+standalone, ver Funcionalidad 2), se agregó un indicador visual en la
+esquina inferior izquierda del sidebar, justo encima de la nota "Requiere:
+python server.py", que muestra si el servidor sigue respondiendo:
+
+- Un punto de color (`.estado-punto`) verde (`conectado`) o rojo
+  (`desconectado`), con el texto "Server connected" / "Server disconnected"
+  al lado.
+- `server.py` expone un endpoint nuevo `GET /api/estado` que responde
+  `{"ok": true}`; no ejecuta ninguna lógica de `metodos/`, es solo una
+  señal de "el servidor sigue vivo".
+- `index.html` hace `fetch("/api/estado")` una vez al cargar la página y
+  luego cada 5 segundos (`setInterval`); si la petición falla o responde
+  con un estado distinto de 2xx, el indicador pasa a rojo/desconectado.
+- Es un cambio puramente de presentación e infraestructura (un endpoint de
+  salud, sin parámetros ni cálculo): no toca `metodos/` ni la lógica de
+  ningún otro endpoint existente.

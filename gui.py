@@ -766,7 +766,7 @@ class VistaConversion(VistaBase):
     """Formulario para convertir entre decimal, binario, octal y hex."""
 
     BASES_A_OTRA = ["binario", "octal", "hexadecimal"]
-    BASES_A_DECIMAL = ["binario", "octal", "decimal"]
+    BASES_A_DECIMAL = ["binario", "octal", "hexadecimal", "decimal"]
 
     NOMBRE_A_BASE = {
         "binario": 2,

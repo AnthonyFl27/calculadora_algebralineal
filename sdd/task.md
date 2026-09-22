@@ -347,3 +347,56 @@ Spec: `sdd/specs/003-diseño-visual-html.md`, sección
       completadas; la spec ya documenta el cambio en su sección "Cambios
       posteriores", así que no requiere un nuevo archivo ni cambiar su
       `Estado`.
+
+---
+
+## 001 / 003 (continuación) — Hexadecimal → decimal + indicador de estado del servidor
+
+Spec: `sdd/specs/001-conversion.md`, sección "Cambios posteriores —
+Habilitar hexadecimal → decimal en la interfaz (GUI y web)".
+Spec: `sdd/specs/003-diseño-visual-html.md`, sección "Cambios posteriores —
+Indicador de estado del servidor".
+
+### Hexadecimal → decimal (`gui.py`, `index.html`)
+
+- [x] Agregar `"hexadecimal"` a `VistaConversion.BASES_A_DECIMAL` en
+      `gui.py`. `metodos/conversion.py` no requirió ningún cambio: ya
+      soportaba hexadecimal como base de entrada de forma genérica.
+- [x] Agregar `"hexadecimal"` a la constante `BASES_A_DECIMAL` en
+      `vistaConversion()` dentro de `index.html`, para mantener paridad
+      entre GUI y web.
+- [x] Verificar que `server.py` (`/api/conversion`) no tenía ninguna
+      restricción propia de bases (recibe `base_entrada`/`base_salida`
+      como enteros y delega en `metodos/conversion.py`), por lo que no
+      necesitó cambios.
+- [x] Probar con `curl -X POST /api/conversion` que `"2F"` en base 16
+      convierte correctamente a `47` en decimal, y que la dirección
+      inversa (decimal → hexadecimal) sigue funcionando igual que antes.
+
+### Indicador de estado del servidor (`server.py`, `index.html`)
+
+- [x] Agregar el endpoint `GET /api/estado` en `server.py`, que responde
+      `{"ok": true}` sin ejecutar lógica de `metodos/` (solo señal de
+      salud del servidor).
+- [x] Agregar en `index.html` un indicador visual (punto verde/rojo +
+      texto "Server connected"/"Server disconnected") en la esquina
+      inferior izquierda del sidebar, junto a la nota existente
+      "Requiere: python server.py".
+- [x] Implementar el chequeo con `fetch("/api/estado")` al cargar la
+      página y cada 5 segundos con `setInterval`, actualizando el color
+      del punto y el texto según la respuesta tenga éxito o falle.
+- [x] Probar `curl http://127.0.0.1:8000/api/estado` con el servidor
+      corriendo (responde `{"ok": true}`) y confirmar que `index.html`
+      servido por el propio `server.py` incluye el nuevo bloque
+      `estado-servidor` en el HTML.
+
+### Cierre
+
+- [x] Actualizar `sdd/specs/001-conversion.md` con la sección "Cambios
+      posteriores" documentando el fix de hexadecimal → decimal.
+- [x] Actualizar `sdd/specs/003-diseño-visual-html.md` con la sección
+      "Cambios posteriores" documentando el indicador de estado del
+      servidor.
+- [ ] Confirmar con el usuario el visto bueno visual del indicador de
+      estado del servidor (color, posición, texto) desde su propia
+      máquina.
