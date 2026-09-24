@@ -12,7 +12,7 @@ Este archivo se actualiza cada vez que se agregue una spec nueva en `sdd/`
 
 ## 001 — Conversión de bases numéricas
 
-Spec: `sdd/specs/001-conversion.md`
+Spec: `sdd/specs/v1/001-conversion.md`
 
 ### Implementación (`metodos/conversion.py`)
 
@@ -66,7 +66,7 @@ Spec: `sdd/specs/001-conversion.md`
       casos con número negativo y con dígito inválido. (Probado vía script
       que monta la vista real y llama `convertir()`; falta una pasada visual
       del usuario en su propia máquina para el visto bueno final de estética.)
-- [x] Marcar `Estado: implementado` en `sdd/specs/001-conversion.md`.
+- [x] Marcar `Estado: implementado` en `sdd/specs/v1/001-conversion.md`.
 - [x] Actualizar la fila del módulo 001 en la tabla de seguimiento de
       `sdd/plan.md`.
 
@@ -74,7 +74,7 @@ Spec: `sdd/specs/001-conversion.md`
 
 ## 002 — Operaciones vectoriales y matriciales
 
-Spec: `sdd/specs/002-vectores-matrices.md`
+Spec: `sdd/specs/v1/002-vectores-matrices.md`
 
 ### Implementación (`metodos/vectores_matrices.py`)
 
@@ -149,7 +149,7 @@ Spec: `sdd/specs/002-vectores-matrices.md`
       ecuación matricial A·X = B (incluyendo sistema sin solución única).
       Validado con 5 pruebas de integración que montan la vista Tkinter real
       y ejecutan sus controles, además de 12 pruebas unitarias del motor.
-- [x] Marcar `Estado: implementado` en `sdd/specs/002-vectores-matrices.md`.
+- [x] Marcar `Estado: implementado` en `sdd/specs/v1/002-vectores-matrices.md`.
 - [x] Actualizar la fila del módulo 002 en la tabla de seguimiento de
       `sdd/plan.md`.
 
@@ -157,7 +157,7 @@ Spec: `sdd/specs/002-vectores-matrices.md`
 
 ## 003 — Diseño visual web (index.html)
 
-Spec: `sdd/specs/003-diseño-visual-html.md`
+Spec: `sdd/specs/v1/003-diseño-visual-html.md`
 
 ### Servidor local (`server.py`)
 
@@ -213,7 +213,7 @@ Spec: `sdd/specs/003-diseño-visual-html.md`
       visual del usuario en su propia máquina (abrir el navegador) para el
       visto bueno final de estética, ya que la skill de automatización de
       navegador no estaba disponible en esta sesión.
-- [x] Marcar `Estado: implementado` en `sdd/specs/003-diseño-visual-html.md`.
+- [x] Marcar `Estado: implementado` en `sdd/specs/v1/003-diseño-visual-html.md`.
 - [x] Actualizar la fila del módulo 003 en la tabla de seguimiento de
       `sdd/plan.md`.
 
@@ -221,7 +221,7 @@ Spec: `sdd/specs/003-diseño-visual-html.md`
 
 ## 003 (continuación) — Mejora visual e interactividad de los pasos
 
-Spec: `sdd/specs/003-diseño-visual-html.md`, sección
+Spec: `sdd/specs/v1/003-diseño-visual-html.md`, sección
 "Cambios posteriores — Mejora visual e interactividad de los pasos".
 
 ### Formato de transporte (`server.py`)
@@ -352,9 +352,9 @@ Spec: `sdd/specs/003-diseño-visual-html.md`, sección
 
 ## 001 / 003 (continuación) — Hexadecimal → decimal + indicador de estado del servidor
 
-Spec: `sdd/specs/001-conversion.md`, sección "Cambios posteriores —
+Spec: `sdd/specs/v1/001-conversion.md`, sección "Cambios posteriores —
 Habilitar hexadecimal → decimal en la interfaz (GUI y web)".
-Spec: `sdd/specs/003-diseño-visual-html.md`, sección "Cambios posteriores —
+Spec: `sdd/specs/v1/003-diseño-visual-html.md`, sección "Cambios posteriores —
 Indicador de estado del servidor".
 
 ### Hexadecimal → decimal (`gui.py`, `index.html`)
@@ -392,11 +392,11 @@ Indicador de estado del servidor".
 
 ### Cierre
 
-- [x] Actualizar `sdd/specs/001-conversion.md` con la sección "Cambios
+- [x] Actualizar `sdd/specs/v1/001-conversion.md` con la sección "Cambios
       posteriores" documentando el fix de hexadecimal → decimal.
-- [x] Actualizar `sdd/specs/003-diseño-visual-html.md` con la sección
+- [x] Actualizar `sdd/specs/v1/003-diseño-visual-html.md` con la sección
       "Cambios posteriores" documentando el indicador de estado del
       servidor.
-- [ ] Confirmar con el usuario el visto bueno visual del indicador de
+- [x] Confirmar con el usuario el visto bueno visual del indicador de
       estado del servidor (color, posición, texto) desde su propia
       máquina.
