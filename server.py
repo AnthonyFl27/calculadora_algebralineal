@@ -27,6 +27,7 @@ from metodos.conversion import NOMBRES_BASE, resolver as resolver_conversion
 from metodos.vectores_matrices import (
     combinacion_lineal,
     ecuacion_matricial,
+    matriz_inversa,
     multiplicar_matrices,
     multiplicar_matriz_escalar,
     multiplicar_vector_escalar,
@@ -246,6 +247,22 @@ def _armar_bloque_operacion(resultado, modo):
             for resolucion in resultado["resoluciones"]
         ]
 
+    if tipo == "matriz_inversa":
+        bloque["metodo"] = resultado["metodo"]
+        bloque["matriz_aumentada"] = _formatear_estructura(
+            resultado["matriz_aumentada"], modo
+        )
+        bloque["matriz_final"] = _formatear_estructura(
+            resultado["matriz_final"], modo
+        )
+        bloque["pivotes"] = resultado["pivotes"]
+        bloque["existe"] = resultado["existe"]
+        bloque["filas_cero"] = resultado["filas_cero"]
+        bloque["motivo"] = resultado["motivo"]
+        bloque["comprobacion"] = _formatear_estructura(
+            resultado["comprobacion"], modo
+        )
+
     return bloque
 
 
@@ -303,12 +320,21 @@ def _resolver_ecuacion_matricial(datos):
     return _armar_bloque_operacion(resultado, modo)
 
 
+def _resolver_inversa(datos):
+    modo = datos.get("modo", "fraccion")
+    metodo = datos.get("metodo", "gauss_jordan")
+    resultado = matriz_inversa(datos.get("matriz", []), metodo, modo)
+
+    return _armar_bloque_operacion(resultado, modo)
+
+
 RUTAS = {
     "/api/sistema": _resolver_sistema,
     "/api/conversion": _resolver_conversion,
     "/api/vectores": _resolver_vectores,
     "/api/matrices": _resolver_matrices,
     "/api/ecuacion-matricial": _resolver_ecuacion_matricial,
+    "/api/inversa": _resolver_inversa,
 }
 
 

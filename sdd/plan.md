@@ -87,7 +87,9 @@ depender de recordarlas spec por spec.)
 | 000 | — | Pivoteo | implementado (previo a SDD) |
 | 001 | `sdd/specs/v1/001-conversion.md` | Conversión de bases numéricas | implementado |
 | 002 | `sdd/specs/v1/002-vectores-matrices.md` | Operaciones vectoriales y matriciales | implementado |
+| 002 (2.4) | `sdd/specs/v1/002-vectores-matrices.md` | Matriz inversa (cambio posterior) | implementado |
 | 003 | `sdd/specs/v1/003-diseño-visual-html.md` | Diseño visual web (index.html) | implementado |
+| 004 | `sdd/specs/v2/004-modo-oscuro-claro.md` | Modo oscuro y claro (GUI y web) | implementado |
 
 Esta tabla se actualiza cada vez que se agrega una spec nueva o se cierra el
 ciclo de una existente.

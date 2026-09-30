@@ -2,14 +2,22 @@
 Operaciones con vectores y matrices implementadas de forma manual.
 
 Incluye operaciones aritméticas, comprobación de combinaciones lineales y
-resolución de ecuaciones matriciales A·X = B. No usa librerías matemáticas
-externas; para resolver sistemas reutiliza el motor Gauss-Jordan del proyecto.
+resolución de ecuaciones matriciales A·X = B y cálculo de la matriz inversa.
+No usa librerías matemáticas
+externas; para resolver sistemas y hallar inversas reutiliza los motores
+Gauss-Jordan y Pivoteo del proyecto.
 """
 
 from fractions import Fraction
 
-from .gauss_jordan import resolver as resolver_gauss_jordan
-from .general_metodos import formatear, matriz_texto
+from .gauss_jordan import gauss_jordan, resolver as resolver_gauss_jordan
+from .general_metodos import formatear, matriz_texto, pasos_a_diccionarios
+from .pivote import gauss_jordan_pivoteo
+
+METODOS_INVERSA = {
+    "gauss_jordan": gauss_jordan,
+    "pivoteo": gauss_jordan_pivoteo,
+}
 
 
 def parsear_numero(valor):
@@ -377,6 +385,78 @@ def ecuacion_matricial(matriz_a, matriz_b, modo="fraccion"):
     }
 
 
+def matriz_inversa(matriz, metodo="gauss_jordan", modo="fraccion"):
+    """
+    Calcula la inversa de una matriz cuadrada reduciendo [A | I] a [I | A⁻¹].
+
+    Reutiliza el motor de Gauss-Jordan (o Pivoteo) indicando que solo las
+    primeras n columnas son variables. Si el bloque izquierdo no llega a la
+    identidad (faltan pivotes), la matriz es singular y no existe inversa.
+    """
+
+    if metodo not in METODOS_INVERSA:
+        raise ValueError(f"Método desconocido: {metodo}.")
+
+    matriz = _matriz(matriz, "matriz A")
+    filas, columnas = _dimensiones(matriz)
+
+    if filas != columnas:
+        raise ValueError(
+            "Solo las matrices cuadradas pueden tener inversa "
+            f"(la matriz es de {filas}×{columnas})."
+        )
+
+    n = filas
+    identidad = [[Fraction(int(i == j)) for j in range(n)] for i in range(n)]
+    aumentada = [matriz[i] + identidad[i] for i in range(n)]
+
+    matriz_final, pasos_motor, _, pivotes, _ = METODOS_INVERSA[metodo](
+        aumentada, columnas_variables=n
+    )
+    pasos = pasos_a_diccionarios(pasos_motor, modo)
+    existe = len(pivotes) == n
+
+    inversa = None
+    comprobacion = None
+    filas_cero = []
+
+    if existe:
+        inversa = [fila[n:] for fila in matriz_final]
+        producto = multiplicar_matrices(matriz, inversa)["resultado"]
+        comprobacion = {
+            "producto": producto,
+            "identidad": identidad,
+            "correcto": producto == identidad,
+        }
+        motivo = "El bloque izquierdo se redujo a la identidad."
+    else:
+        filas_cero = [
+            i + 1 for i, fila in enumerate(matriz_final)
+            if all(valor == 0 for valor in fila[:n])
+        ]
+        lista = ", ".join(f"F{i}" for i in filas_cero)
+        motivo = (
+            f"No se encontró pivote en todas las columnas: {lista} quedó "
+            "con ceros en el bloque izquierdo, por lo que la matriz es "
+            "singular (su determinante es 0)."
+        )
+
+    return {
+        "operacion": "matriz_inversa",
+        "metodo": metodo,
+        "entradas": {"matriz": matriz},
+        "matriz_aumentada": aumentada,
+        "pasos": pasos,
+        "matriz_final": matriz_final,
+        "pivotes": pivotes,
+        "existe": existe,
+        "filas_cero": filas_cero,
+        "motivo": motivo,
+        "resultado": inversa,
+        "comprobacion": comprobacion,
+    }
+
+
 def vector_texto(vector, modo="fraccion"):
     """Devuelve un vector con formato legible."""
 
@@ -394,6 +474,21 @@ def matriz_general_texto(matriz, modo="fraccion"):
                             for j, texto in enumerate(fila)) + " ]"
         for fila in textos
     )
+
+
+def matriz_ampliada_texto(matriz, n, modo="fraccion"):
+    """Devuelve [A | I] con la barra vertical después de la columna n."""
+
+    textos = [[formatear(numero, modo) for numero in fila] for fila in matriz]
+    anchos = [max(len(fila[j]) for fila in textos)
+              for j in range(len(textos[0]))]
+    lineas = []
+    for fila in textos:
+        celdas = [texto.rjust(anchos[j]) for j, texto in enumerate(fila)]
+        lineas.append(
+            "[ " + "  ".join(celdas[:n]) + " | " + "  ".join(celdas[n:]) + " ]"
+        )
+    return "\n".join(lineas)
 
 
 def procedimiento_texto(datos, modo="fraccion"):
@@ -514,6 +609,30 @@ def procedimiento_texto(datos, modo="fraccion"):
             else:
                 lineas.append("Solución única X:")
             lineas.append(matriz_general_texto(datos["resultado"], modo))
+        return "\n".join(lineas)
+
+    if operacion == "matriz_inversa":
+        n = len(datos["entradas"]["matriz"])
+        nombre = "PIVOTEO" if datos["metodo"] == "pivoteo" else "GAUSS-JORDAN"
+        lineas.extend(("MATRIZ INVERSA (" + nombre + ")", "=" * 30, "",
+                       "Matriz ampliada [A | I]:",
+                       matriz_ampliada_texto(datos["matriz_aumentada"], n, modo)))
+        for paso in datos["pasos"]:
+            lineas.extend(("", paso["operacion"],
+                           matriz_ampliada_texto(paso["matriz"], n, modo)))
+        lineas.extend(("", "Matriz reducida:",
+                       matriz_ampliada_texto(datos["matriz_final"], n, modo), ""))
+        if datos["existe"]:
+            lineas.extend(("La matriz es invertible. A⁻¹ =",
+                           matriz_general_texto(datos["resultado"], modo), "",
+                           "Comprobación A · A⁻¹:",
+                           matriz_general_texto(datos["comprobacion"]["producto"], modo)))
+            if datos["comprobacion"]["correcto"]:
+                lineas.append("A · A⁻¹ = I: correcto.")
+            else:
+                lineas.append("A · A⁻¹ no dio la identidad: revisar.")
+        else:
+            lineas.append("La inversa NO existe. " + datos["motivo"])
         return "\n".join(lineas)
 
     raise ValueError(f"Operación desconocida: {operacion}")

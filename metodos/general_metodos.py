@@ -55,6 +55,38 @@ def formatear_operacion(operacion, modo="fraccion"):
         return f"F{fila} -> F{fila} {signo} {valor_texto}F{pivote_fila}"
 
 
+def pasos_a_diccionarios(pasos, modo="fraccion"):
+    """
+    Convierte las tuplas de pasos de los motores (intercambio, normalizar,
+    eliminar) en diccionarios con el texto de la operación, la columna del
+    pivote, las filas afectadas y la matriz resultante de cada paso.
+    """
+    resultado = []
+
+    for paso in pasos:
+        operacion = paso[:-2]
+        columna_pivote = paso[-2]
+        matriz_paso = paso[-1]
+        tipo_paso = operacion[0]
+
+        if tipo_paso == "intercambio":
+            filas_afectadas = {"fila_a": operacion[1], "fila_b": operacion[2]}
+        elif tipo_paso == "normalizar":
+            filas_afectadas = {"fila": operacion[1]}
+        else:  # "eliminar"
+            filas_afectadas = {"fila": operacion[1], "fila_pivote": operacion[2]}
+
+        resultado.append({
+            "tipo": tipo_paso,
+            "columna": columna_pivote,
+            "operacion": formatear_operacion(operacion, modo),
+            "matriz": matriz_paso,
+            **filas_afectadas,
+        })
+
+    return resultado
+
+
 def matriz_texto(matriz, modo="fraccion"):
     """Devuelve la matriz con el formato de matriz aumentada."""
     filas_texto = []

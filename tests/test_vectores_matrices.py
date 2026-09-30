@@ -3,9 +3,13 @@
 import unittest
 from fractions import Fraction
 
+from metodos.gauss_jordan import resolver as resolver_gauss_jordan
+from metodos.pivote import resolver as resolver_pivote
+
 from metodos.vectores_matrices import (
     combinacion_lineal,
     ecuacion_matricial,
+    matriz_inversa,
     multiplicar_matrices,
     multiplicar_matriz_escalar,
     multiplicar_vector_escalar,
@@ -121,6 +125,84 @@ class EcuacionMatricialTests(unittest.TestCase):
     def test_filas_de_a_y_b_deben_coincidir(self):
         with self.assertRaisesRegex(ValueError, "misma cantidad de filas"):
             ecuacion_matricial([[1], [2]], [[1]])
+
+
+class MatrizInversaTests(unittest.TestCase):
+
+    METODOS = ("gauss_jordan", "pivoteo")
+
+    def assert_inversa(self, matriz, esperada):
+        esperada = [[Fraction(x) for x in fila] for fila in esperada]
+        for metodo in self.METODOS:
+            with self.subTest(metodo=metodo):
+                r = matriz_inversa(matriz, metodo)
+                self.assertTrue(r["existe"])
+                self.assertEqual(r["resultado"], esperada)
+                self.assertTrue(r["comprobacion"]["correcto"])
+                self.assertIn("A⁻¹", procedimiento_texto(r))
+
+    def test_matriz_de_la_practica_no_tiene_inversa(self):
+        for metodo in self.METODOS:
+            with self.subTest(metodo=metodo):
+                r = matriz_inversa(
+                    [[1, -2, -1], [-1, 5, 6], [5, -4, 5]], metodo
+                )
+                self.assertFalse(r["existe"])
+                self.assertIsNone(r["resultado"])
+                self.assertIsNone(r["comprobacion"])
+                self.assertTrue(r["filas_cero"])
+                self.assertIn("NO existe", procedimiento_texto(r))
+
+    def test_inversa_2x2(self):
+        self.assert_inversa([[2, 1], [5, 3]], [[3, -1], [-5, 2]])
+
+    def test_inversa_3x3(self):
+        self.assert_inversa(
+            [[2, 0, 1], [1, 1, 0], [0, 1, 1]],
+            [["1/3", "1/3", "-1/3"], ["-1/3", "2/3", "1/3"],
+             ["1/3", "-2/3", "2/3"]],
+        )
+
+    def test_inversa_que_requiere_intercambio_de_filas(self):
+        self.assert_inversa([[0, 1], [1, 0]], [[0, 1], [1, 0]])
+
+    def test_inversa_1x1(self):
+        self.assert_inversa([[4]], [["1/4"]])
+
+    def test_inversa_con_fracciones_y_decimales(self):
+        self.assert_inversa([["1/2", 0], [0, "1/3"]], [[2, 0], [0, 3]])
+        self.assert_inversa([["0.5", 0], [0, 2]], [[2, 0], [0, "1/2"]])
+
+    def test_fila_de_ceros_no_tiene_inversa(self):
+        self.assertFalse(matriz_inversa([[1, 2], [0, 0]])["existe"])
+
+    def test_matriz_no_cuadrada_da_error(self):
+        with self.assertRaisesRegex(ValueError, "cuadradas"):
+            matriz_inversa([[1, 2, 3], [4, 5, 6]])
+
+    def test_entradas_invalidas(self):
+        with self.assertRaises(ValueError):
+            matriz_inversa([])
+        with self.assertRaises(ValueError):
+            matriz_inversa([[1, "x"], [0, 1]])
+        with self.assertRaisesRegex(ValueError, "Método"):
+            matriz_inversa([[1]], "otro")
+
+    def test_pasos_incluyen_metadatos_del_pivote(self):
+        r = matriz_inversa([[0, 1], [1, 0]])
+        self.assertEqual(r["pasos"][0]["tipo"], "intercambio")
+        self.assertIn("columna", r["pasos"][0])
+
+
+class MotoresColumnasVariablesTests(unittest.TestCase):
+    """El parámetro opcional no debe alterar la resolución de sistemas."""
+
+    def test_sistema_normal_no_cambia(self):
+        sistema = [[2, 1, 5], [1, -1, 1]]
+        for resolver in (resolver_gauss_jordan, resolver_pivote):
+            r = resolver(sistema)
+            self.assertEqual(r["tipo"], "unica")
+            self.assertEqual(r["comprobacion"]["X"], [2, 1])
 
 
 if __name__ == "__main__":

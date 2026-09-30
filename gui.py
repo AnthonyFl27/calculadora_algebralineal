@@ -23,6 +23,7 @@ from metodos.conversion import (
 from metodos.vectores_matrices import (
     combinacion_lineal,
     ecuacion_matricial,
+    matriz_inversa,
     multiplicar_matrices,
     multiplicar_matriz_escalar,
     multiplicar_vector_escalar,
@@ -45,13 +46,112 @@ FUENTE_NORMAL = ("Arial", 10)
 FUENTE_SEPARADOR = ("Arial", 12, "bold")
 FUENTE_MONO = ("Courier New", 10)
 
-COLOR_FONDO = "#f5f5f5"
-COLOR_SIDEBAR = "#2c3e50"
-COLOR_BOTON = "#34495e"
-COLOR_BOTON_ACT = "#1abc9c"
-COLOR_TEXTO_SB = "#ffffff"
+# Paletas de los dos temas. Es el único lugar donde se definen colores: el
+# tema claro reproduce el aspecto original (y los valores por defecto de Tk
+# para los widgets nativos); el oscuro cumple contraste mínimo 4.5:1 en texto.
+PALETAS = {
+    "claro": {
+        "fondo": "#f5f5f5",
+        "sidebar": "#2c3e50",
+        "boton": "#34495e",
+        "boton_act": "#1abc9c",
+        "texto_sb": "#ffffff",
+        "texto": "#000000",
+        "superficie": "#ffffff",       # áreas de texto y campos de captura
+        "borde": "#d9d9d9",            # anillo de foco / bordes de widgets
+        "control": "#d9d9d9",          # OptionMenu y menús desplegables
+        "control_act": "#ececec",
+        "desact_fondo": "#b0b0b0",
+        "desact_borde": "#8e8e8e",
+        "desact_resalte": "#cfcfcf",
+        "desact_texto": "#9e9e9e",
+        "pestana": "#c3c3c3",          # ttk.Notebook
+        "pestana_sel": "#d9d9d9",
+        "notebook": "#d9d9d9",
+    },
+    "oscuro": {
+        "fondo": "#1a1f24",
+        "sidebar": "#11161a",
+        "boton": "#2f3b46",
+        "boton_act": "#0f7f6b",
+        "texto_sb": "#ffffff",
+        "texto": "#e6eaed",
+        "superficie": "#242b31",
+        "borde": "#4a5660",
+        "control": "#2b343b",
+        "control_act": "#3a444d",
+        "desact_fondo": "#3a444d",
+        "desact_borde": "#4a5660",
+        "desact_resalte": "#45515b",
+        "desact_texto": "#8c969e",
+        "pestana": "#20272d",
+        "pestana_sel": "#1a1f24",
+        "notebook": "#1a1f24",
+    },
+}
+
+TEMA_ACTUAL = "claro"
+COLOR_FONDO = PALETAS["claro"]["fondo"]
+COLOR_SIDEBAR = PALETAS["claro"]["sidebar"]
+COLOR_BOTON = PALETAS["claro"]["boton"]
+COLOR_BOTON_ACT = PALETAS["claro"]["boton_act"]
+COLOR_TEXTO_SB = PALETAS["claro"]["texto_sb"]
+COLOR_TEXTO = PALETAS["claro"]["texto"]
+COLOR_SUPERFICIE = PALETAS["claro"]["superficie"]
 
 PAD = 8
+
+
+def activar_tema(nombre, raiz=None):
+    """
+    Cambia el tema activo: actualiza las constantes COLOR_* (que los widgets
+    leen al crearse) y, si se pasa la raíz, la base de opciones de Tk para
+    que los widgets nativos creados después (Entry, Label, Text, ...) nazcan
+    ya con los colores del tema.
+    """
+    global TEMA_ACTUAL, COLOR_FONDO, COLOR_SIDEBAR, COLOR_BOTON
+    global COLOR_BOTON_ACT, COLOR_TEXTO_SB, COLOR_TEXTO, COLOR_SUPERFICIE
+
+    p = PALETAS[nombre]
+    TEMA_ACTUAL = nombre
+    COLOR_FONDO = p["fondo"]
+    COLOR_SIDEBAR = p["sidebar"]
+    COLOR_BOTON = p["boton"]
+    COLOR_BOTON_ACT = p["boton_act"]
+    COLOR_TEXTO_SB = p["texto_sb"]
+    COLOR_TEXTO = p["texto"]
+    COLOR_SUPERFICIE = p["superficie"]
+
+    if raiz is None:
+        return
+
+    opciones = {
+        "*Label.foreground": p["texto"],
+        "*Entry.background": p["superficie"],
+        "*Entry.foreground": p["texto"],
+        "*Entry.insertBackground": p["texto"],
+        "*Entry.highlightBackground": p["borde"],
+        "*Text.background": p["superficie"],
+        "*Text.foreground": p["texto"],
+        "*Text.insertBackground": p["texto"],
+        "*Text.highlightBackground": p["borde"],
+        "*Radiobutton.foreground": p["texto"],
+        "*Radiobutton.selectColor": p["superficie"],
+        "*Radiobutton.activeBackground": p["control_act"],
+        "*Radiobutton.activeForeground": p["texto"],
+        "*Radiobutton.highlightBackground": p["borde"],
+        "*Menubutton.background": p["control"],
+        "*Menubutton.foreground": p["texto"],
+        "*Menubutton.activeBackground": p["control_act"],
+        "*Menubutton.activeForeground": p["texto"],
+        "*Menubutton.highlightBackground": p["borde"],
+        "*Menu.background": p["control"],
+        "*Menu.foreground": p["texto"],
+        "*Menu.activeBackground": p["control_act"],
+        "*Menu.activeForeground": p["texto"],
+    }
+    for patron, valor in opciones.items():
+        raiz.option_add(patron, valor)
 
 
 def _ajustar_color(color, factor):
@@ -161,6 +261,18 @@ class RoundedButton(tk.Canvas):
         self.activo = (color == COLOR_BOTON_ACT)
         self.draw_button()
 
+    def aplicar_tema(self, fondo_canvas):
+        """Toma los colores del tema activo y se redibuja."""
+        self.bg = COLOR_BOTON_ACT if self.activo else COLOR_BOTON
+        self.active_bg = COLOR_BOTON_ACT
+        self.fg = COLOR_TEXTO_SB
+        self.config(bg=fondo_canvas)
+        self.draw_button()
+
+    def set_text(self, texto):
+        self.text = texto
+        self.draw_button()
+
     def set_state(self, estado):
         self.state = estado
         self.draw_button()
@@ -178,10 +290,11 @@ class RoundedButton(tk.Canvas):
         r = min(self.radio, w / 2, h / 2)
 
         if self.state == "disabled":
-            fill = "#b0b0b0"
-            borde = "#8e8e8e"
-            resalte = "#cfcfcf"
-            texto = "#9e9e9e"
+            p = PALETAS[TEMA_ACTUAL]
+            fill = p["desact_fondo"]
+            borde = p["desact_borde"]
+            resalte = p["desact_resalte"]
+            texto = p["desact_texto"]
         else:
             fill = self.bg
             borde = _ajustar_color(self.bg, 0.82)
@@ -412,7 +525,8 @@ class VistaSistemaLineal(VistaBase):
             width=105,
             height=22,
             font=FUENTE_MONO,
-            bg="white",
+            bg=COLOR_SUPERFICIE,
+            fg=COLOR_TEXTO,
             state="disabled"
         )
         self.salida.pack(padx=15, pady=8)
@@ -873,7 +987,8 @@ class VistaConversion(VistaBase):
             width=105,
             height=26,
             font=FUENTE_MONO,
-            bg="white",
+            bg=COLOR_SUPERFICIE,
+            fg=COLOR_TEXTO,
             state="disabled"
         )
         self.salida.pack(padx=15, pady=8)
@@ -961,13 +1076,16 @@ class VistaVectoresMatrices(VistaBase):
         self.tab_vectores = tk.Frame(self.pestanas, bg=COLOR_FONDO)
         self.tab_matrices = tk.Frame(self.pestanas, bg=COLOR_FONDO)
         self.tab_ecuacion = tk.Frame(self.pestanas, bg=COLOR_FONDO)
+        self.tab_inversa = tk.Frame(self.pestanas, bg=COLOR_FONDO)
         self.pestanas.add(self.tab_vectores, text="Vectores")
         self.pestanas.add(self.tab_matrices, text="Matrices")
         self.pestanas.add(self.tab_ecuacion, text="Ecuación A·X = B")
+        self.pestanas.add(self.tab_inversa, text="Matriz inversa")
 
         self._construir_tab_vectores()
         self._construir_tab_matrices()
         self._construir_tab_ecuacion()
+        self._construir_tab_inversa()
 
         formato = tk.Frame(self.padre, bg=COLOR_FONDO)
         formato.pack(pady=3)
@@ -986,7 +1104,8 @@ class VistaVectoresMatrices(VistaBase):
 
         self.salida = tk.Text(
             self.padre, width=105, height=14, font=FUENTE_MONO,
-            bg="white", state="disabled",
+            bg=COLOR_SUPERFICIE, fg=COLOR_TEXTO,
+            state="disabled",
         )
         self.salida.pack(fill="both", expand=True, padx=15, pady=(3, 10))
 
@@ -1299,6 +1418,55 @@ class VistaVectoresMatrices(VistaBase):
         self._mostrar_resultado(resultado)
 
 
+    def _construir_tab_inversa(self):
+        controles = tk.Frame(self.tab_inversa, bg=COLOR_FONDO)
+        controles.pack(pady=3)
+        self.inv_n = self._entrada_dimension(controles, "Tamaño n (n × n):", 0, "3")
+        tk.Label(controles, text="Método:", bg=COLOR_FONDO).grid(
+            row=0, column=2, padx=(10, 3)
+        )
+        self.metodo_inversa = tk.StringVar(value="Gauss-Jordan")
+        tk.OptionMenu(
+            controles, self.metodo_inversa, "Gauss-Jordan", "Pivoteo"
+        ).grid(row=0, column=3, padx=3)
+        RoundedButton(
+            controles, text="Crear campos", command=self._crear_campos_inversa,
+            width=115,
+        ).grid(row=0, column=4, padx=5)
+        RoundedButton(
+            controles, text="Calcular inversa", command=self._calcular_inversa,
+            width=130,
+        ).grid(row=0, column=5, padx=5)
+
+        self.marco_inversa = tk.Frame(self.tab_inversa, bg=COLOR_FONDO)
+        self.marco_inversa.pack(pady=3)
+        self._crear_campos_inversa()
+
+    def _crear_campos_inversa(self):
+        try:
+            n = self._entero_positivo(self.inv_n, "El tamaño n")
+        except ValueError as error:
+            messagebox.showerror("Error", str(error))
+            return
+
+        for widget in self.marco_inversa.winfo_children():
+            widget.destroy()
+        self.entradas_inversa = self._crear_tabla(
+            self.marco_inversa, n, n, "Matriz A", 0
+        )
+
+    def _calcular_inversa(self):
+        metodo = "pivoteo" if self.metodo_inversa.get() == "Pivoteo" else "gauss_jordan"
+        try:
+            resultado = matriz_inversa(
+                self._leer_matriz(self.entradas_inversa), metodo, self.modo.get()
+            )
+        except ValueError as error:
+            messagebox.showerror("Error", str(error))
+            return
+        self._mostrar_resultado(resultado)
+
+
 # ======================================================
 # REGISTRO DE MÉTODOS
 # ======================================================
@@ -1335,6 +1503,8 @@ class Aplicacion:
 
     def __init__(self, raiz):
         self.raiz = raiz
+        self.estilo = ttk.Style(raiz)
+        activar_tema("claro", raiz)
         raiz.title("Calculadora de Matrices")
         raiz.geometry("1000x720")
         raiz.configure(bg=COLOR_FONDO)
@@ -1383,6 +1553,19 @@ class Aplicacion:
             boton.pack(fill="x", padx=PAD, pady=4)
             self.botones_sidebar[nombre] = boton
 
+        # Cambio de tema, siempre visible en la parte inferior del sidebar.
+        self.boton_tema = RoundedButton(
+            self.sidebar,
+            text=self._texto_boton_tema(),
+            font=FUENTE_NORMAL,
+            bg=COLOR_BOTON,
+            active_background=COLOR_BOTON_ACT,
+            cursor="hand2",
+            width=180,
+            command=self.alternar_tema
+        )
+        self.boton_tema.pack(side="bottom", fill="x", padx=PAD, pady=PAD)
+
     def mostrar_vista(self, fabrica, nombre=None):
 
         for widget in self.contenedor.winfo_children():
@@ -1390,6 +1573,93 @@ class Aplicacion:
 
         self.vista_actual = fabrica(self.contenedor)
         self._resaltar_boton(nombre)
+
+    # ==================================================
+    # TEMA CLARO / OSCURO
+    # ==================================================
+
+    def _texto_boton_tema(self):
+        if TEMA_ACTUAL == "claro":
+            return "\u263E  Modo oscuro"
+        return "\u2600  Modo claro"
+
+    def alternar_tema(self):
+        self.aplicar_tema("oscuro" if TEMA_ACTUAL == "claro" else "claro")
+
+    def aplicar_tema(self, nombre):
+        """
+        Cambia el tema y recolorea los widgets ya creados (sin reconstruir la
+        vista), de modo que se conserven los datos capturados, la pestaña
+        activa y el resultado mostrado.
+        """
+        anterior = PALETAS[TEMA_ACTUAL]
+        activar_tema(nombre, self.raiz)
+        nuevo = PALETAS[nombre]
+
+        self.raiz.configure(bg=nuevo["fondo"])
+        self._configurar_ttk(nuevo)
+        self._recolorear(self.raiz, anterior, nuevo)
+        self.boton_tema.set_text(self._texto_boton_tema())
+
+    def _configurar_ttk(self, p):
+        """Colores de ttk.Notebook (pestañas), que no usa la base de opciones."""
+        self.estilo.configure("TNotebook", background=p["notebook"])
+        self.estilo.configure(
+            "TNotebook.Tab", background=p["pestana"], foreground=p["texto"]
+        )
+        self.estilo.map(
+            "TNotebook.Tab",
+            background=[("selected", p["pestana_sel"])],
+            foreground=[("selected", p["texto"])],
+        )
+
+    def _recolorear(self, widget, anterior, nuevo):
+        """Recorre el árbol de widgets y traduce sus colores al tema nuevo."""
+
+        def fondo_de(w):
+            actual = str(w.cget("bg")).lower()
+            return nuevo["sidebar"] if actual == anterior["sidebar"] else nuevo["fondo"]
+
+        if isinstance(widget, RoundedButton):
+            widget.aplicar_tema(fondo_de(widget))
+        elif isinstance(widget, tk.Frame):
+            widget.config(bg=fondo_de(widget))
+        elif isinstance(widget, tk.Label):
+            en_sidebar = str(widget.cget("bg")).lower() == anterior["sidebar"]
+            widget.config(
+                bg=fondo_de(widget),
+                fg=nuevo["texto_sb"] if en_sidebar else nuevo["texto"],
+            )
+        elif isinstance(widget, tk.Radiobutton):
+            widget.config(
+                bg=fondo_de(widget), fg=nuevo["texto"],
+                selectcolor=nuevo["superficie"],
+                activebackground=nuevo["control_act"],
+                activeforeground=nuevo["texto"],
+                highlightbackground=nuevo["borde"],
+            )
+        elif isinstance(widget, tk.Menubutton):
+            widget.config(
+                bg=nuevo["control"], fg=nuevo["texto"],
+                activebackground=nuevo["control_act"],
+                activeforeground=nuevo["texto"],
+                highlightbackground=nuevo["borde"],
+            )
+        elif isinstance(widget, tk.Menu):
+            widget.config(
+                bg=nuevo["control"], fg=nuevo["texto"],
+                activebackground=nuevo["control_act"],
+                activeforeground=nuevo["texto"],
+            )
+        elif isinstance(widget, (tk.Entry, tk.Text)):
+            widget.config(
+                bg=nuevo["superficie"], fg=nuevo["texto"],
+                insertbackground=nuevo["texto"],
+                highlightbackground=nuevo["borde"],
+            )
+
+        for hijo in widget.winfo_children():
+            self._recolorear(hijo, anterior, nuevo)
 
     def _resaltar_boton(self, nombre):
 

@@ -9,15 +9,20 @@ No usa NumPy ni librerías externas.
 from fractions import Fraction
 
 from .general_metodos import (
-    formatear_operacion,
+    pasos_a_diccionarios,
     soluciones_texto,
     comprobar_solucion,
 )
 
 
-def gauss_jordan(matriz):
+def gauss_jordan(matriz, columnas_variables=None):
     """
     Resuelve una matriz aumentada por Gauss-Jordan.
+
+    columnas_variables indica cuántas columnas (desde la izquierda) se
+    reducen como pivotes; el resto se trata como términos independientes.
+    Por defecto es solo la última columna (sistema normal); para la matriz
+    inversa se usa n sobre la ampliada [A | I].
 
     Devuelve:
         matriz_final
@@ -32,7 +37,10 @@ def gauss_jordan(matriz):
 
     filas = len(A)
     columnas = len(A[0])
-    variables = columnas - 1
+    if columnas_variables is None:
+        variables = columnas - 1
+    else:
+        variables = columnas_variables
 
     pasos = []
     fila_pivote = 0
@@ -114,7 +122,11 @@ def gauss_jordan(matriz):
     for i in range(filas):
         coeficientes_cero = all(A[i][j] == 0 for j in range(variables))
 
-        if coeficientes_cero and A[i][variables] != 0:
+        independiente_no_cero = any(
+            A[i][j] != 0 for j in range(variables, columnas)
+        )
+
+        if coeficientes_cero and independiente_no_cero:
             tipo = "incompatible"
             variables_libres = []
             return A, pasos, tipo, pivotes, variables_libres
@@ -164,25 +176,6 @@ def resolver(matriz, modo="fraccion"):
         ),
     }
 
-    for paso in pasos:
-        operacion = paso[:-2]
-        columna_pivote = paso[-2]
-        matriz_paso = paso[-1]
-        tipo_paso = operacion[0]
-
-        if tipo_paso == "intercambio":
-            filas_afectadas = {"fila_a": operacion[1], "fila_b": operacion[2]}
-        elif tipo_paso == "normalizar":
-            filas_afectadas = {"fila": operacion[1]}
-        else:  # "eliminar"
-            filas_afectadas = {"fila": operacion[1], "fila_pivote": operacion[2]}
-
-        resultado["pasos"].append({
-            "tipo": tipo_paso,
-            "columna": columna_pivote,
-            "operacion": formatear_operacion(operacion, modo),
-            "matriz": matriz_paso,
-            **filas_afectadas,
-        })
+    resultado["pasos"] = pasos_a_diccionarios(pasos, modo)
 
     return resultado

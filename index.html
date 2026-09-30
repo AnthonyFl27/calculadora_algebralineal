@@ -4,8 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calculadora de Matrices</title>
+<script>
+/* Aplica el tema antes de pintar (evita el parpadeo del tema claro). */
+(function () {
+  var tema = null;
+  try { tema = localStorage.getItem("tema-calculadora"); } catch (e) {}
+  if (tema !== "dark" && tema !== "light") {
+    tema = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark" : "light";
+  }
+  document.documentElement.setAttribute("data-theme", tema);
+})();
+</script>
 <style>
   :root {
+    color-scheme: light;
     --color-fondo: #f5f5f5;
     --color-sidebar: #2c3e50;
     --color-boton: #34495e;
@@ -16,6 +29,110 @@
     --color-error: #e74c3c;
     --color-neutro: #7f8c8d;
     --color-borde: #d8dde0;
+
+    --texto: #1c1c1c;
+    --texto-titulo: #2c3e50;
+    --texto-acento: #34495e;
+    --texto-suave-1: #55636b;
+    --texto-suave-2: #5b6b73;
+    --texto-suave-3: #6b7a82;
+    --texto-tenue: #8a979d;
+    --texto-sb-suave: #cfd8dc;
+
+    --superficie: #ffffff;
+    --superficie-2: #fafbfb;
+    --superficie-3: #fbfcfc;
+    --input-fondo: #ffffff;
+    --borde-input: #b7b7b7;
+    --borde-tab: #c9c9c9;
+    --tab-fondo: #e6e6e6;
+    --linea-tabla: #eef0f1;
+    --linea-fila: #f0f2f3;
+    --chip-fondo: #eef2f3;
+    --desact-fondo: #b0b0b0;
+    --desact-texto: #9e9e9e;
+    --punto: #d3d9db;
+    --punto-hover: #aab4b8;
+
+    --pivote-fondo: rgba(26, 188, 156, 0.16);
+    --pivote-fondo-fuerte: rgba(26, 188, 156, 0.22);
+    --pivote-texto: #0e8c73;
+    --fila-resaltada: rgba(52, 73, 94, 0.05);
+    --exito-texto: #117a65;
+    --exito-fondo: rgba(26, 188, 156, 0.15);
+    --exito-fondo-suave: rgba(26, 188, 156, 0.12);
+    --alerta-fondo: rgba(243, 156, 18, 0.15);
+    --alerta-texto: #b9770e;
+    --error-fondo: rgba(231, 76, 60, 0.15);
+    --error-fondo-suave: rgba(231, 76, 60, 0.06);
+    --error-texto: #c0392b;
+
+    --op-inter-fondo: #fdebd0;
+    --op-inter-texto: #935116;
+    --op-norm-fondo: #d6f3ec;
+    --op-elim-fondo: #e3e9ea;
+
+    --overlay: rgba(0, 0, 0, 0.35);
+    --sombra: rgba(0, 0, 0, 0.3);
+  }
+
+  html[data-theme="dark"] {
+    color-scheme: dark;
+    --color-fondo: #1a1f24;
+    --color-sidebar: #11161a;
+    --color-boton: #2f3b46;
+    --color-boton-act: #0f7f6b;
+    --color-texto-sb: #ffffff;
+    --color-exito: #1abc9c;
+    --color-alerta: #f39c12;
+    --color-error: #e74c3c;
+    --color-neutro: #8c9aa4;
+    --color-borde: #3a444d;
+
+    --texto: #e6eaed;
+    --texto-titulo: #d5dde3;
+    --texto-acento: #b9c6d0;
+    --texto-suave-1: #9fadb6;
+    --texto-suave-2: #a3b1ba;
+    --texto-suave-3: #9aa8b1;
+    --texto-tenue: #a0adb7;
+    --texto-sb-suave: #9fb0ba;
+
+    --superficie: #242b31;
+    --superficie-2: #2b343b;
+    --superficie-3: #20272d;
+    --input-fondo: #2b343b;
+    --borde-input: #4a5660;
+    --borde-tab: #3a444d;
+    --tab-fondo: #1f262c;
+    --linea-tabla: #313b43;
+    --linea-fila: #2f3941;
+    --chip-fondo: #33404a;
+    --desact-fondo: #3a444d;
+    --desact-texto: #8c969e;
+    --punto: #45515b;
+    --punto-hover: #62717d;
+
+    --pivote-fondo: rgba(26, 188, 156, 0.26);
+    --pivote-fondo-fuerte: rgba(26, 188, 156, 0.34);
+    --pivote-texto: #7ee8d3;
+    --fila-resaltada: rgba(255, 255, 255, 0.05);
+    --exito-texto: #4fd8bd;
+    --exito-fondo: rgba(26, 188, 156, 0.22);
+    --exito-fondo-suave: rgba(26, 188, 156, 0.18);
+    --alerta-fondo: rgba(243, 156, 18, 0.22);
+    --alerta-texto: #f0b45a;
+    --error-fondo: rgba(231, 76, 60, 0.24);
+    --error-fondo-suave: rgba(231, 76, 60, 0.12);
+    --error-texto: #f1867a;
+
+    --op-inter-fondo: #4a3a20;
+    --op-inter-texto: #f5b971;
+    --op-norm-fondo: #1f4a43;
+    --op-elim-fondo: #37424b;
+
+    --overlay: rgba(0, 0, 0, 0.6);
+    --sombra: rgba(0, 0, 0, 0.6);
   }
 
   * { box-sizing: border-box; }
@@ -25,7 +142,7 @@
     height: 100%;
     background: var(--color-fondo);
     font-family: Arial, Helvetica, sans-serif;
-    color: #1c1c1c;
+    color: var(--texto);
   }
 
   .app {
@@ -69,18 +186,25 @@
 
   .sidebar-nota {
     font-size: 10px;
-    color: #cfd8dc;
+    color: var(--texto-sb-suave);
     padding: 6px;
     line-height: 1.4;
   }
 
-  .estado-servidor {
+  .btn-tema {
     margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .estado-servidor {
+    margin-top: 0;
     display: flex;
     align-items: center;
     gap: 7px;
     font-size: 11px;
-    color: #cfd8dc;
+    color: var(--texto-sb-suave);
     padding: 8px 6px 2px;
   }
 
@@ -135,10 +259,11 @@
     font-family: inherit;
     font-size: 13px;
     padding: 5px 7px;
-    border: 1px solid #b7b7b7;
+    border: 1px solid var(--borde-input);
     border-radius: 4px;
     text-align: center;
-    background: #fff;
+    background: var(--input-fondo);
+    color: var(--texto);
   }
 
   .btn {
@@ -155,8 +280,8 @@
   .btn:hover:not(:disabled) { background: var(--color-boton-act); }
 
   .btn:disabled {
-    background: #b0b0b0;
-    color: #9e9e9e;
+    background: var(--desact-fondo);
+    color: var(--desact-texto);
     cursor: default;
   }
 
@@ -283,23 +408,24 @@
 
   .tab-btn {
     padding: 8px 20px;
-    border: 1px solid #c9c9c9;
+    border: 1px solid var(--borde-tab);
     border-bottom: none;
-    background: #e6e6e6;
+    background: var(--tab-fondo);
     border-radius: 8px 8px 0 0;
     cursor: pointer;
     font-size: 13px;
+    color: var(--texto);
   }
 
   .tab-btn.active {
-    background: #ffffff;
+    background: var(--superficie);
     font-weight: bold;
   }
 
   .tab-panel {
-    border: 1px solid #c9c9c9;
+    border: 1px solid var(--borde-tab);
     border-radius: 0 4px 4px 4px;
-    background: #ffffff;
+    background: var(--superficie);
     padding: 12px;
     max-width: 960px;
     margin: 0 auto;
@@ -323,14 +449,14 @@
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #55636b;
+    color: var(--texto-suave-1);
     margin: 18px 2px 8px;
     padding-left: 8px;
     border-left: 3px solid var(--color-boton-act);
   }
 
   .planteamiento {
-    background: #ffffff;
+    background: var(--superficie);
     border: 1px solid var(--color-borde);
     border-radius: 8px;
     padding: 10px 14px;
@@ -340,12 +466,12 @@
   }
 
   .nota-sin-pasos {
-    background: #ffffff;
+    background: var(--superficie);
     border: 1px dashed var(--color-borde);
     border-radius: 8px;
     padding: 12px 14px;
     font-size: 13px;
-    color: #5b6b73;
+    color: var(--texto-suave-2);
     margin: 4px 0;
   }
 
@@ -359,7 +485,7 @@
   table.tabla-matriz {
     border-collapse: collapse;
     margin: 0 auto;
-    background: #ffffff;
+    background: var(--superficie);
     border: 1px solid var(--color-borde);
     border-radius: 6px;
     overflow: hidden;
@@ -371,14 +497,14 @@
     text-align: center;
     font-family: "Courier New", Courier, monospace;
     font-size: 13px;
-    border-bottom: 1px solid #eef0f1;
+    border-bottom: 1px solid var(--linea-tabla);
   }
 
   table.tabla-matriz th {
     font-family: Arial, sans-serif;
     font-size: 11px;
-    color: #6b7a82;
-    background: #fafbfb;
+    color: var(--texto-suave-3);
+    background: var(--superficie-2);
     font-weight: normal;
   }
 
@@ -389,24 +515,24 @@
   }
 
   table.tabla-matriz .celda-pivote {
-    background: rgba(26, 188, 156, 0.16);
+    background: var(--pivote-fondo);
     font-weight: bold;
-    color: #0e8c73;
+    color: var(--pivote-texto);
     position: relative;
   }
 
   table.tabla-matriz tr.fila-resaltada td {
-    background: rgba(52, 73, 94, 0.05);
+    background: var(--fila-resaltada);
   }
 
   table.tabla-matriz tr.fila-resaltada td.celda-pivote {
-    background: rgba(26, 188, 156, 0.22);
+    background: var(--pivote-fondo-fuerte);
   }
 
   /* ---------- STEPPER DE PASOS ---------- */
 
   .stepper {
-    background: #fbfcfc;
+    background: var(--superficie-3);
     border: 1px solid var(--color-borde);
     border-radius: 10px;
     padding: 14px;
@@ -426,13 +552,13 @@
     height: 10px;
     border-radius: 50%;
     border: none;
-    background: #d3d9db;
+    background: var(--punto);
     cursor: pointer;
     padding: 0;
     transition: background 0.15s ease, transform 0.15s ease;
   }
 
-  .stepper-punto:hover { background: #aab4b8; }
+  .stepper-punto:hover { background: var(--punto-hover); }
   .stepper-punto.activo { background: var(--color-boton-act); transform: scale(1.3); }
 
   .stepper-nav {
@@ -449,7 +575,7 @@
 
   .stepper-contador {
     font-size: 12px;
-    color: #5b6b73;
+    color: var(--texto-suave-2);
     min-width: 48px;
     text-align: center;
   }
@@ -470,7 +596,7 @@
 
   .paso-numero {
     font-size: 11px;
-    color: #8a979d;
+    color: var(--texto-tenue);
     font-weight: bold;
     text-transform: uppercase;
   }
@@ -481,24 +607,24 @@
     font-weight: bold;
     padding: 3px 10px;
     border-radius: 6px;
-    background: #eef2f3;
-    color: #2c3e50;
+    background: var(--chip-fondo);
+    color: var(--texto-titulo);
   }
 
-  .paso-operacion.tipo-intercambio { background: #fdebd0; color: #935116; }
-  .paso-operacion.tipo-normalizar { background: #d6f3ec; color: #117a65; }
-  .paso-operacion.tipo-eliminar { background: #e3e9ea; color: #34495e; }
+  .paso-operacion.tipo-intercambio { background: var(--op-inter-fondo); color: var(--op-inter-texto); }
+  .paso-operacion.tipo-normalizar { background: var(--op-norm-fondo); color: var(--exito-texto); }
+  .paso-operacion.tipo-eliminar { background: var(--op-elim-fondo); color: var(--texto-acento); }
 
   .paso-descripcion {
     font-size: 11px;
-    color: #8a979d;
+    color: var(--texto-tenue);
     margin-bottom: 8px;
   }
 
   /* ---------- LISTA COMPACTA DE PASOS (vectores/matrices) ---------- */
 
   .lista-pasos {
-    background: #ffffff;
+    background: var(--superficie);
     border: 1px solid var(--color-borde);
     border-radius: 10px;
     overflow: hidden;
@@ -510,28 +636,28 @@
     justify-content: space-between;
     gap: 12px;
     padding: 8px 14px;
-    border-bottom: 1px solid #f0f2f3;
+    border-bottom: 1px solid var(--linea-fila);
     font-family: "Courier New", Courier, monospace;
     font-size: 13px;
     animation: aparecerDesdeIzquierda 0.3s ease both;
   }
 
   .fila-paso:last-child { border-bottom: none; }
-  .fila-paso:hover { background: #fafbfb; }
+  .fila-paso:hover { background: var(--superficie-2); }
 
   .fila-paso .paso-etiqueta {
-    color: #8a979d;
+    color: var(--texto-tenue);
     font-family: Arial, sans-serif;
     font-size: 11px;
     white-space: nowrap;
   }
 
-  .fila-paso .paso-expresion { font-weight: bold; color: #2c3e50; }
+  .fila-paso .paso-expresion { font-weight: bold; color: var(--texto-titulo); }
 
   /* ---------- TARJETAS DE VEREDICTO/RESULTADO ---------- */
 
   .tarjeta {
-    background: #ffffff;
+    background: var(--superficie);
     border: 1px solid var(--color-borde);
     border-radius: 10px;
     padding: 14px 18px;
@@ -561,14 +687,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #eef2f3;
+    background: var(--chip-fondo);
     color: var(--color-neutro);
     flex-shrink: 0;
   }
 
-  .tipo-unica .tarjeta-icono { background: rgba(26, 188, 156, 0.15); color: var(--color-exito); }
-  .tipo-infinitas .tarjeta-icono { background: rgba(243, 156, 18, 0.15); color: var(--color-alerta); }
-  .tipo-incompatible .tarjeta-icono { background: rgba(231, 76, 60, 0.15); color: var(--color-error); }
+  .tipo-unica .tarjeta-icono { background: var(--exito-fondo); color: var(--color-exito); }
+  .tipo-infinitas .tarjeta-icono { background: var(--alerta-fondo); color: var(--color-alerta); }
+  .tipo-incompatible .tarjeta-icono { background: var(--error-fondo); color: var(--color-error); }
 
   .tarjeta-titulo {
     font-size: 15px;
@@ -577,7 +703,7 @@
 
   .tarjeta-detalle {
     font-size: 12px;
-    color: #6b7a82;
+    color: var(--texto-suave-3);
   }
 
   .tarjeta-cuerpo-mono {
@@ -596,8 +722,8 @@
   }
 
   .chip-escalar {
-    background: rgba(26, 188, 156, 0.12);
-    color: #0e8c73;
+    background: var(--exito-fondo-suave);
+    color: var(--pivote-texto);
     border-radius: 999px;
     padding: 5px 14px;
     font-family: "Courier New", Courier, monospace;
@@ -609,12 +735,12 @@
     font-family: "Courier New", Courier, monospace;
     font-size: 15px;
     font-weight: bold;
-    background: #ffffff;
+    background: var(--superficie);
     border: 1px solid var(--color-borde);
     border-radius: 8px;
     padding: 10px 16px;
     text-align: center;
-    color: #117a65;
+    color: var(--exito-texto);
   }
 
   /* ---------- COMPROBACIÓN: ecuación A · X = B y verificación por fila ---------- */
@@ -641,7 +767,7 @@
     font-size: 11px;
     font-weight: bold;
     font-style: italic;
-    color: #8a979d;
+    color: var(--texto-tenue);
   }
 
   .simbolo-ecuacion {
@@ -655,7 +781,7 @@
     align-items: center;
   }
 
-  .fila-comprobacion.fallo { background: rgba(231, 76, 60, 0.06); }
+  .fila-comprobacion.fallo { background: var(--error-fondo-suave); }
 
   .badge-comprobacion {
     font-weight: bold;
@@ -683,7 +809,7 @@
     font-family: "Courier New", Courier, monospace;
     font-size: 20px;
     font-weight: bold;
-    color: #2c3e50;
+    color: var(--texto-titulo);
   }
 
   .division-operador, .division-igual, .termino-igual {
@@ -691,12 +817,12 @@
   }
 
   .division-cociente, .termino-resultado {
-    color: #117a65;
+    color: var(--exito-texto);
   }
 
   .division-residuo {
     font-size: 13px;
-    color: #6b7a82;
+    color: var(--texto-suave-3);
   }
 
   .resultado-conversion-numero {
@@ -705,7 +831,7 @@
     font-weight: bold;
     text-align: center;
     margin-top: 10px;
-    color: #117a65;
+    color: var(--exito-texto);
   }
 
   /* ---------- ACORDEÓN (ecuación matricial, columnas de B) ---------- */
@@ -720,13 +846,13 @@
   .accordion-encabezado {
     width: 100%;
     text-align: left;
-    background: #fafbfb;
+    background: var(--superficie-2);
     border: none;
     padding: 10px 14px;
     font-size: 13px;
     font-weight: bold;
     cursor: pointer;
-    color: #34495e;
+    color: var(--texto-acento);
     position: relative;
   }
 
@@ -749,7 +875,7 @@
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.35);
+    background: var(--overlay);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -757,12 +883,12 @@
   }
 
   .modal-box {
-    background: #ffffff;
+    background: var(--superficie);
     border-radius: 8px;
     padding: 20px 24px;
     min-width: 280px;
     max-width: 440px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 24px var(--sombra);
     animation: apareceSuave 0.2s ease;
   }
 
@@ -771,8 +897,8 @@
     font-size: 16px;
   }
 
-  .modal-box h2.error { color: #c0392b; }
-  .modal-box h2.aviso { color: #b9770e; }
+  .modal-box h2.error { color: var(--error-texto); }
+  .modal-box h2.aviso { color: var(--alerta-texto); }
 
   .modal-box p {
     margin: 0 0 18px;
@@ -1045,6 +1171,8 @@
       sidebar.appendChild(boton);
     }
 
+    sidebar.appendChild(crearBotonTema());
+
     const puntoEstado = el("div", { class: "estado-punto" });
     const textoEstado = el("span", { texto: "Verificando servidor..." });
 
@@ -1059,6 +1187,33 @@
     }));
 
     iniciarMonitorEstado(puntoEstado, textoEstado);
+  }
+
+  function temaActual() {
+    return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+  }
+
+  function crearBotonTema() {
+    const icono = el("span", { "aria-hidden": "true" });
+    const etiqueta = el("span");
+    const boton = el("button", { class: "nav-btn btn-tema" }, [icono, etiqueta]);
+
+    function actualizar() {
+      const oscuro = temaActual() === "dark";
+      icono.textContent = oscuro ? "☀" : "☾";
+      etiqueta.textContent = oscuro ? "Modo claro" : "Modo oscuro";
+      boton.title = oscuro ? "Cambiar al modo claro" : "Cambiar al modo oscuro";
+    }
+
+    boton.addEventListener("click", () => {
+      const nuevo = temaActual() === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", nuevo);
+      try { localStorage.setItem("tema-calculadora", nuevo); } catch (e) {}
+      actualizar();
+    });
+
+    actualizar();
+    return boton;
   }
 
   async function verificarEstadoServidor(puntoEstado, textoEstado) {
@@ -1187,7 +1342,7 @@
     return null;
   }
 
-  function renderPasoSistema(paso, indice, total, encabezados) {
+  function renderPasoSistema(paso, indice, total, encabezados, separador) {
     return el("div", { class: "paso-tarjeta" }, [
       el("div", { class: "paso-encabezado" }, [
         el("span", { class: "paso-numero", texto: `Paso ${indice + 1} de ${total}` }),
@@ -1196,14 +1351,15 @@
       el("div", { class: "paso-descripcion", texto: NOMBRE_TIPO_PASO[paso.tipo] || "" }),
       crearTablaMatriz(paso.matriz, {
         encabezados,
-        separadorAntesDe: encabezados.length - 1,
+        separadorAntesDe: separador == null ? encabezados.length - 1 : separador,
         pivote: pivoteDePaso(paso),
         filasResaltadas: filasAfectadasDePaso(paso),
       }),
     ]);
   }
 
-  function renderStepperYFinal(contenedor, bloqueSistema, encabezados) {
+  function renderStepperYFinal(contenedor, bloqueSistema, encabezados, separador) {
+    const sep = separador == null ? encabezados.length - 1 : separador;
     if (bloqueSistema.pasos.length === 0) {
       contenedor.appendChild(el("p", {
         class: "nota-sin-pasos",
@@ -1212,7 +1368,7 @@
     } else {
       contenedor.appendChild(crearStepperGenerico(
         bloqueSistema.pasos,
-        (paso, i, total) => renderPasoSistema(paso, i, total, encabezados)
+        (paso, i, total) => renderPasoSistema(paso, i, total, encabezados, sep)
       ));
     }
 
@@ -1220,7 +1376,7 @@
     const pivotesFinal = bloqueSistema.pivotes.map((columna, fila) => ({ fila, columna }));
     contenedor.appendChild(crearTablaMatriz(bloqueSistema.matriz_final, {
       encabezados,
-      separadorAntesDe: encabezados.length - 1,
+      separadorAntesDe: sep,
       pivotes: pivotesFinal,
     }));
   }
@@ -1693,9 +1849,65 @@
     }));
   }
 
+  function renderMatrizInversa(contenedor, bloque) {
+    const n = bloque.entradas.matriz.length;
+    const nombreMetodo = bloque.metodo === "pivoteo" ? "Pivoteo" : "Gauss-Jordan";
+    const encabezados = Array.from({ length: n }, (_, j) => `a${j + 1}`)
+      .concat(Array.from({ length: n }, (_, j) => `i${j + 1}`));
+
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: `Matriz inversa (${nombreMetodo})` }));
+    contenedor.appendChild(el("div", {
+      class: "planteamiento",
+      texto: "Se reduce [A | I] hasta obtener [I | A⁻¹].",
+    }));
+
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Matriz ampliada [A | I]" }));
+    contenedor.appendChild(crearTablaMatriz(bloque.matriz_aumentada, {
+      encabezados, separadorAntesDe: n,
+    }));
+
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Procedimiento" }));
+    renderStepperYFinal(contenedor, {
+      pasos: bloque.pasos,
+      pivotes: bloque.pivotes,
+      matriz_final: bloque.matriz_final,
+    }, encabezados, n);
+
+    if (!bloque.existe) {
+      contenedor.appendChild(crearTarjetaVeredicto({
+        tipoClase: "tipo-incompatible", icono: "✕", titulo: "La inversa no existe",
+        detalle: "La matriz A es singular (no invertible).",
+        cuerpoTexto: bloque.motivo,
+      }));
+      return;
+    }
+
+    contenedor.appendChild(crearTarjetaVeredicto({
+      tipoClase: "tipo-unica", icono: "✓", titulo: "La matriz es invertible",
+      detalle: "A⁻¹ es el bloque derecho de la matriz reducida:",
+      cuerpoNodo: crearTablaMatriz(bloque.resultado, {}),
+    }));
+
+    const comp = bloque.comprobacion;
+    contenedor.appendChild(crearTarjetaVeredicto({
+      tipoClase: comp.correcto ? "tipo-unica" : "tipo-incompatible",
+      icono: comp.correcto ? "✓" : "✕",
+      titulo: comp.correcto ? "Comprobación correcta" : "Comprobación incorrecta",
+      detalle: "Se verifica que A · A⁻¹ = I",
+      cuerpoNodo: el("div", { class: "ecuacion-comprobacion" }, [
+        tablaConEtiqueta("A", bloque.entradas.matriz),
+        el("span", { class: "simbolo-ecuacion", texto: "·" }),
+        tablaConEtiqueta("A⁻¹", bloque.resultado),
+        el("span", { class: "simbolo-ecuacion", texto: "=" }),
+        tablaConEtiqueta("A · A⁻¹", comp.producto),
+      ]),
+    }));
+  }
+
   function renderBloqueOperacion(contenedor, bloque) {
     contenedor.innerHTML = "";
-    if (bloque.tipo === "combinacion_lineal") renderCombinacionLineal(contenedor, bloque);
+    if (bloque.tipo === "matriz_inversa") renderMatrizInversa(contenedor, bloque);
+    else if (bloque.tipo === "combinacion_lineal") renderCombinacionLineal(contenedor, bloque);
     else if (bloque.tipo === "ecuacion_matricial") renderEcuacionMatricial(contenedor, bloque);
     else renderOperacionSimple(contenedor, bloque);
   }
@@ -2011,26 +2223,78 @@
 
     const tabEcuacion = el("div", {}, [controlesEcuacion, marcoEcuacion]);
 
+    /* ---------- Sub-vista: Matriz inversa ---------- */
+
+    let entradasInversa = [];
+
+    const inversaN = el("input", { type: "number", min: "1", value: "3" });
+    inversaN.style.width = "50px";
+    const metodoInversa = el("select", {}, [
+      el("option", { value: "gauss_jordan", texto: "Gauss-Jordan" }),
+      el("option", { value: "pivoteo", texto: "Pivoteo" }),
+    ]);
+    const marcoInversa = el("div", { class: "grupo-tablas" });
+
+    function crearCamposInversa() {
+      let n;
+      try {
+        n = enteroPositivo(inversaN.value, "El tamaño n");
+      } catch (error) {
+        mostrarError(error.message);
+        return;
+      }
+
+      marcoInversa.innerHTML = "";
+      entradasInversa = crearTabla(marcoInversa, n, n, "Matriz A");
+    }
+
+    async function calcularInversa() {
+      const cuerpo = {
+        matriz: leerMatriz(entradasInversa),
+        metodo: metodoInversa.value,
+        modo,
+      };
+
+      try {
+        const resultado = await llamarApi("/api/inversa", cuerpo);
+        renderBloqueOperacion(panelResultado, resultado);
+      } catch (error) {
+        mostrarError(error.message);
+      }
+    }
+
+    const controlesInversa = el("div", { class: "controles" }, [
+      el("label", { texto: "Tamaño n (n × n):" }), inversaN,
+      el("label", { texto: "Método:" }), metodoInversa,
+      el("button", { class: "btn", texto: "Crear campos", onclick: crearCamposInversa }),
+      el("button", { class: "btn", texto: "Calcular inversa", onclick: calcularInversa }),
+    ]);
+
+    const tabInversa = el("div", {}, [controlesInversa, marcoInversa]);
+
     /* ---------- Ensamblado de pestañas ---------- */
 
     const contenidoVectores = el("div", { class: "tab-contenido activa" }, [tabVectores]);
     const contenidoMatrices = el("div", { class: "tab-contenido" }, [tabMatrices]);
     const contenidoEcuacion = el("div", { class: "tab-contenido" }, [tabEcuacion]);
+    const contenidoInversa = el("div", { class: "tab-contenido" }, [tabInversa]);
 
     const botonTabVectores = el("button", { class: "tab-btn active", texto: "Vectores" });
     const botonTabMatrices = el("button", { class: "tab-btn", texto: "Matrices" });
     const botonTabEcuacion = el("button", { class: "tab-btn", texto: "Ecuación A·X = B" });
+    const botonTabInversa = el("button", { class: "tab-btn", texto: "Matriz inversa" });
 
     function activarPestana(boton, contenido) {
       for (const [b, c] of [
         [botonTabVectores, contenidoVectores],
         [botonTabMatrices, contenidoMatrices],
         [botonTabEcuacion, contenidoEcuacion],
+        [botonTabInversa, contenidoInversa],
       ]) {
         b.classList.toggle("active", b === boton);
         c.classList.toggle("activa", c === contenido);
       }
-      // El panel de resultado es compartido por las tres pestañas: se limpia
+      // El panel de resultado es compartido por todas las pestañas: se limpia
       // al cambiar de pestaña para no dejar visible el resultado de una
       // operación distinta (p. ej. un resultado de "Vectores" mientras se
       // mira la pestaña "Matrices").
@@ -2040,10 +2304,11 @@
     botonTabVectores.addEventListener("click", () => activarPestana(botonTabVectores, contenidoVectores));
     botonTabMatrices.addEventListener("click", () => activarPestana(botonTabMatrices, contenidoMatrices));
     botonTabEcuacion.addEventListener("click", () => activarPestana(botonTabEcuacion, contenidoEcuacion));
+    botonTabInversa.addEventListener("click", () => activarPestana(botonTabInversa, contenidoInversa));
 
-    const tabs = el("div", { class: "tabs" }, [botonTabVectores, botonTabMatrices, botonTabEcuacion]);
+    const tabs = el("div", { class: "tabs" }, [botonTabVectores, botonTabMatrices, botonTabEcuacion, botonTabInversa]);
     const panelTabs = el("div", { class: "tab-panel" }, [
-      contenidoVectores, contenidoMatrices, contenidoEcuacion,
+      contenidoVectores, contenidoMatrices, contenidoEcuacion, contenidoInversa,
     ]);
 
     const radioFraccion = el("input", { type: "radio", name: "modo-vm", value: "fraccion", checked: "checked" });
@@ -2060,6 +2325,7 @@
     crearCamposVectores();
     crearCamposMatrices();
     crearCamposEcuacion();
+    crearCamposInversa();
 
     return el("div", {}, [
       el("div", { class: "titulo", texto: "Vectores y matrices" }),

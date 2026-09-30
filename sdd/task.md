@@ -400,3 +400,182 @@ Indicador de estado del servidor".
 - [x] Confirmar con el usuario el visto bueno visual del indicador de
       estado del servidor (color, posición, texto) desde su propia
       máquina.
+
+---
+
+## 002 (continuación) — 2.4 Matriz inversa
+
+Spec: `sdd/specs/v1/002-vectores-matrices.md`, sección "Cambios posteriores —
+2.4 Matriz inversa".
+
+Factibilidad: **sí es posible**. El motor actual reduce solo con la última
+columna como término independiente, así que se necesita un parámetro opcional
+(retrocompatible) para reducir `[A | I]`; el resto es lógica nueva en
+`metodos/vectores_matrices.py` más las dos interfaces.
+
+### Motor de resolución (`metodos/gauss_jordan.py`, `metodos/pivote.py`)
+
+- [x] Agregar el parámetro opcional `columnas_variables=None` a
+      `gauss_jordan()` y `gauss_jordan_pivoteo()`: si es `None`, usa
+      `columnas - 1` (comportamiento actual); si se indica, reduce solo esas
+      primeras columnas como pivotes.
+- [x] Ajustar la clasificación final (incompatible / libres) para que con
+      `columnas_variables` distinto del default no se interprete mal el bloque
+      derecho (para la inversa solo interesa cuántos pivotes hubo).
+- [x] Verificar que las pruebas existentes de sistemas siguen en verde (el
+      default no cambia nada). Los 17 tests siguen en verde; con
+      `columnas_variables=n` ambos motores reducen `[A | I]` (probado con
+      la matriz de la imagen: 2 pivotes, singular; y con `[[2,1],[5,3]]`:
+      bloque derecho `[[3,-1],[-5,2]]`).
+
+### Implementación (`metodos/vectores_matrices.py`)
+
+- [x] Implementar `matriz_inversa(matriz, metodo, modo)`: validar matriz
+      cuadrada y no vacía (error controlado si no).
+- [x] Construir `[A | I]` y delegar la reducción al motor
+      (`columnas_variables=n`), sin reimplementar el algoritmo.
+- [x] Determinar si existe: bloque izquierdo igual a `I` → `A⁻¹` es el bloque
+      derecho; si no (menos de `n` pivotes) → no existe, indicando la fila
+      que quedó en ceros.
+- [x] Comprobación cuando existe: `A · A⁻¹ = I` reutilizando
+      `multiplicar_matrices()`.
+- [x] Devolver la estructura estándar (`operacion`, `entradas`,
+      `matriz_aumentada`, `pasos`, `existe`, `motivo`, `resultado`,
+      `comprobacion`) y extender `procedimiento_texto()` para la GUI. Además se movió a
+      `general_metodos.pasos_a_diccionarios()` la conversión de pasos que
+      duplicaban ambos `resolver()`, verificando que su salida no cambió.
+
+### Pruebas (`tests/`)
+
+- [x] Casos de la tabla de la spec: matriz de la imagen (no existe), 2×2,
+      con intercambio de filas, 1×1, con fracciones, no cuadrada (error) y
+      fila de ceros; con ambos métodos (Gauss-Jordan y Pivoteo).
+- [x] Prueba de que `A · A⁻¹ = I` en todos los casos con inversa.
+- [x] Prueba de regresión de sistemas lineales con el nuevo parámetro en su
+      valor por defecto.
+
+### Integración en la interfaz de escritorio (`gui.py`)
+
+- [x] Agregar la sub-vista/pestaña "Matriz inversa" en `VistaVectoresMatrices`:
+      selector de `n`, cuadrícula de captura de `A`, selector de método y de
+      fracción/decimal.
+- [x] Mostrar procedimiento sobre `[A | I]`, resultado destacado (`A⁻¹` o
+      "no es invertible") y comprobación.
+- [x] Validación amigable con `messagebox` (celdas vacías, número inválido).
+- [x] Prueba de integración que monta la vista y ejecuta el caso de la
+      imagen.
+
+### Integración web (`server.py`, `index.html`)
+
+- [x] Endpoint `POST /api/inversa` en `server.py` (sin lógica matemática),
+      armando el bloque con `_armar_bloque_sistema()` y devolviendo `existe`,
+      `motivo`, `resultado` y `comprobacion`; errores como
+      `{"error": "..."}` con código 400.
+- [x] Sub-vista "Matriz inversa" en `index.html`: captura de `A`, stepper de
+      `[A | I]` con pivote resaltado, tarjeta de resultado (verde si existe,
+      roja si no) y tarjeta de comprobación.
+- [x] Probar con `curl` el endpoint (caso de la imagen, 2×2 y no cuadrada).
+
+### Cierre
+
+- [x] Probar en ambas interfaces el caso de la imagen y un caso con
+      inversa. GUI: 3 pruebas de integración que montan la vista Tkinter
+      real (caso de la imagen, 2×2 con ambos métodos y errores con
+      `messagebox`). Web: `curl` a `/api/inversa` (singular, 2×2 con
+      Pivoteo, no cuadrada, celda vacía, método inválido) y un arnés con
+      `jsdom` que carga `index.html` real y simula la pestaña (stepper,
+      pivotes resaltados, tarjeta roja/verde, comprobación y modal de
+      error). 31 tests de Python en verde.
+- [ ] Confirmar con el usuario el visto bueno visual de la pestaña "Matriz
+      inversa" en ambas interfaces (jsdom/Tkinter valida comportamiento,
+      no apariencia).
+- [x] Marcar el cambio como implementado en la spec 002 (sección "Cambios
+      posteriores") y actualizar su fila en `sdd/plan.md`.
+- [x] Actualizar `AGENTS.md` (lista de funcionalidades y endpoints) al cerrar.
+
+---
+
+## 004 — Modo oscuro y modo claro
+
+Spec: `sdd/specs/v2/004-modo-oscuro-claro.md`
+
+Factibilidad: **sí es posible en las dos interfaces**, sin tocar `metodos/` ni
+`server.py`. La web es directa (ya usa variables CSS, pero hay ~60 colores
+escritos a mano fuera de `:root`). La GUI es más laboriosa: los colores son
+constantes usadas al crear cada widget, así que hay que centralizarlos y
+poder recolorear widgets ya creados sin perder lo capturado.
+
+### Interfaz web (`index.html`)
+
+- [x] Inventariar los colores escritos directamente en el CSS fuera de
+      `:root` (hex y `rgba`) y asignarles un nombre semántico.
+- [x] Definir el conjunto completo de variables CSS del tema claro (valores
+      actuales, sin cambiar el aspecto) y reemplazar todos los colores
+      sueltos por esas variables.
+- [x] Definir el bloque del tema oscuro (`html[data-theme="dark"]`) con la
+      paleta de la spec, incluyendo los colores semánticos de tarjetas
+      (éxito, infinitas, error, neutro), pivote y filas resaltadas.
+- [x] Agregar el botón de cambio de tema en el sidebar (ícono + etiqueta que
+      indica el tema destino), junto al indicador de estado del servidor.
+- [x] Implementar el cambio de tema (atributo `data-theme` en `<html>`) sin
+      recargar ni re-renderizar los resultados.
+- [x] Guardar la elección en `localStorage` (con `try/catch`) y, si no hay
+      elección guardada, seguir `prefers-color-scheme`.
+- [x] Aplicar el tema inicial con un script en `<head>` para evitar el
+      parpadeo al cargar.
+- [x] Revisar en oscuro: campos de captura, tablas de matriz, stepper,
+      tarjetas, acordeones, pestañas, modal de error y sidebar.
+- [x] Verificar contraste mínimo 4.5:1 del texto en ambos temas (incluyendo
+      tarjetas de colores y celda de pivote). Tema oscuro: todos los pares
+      texto/fondo calculados cumplen 4.5:1 (se subieron `--texto-tenue` y
+      `--pivote-texto` para lograrlo). Tema claro: se dejó idéntico al
+      original, que ya tenía pares por debajo de 4.5:1 (p. ej. blanco sobre
+      `#1abc9c` = 2.4:1, texto tenue `#8a979d` = 3.0:1); ver spec.
+
+### Interfaz de escritorio (`gui.py`)
+
+- [x] Reemplazar las constantes de color por un diccionario de temas
+      (claro/oscuro) con un tema activo, y sustituir los colores escritos a
+      mano (`bg="white"`, colores del botón deshabilitado, etc.) por
+      entradas de la paleta.
+- [x] Hacer que `RoundedButton` tome sus colores de la paleta activa y
+      pueda redibujarse al cambiar de tema.
+- [x] Implementar la función que aplica un tema a todos los widgets ya
+      creados (recorriendo el árbol de widgets) sin reconstruir la vista, de
+      modo que se conserven los datos capturados, la pestaña activa y el
+      resultado mostrado.
+- [x] Cubrir los widgets que no heredan color solos: `ttk.Notebook`
+      (`ttk.Style`), `Entry`, `OptionMenu`, `Radiobutton`, `Text` (áreas de
+      resultado) y `Canvas`.
+- [x] Agregar el botón de cambio de tema en la parte inferior del sidebar,
+      con ícono y etiqueta del tema destino.
+- [x] Verificar que el sidebar se distingue del panel en el tema oscuro y
+      que los colores semánticos y el contraste se mantienen.
+
+### Pruebas
+
+- [x] Prueba de integración de la GUI: montar la vista, capturar datos y
+      mostrar un resultado, cambiar de tema (claro → oscuro → claro) y
+      comprobar que los datos y el resultado siguen intactos y que los
+      colores de los widgets cambiaron.
+- [x] Arnés `jsdom` para la web: alternar el tema, comprobar el atributo
+      `data-theme`, que se recuerda en `localStorage`, que el tema inicial
+      sigue `prefers-color-scheme` y que funciona con `localStorage`
+      bloqueado.
+- [x] Comprobar que ningún color del tema claro queda escrito directamente
+      fuera de la paleta (revisión con `grep` en `index.html` y `gui.py`).
+
+### Cierre
+
+- [x] Probar en ambas interfaces el cambio de tema. GUI: prueba que recorre
+      todas las vistas del sidebar alternando claro/oscuro, y captura real de
+      la ventana en ambos temas (pestaña "Matriz inversa" con resultado a la
+      vista). Web: arnés `jsdom` (12 comprobaciones) y verificación estática
+      del CSS (todas las variables definidas en ambos temas, ningún color
+      literal fuera de las paletas). No se pudo captar la web en un navegador
+      real (no hay navegador sin interfaz en el entorno).
+- [ ] Confirmar con el usuario el visto bueno visual de ambos temas en su
+      propia máquina (sobre todo la web, que no se vio en un navegador).
+- [x] Marcar la spec como implementada (pendiente solo el visto bueno
+      visual), actualizar su fila en `sdd/plan.md` y mencionar la
+      funcionalidad en `AGENTS.md`.

@@ -65,3 +65,98 @@ simples apoyándose en los métodos de resolución de sistemas ya construidos
   sidebar (por ejemplo "Vectores y Matrices"), o bien como entradas separadas
   del sidebar si mejora la claridad — se decide al momento de construir la
   vista, priorizando que el usuario nunca se sienta perdido.
+
+## Cambios posteriores
+
+### 2.4 — Matriz inversa
+
+**Estado de este cambio:** implementado (pendiente solo el visto bueno
+visual del usuario). El `Estado` de arriba se conserva: 2.1–2.3 ya estaban
+implementados.
+
+#### Propósito
+
+Dada una matriz cuadrada `A` de `n × n`, encontrar su inversa `A⁻¹` (tal que
+`A·A⁻¹ = A⁻¹·A = I`) **si existe**, y si no existe, decirlo y explicar por
+qué. Caso de referencia (práctica 2.2, problema 1: "encontrar la inversa de
+la matriz, si existe"):
+
+```
+A = |  1  -2  -1 |
+    | -1   5   6 |
+    |  5  -4   5 |
+```
+
+Esta matriz en particular **no es invertible** (su determinante es 0: al
+reducir, `F3 − 5·F1 = 2·(F2 + F1)`), así que el programa debe concluir
+"la inversa no existe" mostrando el procedimiento que lo demuestra. Sirve
+como caso de prueba principal del módulo.
+
+#### Método
+
+Gauss-Jordan sobre la matriz ampliada `[A | I]` (`I` = identidad `n × n`),
+hasta llegar a `[I | A⁻¹]`. Se puede elegir entre **Gauss-Jordan** y
+**Pivoteo** (igual que en la vista de sistemas), con Gauss-Jordan por
+defecto.
+
+- Si el bloque izquierdo llega a `I`, el bloque derecho es `A⁻¹`.
+- Si en algún momento no se encuentra pivote en una columna (queda una fila
+  con ceros en el bloque izquierdo), `A` es singular: **la inversa no
+  existe**. Se informa cuál fila quedó en ceros.
+
+#### Requisitos funcionales
+
+- **Validación previa:** `A` debe ser cuadrada y no vacía; si no lo es, se
+  informa el error sin intentar operar (mismo estilo que suma/multiplicación
+  de matrices). Las celdas aceptan enteros, decimales y fracciones (`3/4`),
+  como en el resto del módulo.
+- La dimensión `n` no está fija: el usuario la indica antes de capturar `A`
+  (igual que en las demás sub-vistas).
+- **Procedimiento paso a paso** (intercambio, normalizar, eliminar) sobre la
+  matriz ampliada `[A | I]`, con la misma presentación que los sistemas
+  lineales (en la web: stepper con pivote resaltado; en la GUI: texto).
+- **Resultado destacado:** o bien `A⁻¹` completa, o bien la conclusión "A no
+  es invertible (matriz singular)" con su motivo.
+- **Comprobación** cuando existe: mostrar `A · A⁻¹` y verificar que da `I`
+  (reutilizando la multiplicación de matrices ya implementada).
+- Formato de salida fracción/decimal según el `modo` ya existente.
+
+#### Reutilización y decisiones de diseño
+
+- **Es posible con el motor actual, con un ajuste mínimo.** Hoy
+  `gauss_jordan()` y `gauss_jordan_pivoteo()` asumen que solo la **última**
+  columna es el término independiente (`variables = columnas - 1`), por lo
+  que no reducen `[A | I]` completa como bloque de `n` columnas.
+  Se agrega un parámetro opcional `columnas_variables=None` a ambas
+  funciones (por defecto se comporta exactamente igual que hoy); para la
+  inversa se llama con `columnas_variables=n`. Así se reutiliza el mismo
+  algoritmo y las mismas tuplas de pasos (`intercambio`, `normalizar`,
+  `eliminar`), sin copiar código ni tocar el comportamiento de los sistemas
+  existentes.
+- Alternativa descartada: `ecuacion_matricial(A, I)` (resolver `A·X = I`
+  columna por columna). Funciona sin tocar el motor, pero muestra `n`
+  resoluciones separadas en vez de una sola reducción `[A | I] → [I | A⁻¹]`,
+  que es como se enseña y se pide en clase.
+- La nueva lógica vive en `metodos/vectores_matrices.py` (función
+  `matriz_inversa(matriz, metodo="gauss_jordan", modo="fraccion")`), con la
+  estructura de resultado estándar del módulo: `operacion`, `entradas`,
+  `matriz_aumentada`, `pasos`, `existe`, `motivo`, `resultado` (`A⁻¹` o
+  `None`) y `comprobacion`.
+- **Interfaces:** nueva sub-vista/pestaña "Matriz inversa" dentro de la
+  entrada "Vectores y Matrices" (no una entrada nueva del sidebar, porque es
+  la misma familia de operaciones). En web: endpoint `POST /api/inversa` en
+  `server.py`, reusando `_armar_bloque_sistema()` para los pasos.
+- Fuera de alcance: cálculo de determinante o método de la adjunta (no se
+  pidió; el criterio de existencia es el rango por pivotes).
+
+#### Casos de prueba esperados
+
+| Caso | Resultado esperado |
+|------|--------------------|
+| `[[1,-2,-1],[-1,5,6],[5,-4,5]]` (imagen) | No existe (singular) |
+| `[[2,1],[5,3]]` | `[[3,-1],[-5,2]]` |
+| `[[0,1],[1,0]]` (requiere intercambio) | ella misma |
+| `[[4]]` (1×1) | `[[1/4]]` |
+| Matriz con fracciones, p. ej. `[[1/2,0],[0,1/3]]` | `[[2,0],[0,3]]` |
+| Matriz 2×3 (no cuadrada) | Error controlado |
+| Matriz con una fila de ceros | No existe |
