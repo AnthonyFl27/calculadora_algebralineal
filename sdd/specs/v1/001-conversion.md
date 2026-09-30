@@ -22,10 +22,10 @@ base) que da origen a cada número, no solo el resultado.
   entre la base y los residuos obtenidos, en orden) y el número resultante en
   la base elegida.
 
-## Funcionalidad 2 — (Binario / Octal / Decimal) → Decimal
+## Funcionalidad 2 — (Binario / Octal / Hexadecimal / Decimal) → Decimal
 
 - El usuario ingresa un número y selecciona la base en la que está escrito
-  ese número (binario, octal o decimal).
+  ese número (binario, octal, hexadecimal o decimal).
 - El programa valida que los dígitos ingresados sean válidos para la base
   elegida (por ejemplo, rechazar un "2" si la base seleccionada es binaria).
 - El procedimiento debe mostrar explícitamente la **combinación lineal** que
@@ -36,8 +36,7 @@ base) que da origen a cada número, no solo el resultado.
 
 ## Notas de diseño
 
-- Los cuatro casos de "decimal → otra base" y los tres casos de "otra base →
-  decimal" pueden convivir en una sola vista con selector de "dirección" y
+- Los casos de "decimal → otra base" y de "otra base → decimal" pueden convivir en una sola vista con selector de "dirección" y
   selector de "base", para no multiplicar pantallas innecesariamente; queda a
   criterio de implementación mientras el usuario pueda elegir claramente base
   y dirección de la conversión.
@@ -48,25 +47,10 @@ base) que da origen a cada número, no solo el resultado.
 
 ## Cambios posteriores
 
-### Habilitar hexadecimal → decimal en la interfaz (GUI y web)
+### Hexadecimal → decimal en la interfaz
 
-`metodos/conversion.py` (`base_a_decimal()` / `resolver()`) ya soportaba
-hexadecimal como base de entrada desde la implementación original: es
-genérico sobre cualquier base definida en `NOMBRES_BASE` (2, 8, 10, 16), sin
-necesitar ningún cambio de lógica. El bug estaba solo en las interfaces, que
-restringían manualmente las opciones del selector de base cuando la
-dirección era "otra base → decimal":
-
-- `gui.py` (`VistaConversion.BASES_A_DECIMAL`) listaba
-  `["binario", "octal", "decimal"]`, sin `"hexadecimal"`.
-- `index.html` (`vistaConversion()`, constante `BASES_A_DECIMAL`) tenía la
-  misma lista incompleta, duplicada en JavaScript.
-
-Se agregó `"hexadecimal"` a ambas listas. Con esto, la dirección
-"Otra base → Decimal" ahora ofrece binario, octal, hexadecimal y decimal por
-igual, tanto en la GUI de Tkinter como en la versión web, reutilizando el
-mismo `resolver()` y el mismo endpoint `/api/conversion` de `server.py` (que
-tampoco tenía restricción propia: recibe `base_entrada`/`base_salida` como
-enteros y delega directo en `metodos/conversion.py`). Verificado con
-`curl -X POST /api/conversion` (`"2F"` en base 16 → `47` en decimal) y
-revisando el árbol de sintaxis de `gui.py`/`server.py`.
+`metodos/conversion.py` ya soportaba hexadecimal como base de entrada; el
+fallo estaba solo en las interfaces, cuyo selector de la dirección "otra base
+→ decimal" (`BASES_A_DECIMAL` en `gui.py` e `index.html`) no incluía
+`"hexadecimal"`. Se agregó en ambas, sin tocar `metodos/` ni `server.py`
+(p. ej. `"2F"` en base 16 → `47`).

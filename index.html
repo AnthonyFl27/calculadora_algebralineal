@@ -293,6 +293,86 @@
     gap: 16px;
   }
 
+  .inicio-separador {
+    height: 1px;
+    background: var(--color-borde);
+    margin: 30px 0 20px;
+  }
+
+  .inicio-seccion {
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--texto-suave-1);
+    margin: 0 0 14px;
+  }
+
+  /* ---------- EJERCICIOS ---------- */
+
+  .ejercicios-barra {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .ejercicios-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .ejercicio {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    background: var(--superficie);
+    border: 1px solid var(--color-borde);
+    border-radius: 14px;
+    padding: 16px 18px;
+    animation: apareceSuave 0.25s ease both;
+  }
+
+  .ejercicio-info { flex: 1 1 280px; min-width: 0; }
+
+  .ejercicio-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .ejercicio-titulo { font-size: 15px; font-weight: bold; color: var(--texto-titulo); }
+  .ejercicio-descripcion { font-size: 13px; line-height: 1.45; color: var(--texto-suave-1); margin: 0 0 10px; }
+
+  .ejercicio-datos {
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    background: var(--superficie-2);
+    border: 1px solid var(--linea-tabla);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin: 0;
+    overflow-x: auto;
+    color: var(--texto);
+  }
+
+  .dificultad {
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 999px;
+    padding: 2px 10px;
+  }
+
+  .dificultad-basico { background: var(--exito-fondo); color: var(--exito-texto); }
+  .dificultad-intermedio { background: var(--alerta-fondo); color: var(--alerta-texto); }
+  .dificultad-avanzado { background: var(--error-fondo); color: var(--error-texto); }
+
   .inicio-tarjeta {
     display: flex;
     flex-direction: column;
@@ -1258,6 +1338,7 @@
     pivoteo: '<path d="M7 4v16M7 4L4 7M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/>',
     conversion: '<path d="M4 8h14l-3-3M20 16H6l3 3"/>',
     vectores: '<path d="M5 19L19 5M19 5h-7M19 5v7"/>',
+    ejercicios: '<path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',
   };
 
   function icono(nombre, tam) {
@@ -1266,26 +1347,37 @@
       'stroke-linejoin="round" aria-hidden="true">' + ICONOS[nombre] + '</svg>';
   }
 
+  /* Sección de práctica: entrada propia del sidebar (debajo de los métodos) y
+     tarjeta en Inicio. `tarjeta` es el nombre que muestra la tarjeta. */
+  const EJERCICIOS = {
+    nombre: "Ejercicios", tarjeta: "Ejercicios para práctica", icono: "ejercicios",
+    descripcion: "Elige un método y prueba ejercicios de ejemplo con los datos ya listos.",
+    vista: vistaEjercicios,
+  };
+
+  /* Módulos que Inicio muestra bajo el separador, aparte de los métodos. */
+  const SECCIONES_EXTRA = [EJERCICIOS];
+
   const INICIO = { nombre: "Inicio", icono: "inicio", vista: vistaInicio };
 
   const METODOS = [
     {
-      nombre: "Gauss-Jordan", icono: "sistema",
+      clave: "gauss-jordan", nombre: "Gauss-Jordan", icono: "sistema",
       descripcion: "Resuelve sistemas de ecuaciones lineales reduciendo la matriz aumentada, paso a paso.",
-      vista: () => vistaSistemaLineal("gauss-jordan", "Gauss-Jordan"),
+      vista: (ejercicio) => vistaSistemaLineal("gauss-jordan", "Gauss-Jordan", ejercicio),
     },
     {
-      nombre: "Pivoteo", icono: "pivoteo",
+      clave: "pivoteo", nombre: "Pivoteo", icono: "pivoteo",
       descripcion: "Gauss-Jordan con pivoteo parcial: elige el mejor pivote de cada columna.",
-      vista: () => vistaSistemaLineal("pivoteo", "Pivoteo"),
+      vista: (ejercicio) => vistaSistemaLineal("pivoteo", "Pivoteo", ejercicio),
     },
     {
-      nombre: "Conversión de bases", icono: "conversion",
+      clave: "conversion", nombre: "Conversión de bases", icono: "conversion",
       descripcion: "Convierte números entre decimal, binario, octal y hexadecimal con su procedimiento.",
       vista: vistaConversion,
     },
     {
-      nombre: "Vectores y matrices", icono: "vectores",
+      clave: "vectores-matrices", nombre: "Vectores y matrices", icono: "vectores",
       descripcion: "Suma, resta, escalares, combinación lineal, multiplicación, ecuación matricial e inversa.",
       vista: vistaVectoresMatrices,
     },
@@ -1328,8 +1420,10 @@
     crearBotonColapsar();
     aplicarSidebarColapsado(leerSidebarColapsado(), false);
 
-    for (const metodo of [INICIO, ...METODOS]) {
-      if (metodo === METODOS[0]) sidebar.appendChild(el("div", { class: "sidebar-separador" }));
+    for (const metodo of [INICIO, ...METODOS, EJERCICIOS]) {
+      if (metodo === METODOS[0] || metodo === EJERCICIOS) {
+        sidebar.appendChild(el("div", { class: "sidebar-separador" }));
+      }
       const boton = el("button", {
         class: "nav-btn",
         onclick: () => mostrarVista(metodo),
@@ -1400,12 +1494,26 @@
     setInterval(() => verificarEstadoServidor(puntoEstado, textoEstado), 5000);
   }
 
-  function mostrarVista(metodo) {
+  /* `ejercicio` es opcional: si se pasa (desde la sección de ejercicios),
+     la vista del método abre con sus datos ya cargados, sin resolver. */
+  function mostrarVista(metodo, ejercicio) {
     for (const boton of sidebar.querySelectorAll(".nav-btn")) {
       boton.classList.toggle("active", boton.dataset.nombre === metodo.nombre);
     }
     panel.innerHTML = "";
-    panel.appendChild(metodo.vista());
+    panel.appendChild(metodo.vista(ejercicio));
+  }
+
+  /* Rellena una cuadrícula de inputs (lista de listas) con valores de texto. */
+  function llenarEntradas(entradas, valores) {
+    valores.forEach((fila, i) => fila.forEach((valor, j) => {
+      entradas[i][j].value = valor;
+    }));
+  }
+
+  /* Rellena una lista de inputs (un vector) con valores de texto. */
+  function llenarVector(entradas, valores) {
+    valores.forEach((valor, i) => { entradas[i].value = valor; });
   }
 
   /* ==========================================================
@@ -1559,7 +1667,7 @@
     renderStepperYFinal(contenedor, resultado, encabezados);
   }
 
-  function vistaSistemaLineal(metodo, titulo) {
+  function vistaSistemaLineal(metodo, titulo, ejercicio) {
     let entradasMatriz = [];
     let ultimoResultado = null;
     let modo = "fraccion";
@@ -1737,6 +1845,15 @@
     ]);
 
     crearMatriz();
+
+    if (ejercicio && ejercicio.datos.matriz) {
+      const matriz = ejercicio.datos.matriz;
+      entradaEcuaciones.value = String(matriz.length);
+      entradaVariables.value = String(matriz[0].length - 1);
+      crearMatriz();
+      llenarEntradas(entradasMatriz, matriz);
+    }
+
     return contenedor;
   }
 
@@ -1797,7 +1914,7 @@
     });
   }
 
-  function vistaConversion() {
+  function vistaConversion(ejercicio) {
     const BASES_A_OTRA = ["binario", "octal", "hexadecimal"];
     const BASES_A_DECIMAL = ["binario", "octal", "hexadecimal", "decimal"];
     const NOMBRE_A_BASE = { binario: 2, octal: 8, decimal: 10, hexadecimal: 16 };
@@ -1877,6 +1994,18 @@
     ]);
 
     actualizarOpcionesBase();
+
+    if (ejercicio && ejercicio.datos.numero !== undefined) {
+      const { numero, base_entrada, base_salida } = ejercicio.datos;
+      const nombreDeBase = (base) => Object.keys(NOMBRE_A_BASE).find((n) => NOMBRE_A_BASE[n] === base);
+
+      direccion = base_entrada === 10 ? "a_otra_base" : "a_decimal";
+      radioAOtra.checked = direccion === "a_otra_base";
+      radioADecimal.checked = direccion === "a_decimal";
+      actualizarOpcionesBase();
+      selectBase.value = nombreDeBase(direccion === "a_otra_base" ? base_salida : base_entrada);
+      entradaNumero.value = numero;
+    }
 
     return el("div", {}, [
       el("div", { class: "titulo", texto: "Conversión de bases" }),
@@ -2079,7 +2208,7 @@
     else renderOperacionSimple(contenedor, bloque);
   }
 
-  function vistaVectoresMatrices() {
+  function vistaVectoresMatrices(ejercicio) {
     let modo = "fraccion";
     const panelResultado = el("div", { class: "resultado-panel" });
 
@@ -2494,6 +2623,53 @@
     crearCamposEcuacion();
     crearCamposInversa();
 
+    if (ejercicio && ejercicio.categoria) {
+      cargarEjercicio(ejercicio);
+    }
+
+    /* Abre la pestaña de la operación y rellena sus campos con los datos del
+       ejercicio (sin calcular). */
+    function cargarEjercicio(ej) {
+      const d = ej.datos;
+
+      if (ej.categoria === "vectores") {
+        operacionVector.value = ej.operacion;
+        dimensionVector.value = String(d.vectores[0].length);
+        cantidadVectores.value = String(d.vectores.length);
+        crearCamposVectores();
+        d.vectores.forEach((vector, j) => llenarVector(entradasVectores[j], vector));
+        if (d.objetivo) llenarVector(entradasObjetivo, d.objetivo);
+        if (d.escalar !== undefined) entradaEscalarVector.value = d.escalar;
+        activarPestana(botonTabVectores, contenidoVectores);
+      } else if (ej.categoria === "matrices") {
+        operacionMatriz.value = ej.operacion;
+        filasA.value = String(d.matriz_a.length);
+        columnasA.value = String(d.matriz_a[0].length);
+        if (d.matriz_b) {
+          filasB.value = String(d.matriz_b.length);
+          columnasB.value = String(d.matriz_b[0].length);
+        }
+        crearCamposMatrices();
+        llenarEntradas(entradasMatrizA, d.matriz_a);
+        if (d.matriz_b) llenarEntradas(entradasMatrizB, d.matriz_b);
+        if (d.escalar !== undefined) entradaEscalarMatriz.value = d.escalar;
+        activarPestana(botonTabMatrices, contenidoMatrices);
+      } else if (ej.categoria === "ecuacion-matricial") {
+        ecFilasA.value = String(d.matriz_a.length);
+        ecColumnasA.value = String(d.matriz_a[0].length);
+        ecColumnasB.value = String(d.matriz_b[0].length);
+        crearCamposEcuacion();
+        llenarEntradas(entradasEcuacionA, d.matriz_a);
+        llenarEntradas(entradasEcuacionB, d.matriz_b);
+        activarPestana(botonTabEcuacion, contenidoEcuacion);
+      } else if (ej.categoria === "inversa") {
+        inversaN.value = String(d.matriz.length);
+        crearCamposInversa();
+        llenarEntradas(entradasInversa, d.matriz);
+        activarPestana(botonTabInversa, contenidoInversa);
+      }
+    }
+
     return el("div", {}, [
       el("div", { class: "titulo", texto: "Vectores y matrices" }),
       tabs,
@@ -2504,19 +2680,141 @@
   }
 
   /* ==========================================================
+     VISTA: EJERCICIOS PARA PRÁCTICA
+     ========================================================== */
+
+  let catalogoEjercicios = null;
+
+  async function obtenerCatalogoEjercicios() {
+    if (catalogoEjercicios) return catalogoEjercicios;
+
+    let respuesta;
+    try {
+      respuesta = await fetch("/api/ejercicios", { cache: "no-store" });
+    } catch (error) {
+      throw new Error(
+        "No se pudo conectar con el servidor. ¿Está corriendo " +
+        "'python server.py'?"
+      );
+    }
+
+    let datos;
+    try {
+      datos = await respuesta.json();
+    } catch (error) {
+      throw new Error("El servidor devolvió una respuesta inválida.");
+    }
+
+    if (!respuesta.ok || datos.error) {
+      throw new Error(datos.error || "No se pudieron cargar los ejercicios.");
+    }
+
+    catalogoEjercicios = datos;
+    return datos;
+  }
+
+  function vistaEjercicios() {
+    const contenido = el("div", {});
+    const contenedor = el("div", { class: "inicio" }, [contenido]);
+
+    /* Paso 1: pregunta y métodos como opciones. */
+    async function mostrarEleccion() {
+      contenido.innerHTML = "";
+      contenido.appendChild(el("div", { class: "ejercicios-barra" }, [
+        el("button", { class: "btn", texto: "← Inicio", onclick: () => mostrarVista(INICIO) }),
+      ]));
+      contenido.appendChild(el("div", { class: "titulo", texto: "Ejercicios para práctica" }));
+      contenido.appendChild(el("p", {
+        class: "inicio-subtitulo",
+        texto: "¿Para qué método te gustaría tener ejercicios de ejemplo y práctica?",
+      }));
+
+      const cuadricula = el("div", { class: "inicio-cuadricula" });
+      const estado = el("p", { class: "inicio-subtitulo", texto: "Cargando ejercicios..." });
+      contenido.appendChild(estado);
+      contenido.appendChild(cuadricula);
+
+      let catalogo;
+      try {
+        catalogo = await obtenerCatalogoEjercicios();
+      } catch (error) {
+        estado.textContent = "No se pudieron cargar los ejercicios.";
+        mostrarError(error.message);
+        return;
+      }
+
+      estado.remove();
+      for (const { clave, nombre } of catalogo.metodos) {
+        const metodo = METODOS.find((m) => m.clave === clave);
+        const cantidad = catalogo.ejercicios[clave].length;
+        cuadricula.appendChild(el("button", {
+          class: "inicio-tarjeta",
+          type: "button",
+          onclick: () => mostrarLista(clave, nombre),
+        }, [
+          el("span", { class: "inicio-icono", html: icono(metodo ? metodo.icono : "ejercicios", 22) }),
+          el("span", { class: "inicio-nombre", texto: nombre }),
+          el("span", { class: "inicio-descripcion", texto: `${cantidad} ejercicios` }),
+        ]));
+      }
+    }
+
+    /* Paso 2: lista de ejercicios del método elegido. */
+    function mostrarLista(clave, nombre) {
+      const metodo = METODOS.find((m) => m.clave === clave);
+      const ejercicios = catalogoEjercicios.ejercicios[clave];
+
+      contenido.innerHTML = "";
+      contenido.appendChild(el("div", { class: "ejercicios-barra" }, [
+        el("button", { class: "btn", texto: "← Elegir otro método", onclick: mostrarEleccion }),
+      ]));
+      contenido.appendChild(el("div", { class: "titulo", texto: `Ejercicios de ${nombre}` }));
+      contenido.appendChild(el("p", {
+        class: "inicio-subtitulo",
+        texto: "Pulsa \"Probar ejercicio\" para cargar los datos en la calculadora.",
+      }));
+
+      const lista = el("div", { class: "ejercicios-lista" });
+      for (const ejercicio of ejercicios) {
+        const nivel = ejercicio.dificultad
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        lista.appendChild(el("div", { class: "ejercicio" }, [
+          el("div", { class: "ejercicio-info" }, [
+            el("div", { class: "ejercicio-cabecera" }, [
+              el("span", { class: "ejercicio-titulo", texto: ejercicio.titulo }),
+              el("span", { class: `dificultad dificultad-${nivel}`, texto: ejercicio.dificultad }),
+            ]),
+            el("p", { class: "ejercicio-descripcion", texto: ejercicio.descripcion }),
+            el("pre", { class: "ejercicio-datos", texto: ejercicio.vista_previa }),
+          ]),
+          el("button", {
+            class: "btn btn-grande",
+            texto: "Probar ejercicio",
+            onclick: () => mostrarVista(metodo, ejercicio),
+          }),
+        ]));
+      }
+      contenido.appendChild(lista);
+    }
+
+    mostrarEleccion();
+    return contenedor;
+  }
+
+  /* ==========================================================
      VISTA: INICIO
      ========================================================== */
 
   function vistaInicio() {
-    const tarjetas = METODOS.map((metodo) => el("button", {
+    const crearTarjeta = (modulo) => el("button", {
       class: "inicio-tarjeta",
       type: "button",
-      onclick: () => mostrarVista(metodo),
+      onclick: () => mostrarVista(modulo),
     }, [
-      el("span", { class: "inicio-icono", html: icono(metodo.icono, 22) }),
-      el("span", { class: "inicio-nombre", texto: metodo.nombre }),
-      el("span", { class: "inicio-descripcion", texto: metodo.descripcion }),
-    ]));
+      el("span", { class: "inicio-icono", html: icono(modulo.icono, 22) }),
+      el("span", { class: "inicio-nombre", texto: modulo.tarjeta || modulo.nombre }),
+      el("span", { class: "inicio-descripcion", texto: modulo.descripcion }),
+    ]);
 
     return el("div", { class: "inicio" }, [
       el("div", { class: "titulo", texto: "Calculadora de Álgebra Lineal" }),
@@ -2524,7 +2822,10 @@
         class: "inicio-subtitulo",
         texto: "Elige un método u operación para empezar.",
       }),
-      el("div", { class: "inicio-cuadricula" }, tarjetas),
+      el("div", { class: "inicio-cuadricula" }, METODOS.map(crearTarjeta)),
+      el("div", { class: "inicio-separador" }),
+      el("h2", { class: "inicio-seccion", texto: "Práctica" }),
+      el("div", { class: "inicio-cuadricula" }, SECCIONES_EXTRA.map(crearTarjeta)),
     ]);
   }
 

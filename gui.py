@@ -13,6 +13,7 @@ import tkinter.font as tkfont
 from tkinter import messagebox, ttk
 
 from metodos.general_metodos import matriz_texto, texto_comprobacion
+from metodos.ejercicios import METODOS_EJERCICIOS, catalogo as catalogo_ejercicios
 from metodos.gauss_jordan import resolver as resolver_gauss_jordan
 from metodos.pivote import resolver as resolver_pivote
 from metodos.conversion import (
@@ -57,6 +58,9 @@ PALETAS = {
         "boton_act": "#1abc9c",
         "texto_sb": "#ffffff",
         "separador": "#4d6278",        # línea entre Inicio y los métodos
+        "dif_basico": "#117a65",       # etiquetas de dificultad (ejercicios)
+        "dif_intermedio": "#b9770e",
+        "dif_avanzado": "#c0392b",
         "texto": "#000000",
         "superficie": "#ffffff",       # áreas de texto y campos de captura
         "borde": "#d9d9d9",            # anillo de foco / bordes de widgets
@@ -77,6 +81,9 @@ PALETAS = {
         "boton_act": "#0f7f6b",
         "texto_sb": "#ffffff",
         "separador": "#34404a",
+        "dif_basico": "#4fd8bd",
+        "dif_intermedio": "#f0b45a",
+        "dif_avanzado": "#f1867a",
         "texto": "#e6eaed",
         "superficie": "#242b31",
         "borde": "#4a5660",
@@ -355,15 +362,57 @@ class Separador(tk.Frame):
         )
 
 
-class VistaBase:
-    """Clase base de las vistas montadas en el panel derecho."""
+def poner_texto(entrada, texto):
+    """Reemplaza el contenido de un Entry."""
+    entrada.delete(0, tk.END)
+    entrada.insert(0, str(texto))
 
-    def __init__(self, padre):
+
+def llenar_entradas(entradas, valores):
+    """Rellena una cuadrícula de Entry (lista de listas) con texto."""
+    for fila_entradas, fila_valores in zip(entradas, valores):
+        for entrada, valor in zip(fila_entradas, fila_valores):
+            poner_texto(entrada, valor)
+
+
+def llenar_vector(entradas, valores):
+    """Rellena una lista de Entry (un vector) con texto."""
+    for entrada, valor in zip(entradas, valores):
+        poner_texto(entrada, valor)
+
+
+class EtiquetaDificultad(tk.Label):
+    """Etiqueta de dificultad de un ejercicio; su color sale de la paleta y se
+    recolorea con el tema (clave "dif_<nivel>")."""
+
+    NIVELES = {"básico": "basico", "intermedio": "intermedio", "avanzado": "avanzado"}
+
+    def __init__(self, padre, dificultad):
+        self.nivel = self.NIVELES[dificultad]
+        super().__init__(
+            padre, text=dificultad, font=("Arial", 9, "bold"),
+            bg=COLOR_FONDO, fg=PALETAS[TEMA_ACTUAL]["dif_" + self.nivel],
+        )
+
+
+class VistaBase:
+    """Clase base de las vistas montadas en el panel derecho.
+
+    `ejercicio` es opcional: si se pasa (desde la sección de ejercicios), la
+    vista abre con los datos del ejercicio ya cargados, sin resolver.
+    """
+
+    def __init__(self, padre, ejercicio=None):
         self.padre = padre
         self.construir()
+        if ejercicio is not None:
+            self.cargar_ejercicio(ejercicio)
 
     def construir(self):
         raise NotImplementedError
+
+    def cargar_ejercicio(self, ejercicio):
+        """Rellena el formulario con los datos de un ejercicio."""
 
     def limpiar_salida(self):
         self.salida.config(state="normal")
@@ -387,10 +436,17 @@ class VistaSistemaLineal(VistaBase):
     métodos reutilicen la misma interfaz cambiando solo el resolvedor.
     """
 
-    def __init__(self, padre, funcion_resolver, titulo):
+    def __init__(self, padre, funcion_resolver, titulo, ejercicio=None):
         self.funcion_resolver = funcion_resolver
         self.titulo = titulo
-        super().__init__(padre)
+        super().__init__(padre, ejercicio)
+
+    def cargar_ejercicio(self, ejercicio):
+        matriz = ejercicio["datos"]["matriz"]
+        poner_texto(self.entrada_ecuaciones, len(matriz))
+        poner_texto(self.entrada_variables, len(matriz[0]) - 1)
+        self.crear_matriz()
+        llenar_entradas(self.entradas, matriz)
 
     def construir(self):
         self.entradas = []
@@ -1004,6 +1060,19 @@ class VistaConversion(VistaBase):
         )
         self.salida.pack(padx=15, pady=8)
 
+    NOMBRES_BASE = {2: "binario", 8: "octal", 10: "decimal", 16: "hexadecimal"}
+
+    def cargar_ejercicio(self, ejercicio):
+        datos = ejercicio["datos"]
+        a_otra_base = datos["base_entrada"] == 10
+
+        self.direccion.set("a_otra_base" if a_otra_base else "a_decimal")
+        self._actualizar_opciones_base()
+        self.base.set(self.NOMBRES_BASE[
+            datos["base_salida"] if a_otra_base else datos["base_entrada"]
+        ])
+        poner_texto(self.entrada_numero, datos["numero"])
+
     def _actualizar_opciones_base(self):
 
         opciones = (
@@ -1119,6 +1188,53 @@ class VistaVectoresMatrices(VistaBase):
             state="disabled",
         )
         self.salida.pack(fill="both", expand=True, padx=15, pady=(3, 10))
+
+    def cargar_ejercicio(self, ejercicio):
+        datos = ejercicio["datos"]
+        categoria = ejercicio["categoria"]
+
+        if categoria == "vectores":
+            self.operacion_vector.set(ejercicio["operacion"])
+            poner_texto(self.dimension_vector, len(datos["vectores"][0]))
+            poner_texto(self.cantidad_vectores, len(datos["vectores"]))
+            self._crear_campos_vectores()
+            for entradas, vector in zip(self.entradas_vectores, datos["vectores"]):
+                llenar_vector(entradas, vector)
+            if "objetivo" in datos:
+                llenar_vector(self.entradas_objetivo, datos["objetivo"])
+            if "escalar" in datos:
+                poner_texto(self.entrada_escalar_vector, datos["escalar"])
+            self.pestanas.select(self.tab_vectores)
+
+        elif categoria == "matrices":
+            self.operacion_matriz.set(ejercicio["operacion"])
+            poner_texto(self.filas_a, len(datos["matriz_a"]))
+            poner_texto(self.columnas_a, len(datos["matriz_a"][0]))
+            if "matriz_b" in datos:
+                poner_texto(self.filas_b, len(datos["matriz_b"]))
+                poner_texto(self.columnas_b, len(datos["matriz_b"][0]))
+            self._crear_campos_matrices()
+            llenar_entradas(self.entradas_matriz_a, datos["matriz_a"])
+            if "matriz_b" in datos:
+                llenar_entradas(self.entradas_matriz_b, datos["matriz_b"])
+            if "escalar" in datos:
+                poner_texto(self.entrada_escalar_matriz, datos["escalar"])
+            self.pestanas.select(self.tab_matrices)
+
+        elif categoria == "ecuacion-matricial":
+            poner_texto(self.ec_filas_a, len(datos["matriz_a"]))
+            poner_texto(self.ec_columnas_a, len(datos["matriz_a"][0]))
+            poner_texto(self.ec_columnas_b, len(datos["matriz_b"][0]))
+            self._crear_campos_ecuacion()
+            llenar_entradas(self.entradas_ecuacion_a, datos["matriz_a"])
+            llenar_entradas(self.entradas_ecuacion_b, datos["matriz_b"])
+            self.pestanas.select(self.tab_ecuacion)
+
+        elif categoria == "inversa":
+            poner_texto(self.inv_n, len(datos["matriz"]))
+            self._crear_campos_inversa()
+            llenar_entradas(self.entradas_inversa, datos["matriz"])
+            self.pestanas.select(self.tab_inversa)
 
     def _entrada_dimension(self, padre, texto, columna, valor="2"):
         tk.Label(padre, text=texto, bg=COLOR_FONDO).grid(
@@ -1485,23 +1601,23 @@ class VistaVectoresMatrices(VistaBase):
 METODOS = [
     (
         "Gauss-Jordan",
-        lambda p: VistaSistemaLineal(
-            p, resolver_gauss_jordan, "Gauss-Jordan"
+        lambda p, e=None: VistaSistemaLineal(
+            p, resolver_gauss_jordan, "Gauss-Jordan", e
         ),
     ),
     (
         "Pivoteo",
-        lambda p: VistaSistemaLineal(
-            p, resolver_pivote, "Pivoteo"
+        lambda p, e=None: VistaSistemaLineal(
+            p, resolver_pivote, "Pivoteo", e
         ),
     ),
     (
         "Conversión de bases",
-        lambda p: VistaConversion(p),
+        lambda p, e=None: VistaConversion(p, e),
     ),
     (
         "Vectores y matrices",
-        lambda p: VistaVectoresMatrices(p),
+        lambda p, e=None: VistaVectoresMatrices(p, e),
     ),
 ]
 
@@ -1520,6 +1636,11 @@ DESCRIPCIONES = {
 }
 
 NOMBRE_INICIO = "Inicio"
+NOMBRE_EJERCICIOS = "Ejercicios"
+NOMBRE_TARJETA_EJERCICIOS = "Ejercicios para práctica"
+DESCRIPCION_EJERCICIOS = (
+    "Elige un método y prueba ejercicios de ejemplo con los datos ya listos."
+)
 
 
 class VistaInicio(VistaBase):
@@ -1527,8 +1648,9 @@ class VistaInicio(VistaBase):
 
     COLUMNAS = 2
 
-    def __init__(self, padre, al_abrir):
+    def __init__(self, padre, al_abrir, al_ejercicios=None):
         self.al_abrir = al_abrir
+        self.al_ejercicios = al_ejercicios
         super().__init__(padre)
 
     def construir(self):
@@ -1583,6 +1705,211 @@ class VistaInicio(VistaBase):
             ).pack(pady=(6, 0))
 
             self.tarjetas[nombre] = boton
+
+        # Sección aparte de los métodos: separador + tarjeta de ejercicios.
+        Separador(self.padre).pack(fill="x", padx=60, pady=(24, 12))
+
+        tk.Label(
+            self.padre,
+            text="PRÁCTICA",
+            font=("Arial", 10, "bold"),
+            bg=COLOR_FONDO,
+            fg=COLOR_TEXTO,
+        ).pack(pady=(0, 6))
+
+        tarjeta = tk.Frame(self.padre, bg=COLOR_FONDO)
+        tarjeta.pack()
+
+        self.tarjeta_ejercicios = RoundedButton(
+            tarjeta,
+            text=NOMBRE_TARJETA_EJERCICIOS,
+            font=FUENTE_SUBTIT,
+            bg=COLOR_BOTON,
+            active_background=COLOR_BOTON_ACT,
+            cursor="hand2",
+            width=300,
+            height=48,
+            command=lambda: self.al_ejercicios(),
+        )
+        self.tarjeta_ejercicios.pack()
+
+        tk.Label(
+            tarjeta,
+            text=DESCRIPCION_EJERCICIOS,
+            font=FUENTE_NORMAL,
+            bg=COLOR_FONDO,
+            fg=COLOR_TEXTO,
+            wraplength=290,
+            justify="left",
+        ).pack(pady=(6, 0))
+
+
+class VistaEjercicios(VistaBase):
+    """Ejercicios para práctica: primero se elige el método y luego se ve la
+    lista de ejercicios, cada uno con su botón "Probar ejercicio"."""
+
+    def __init__(self, padre, al_probar, al_inicio):
+        self.al_probar = al_probar   # al_probar(clave_metodo, ejercicio)
+        self.al_inicio = al_inicio
+        self.catalogo = catalogo_ejercicios()
+        super().__init__(padre)
+
+    def construir(self):
+        self.contenido = tk.Frame(self.padre, bg=COLOR_FONDO)
+        self.contenido.pack(fill="both", expand=True)
+        self.mostrar_eleccion()
+
+    def _limpiar(self):
+        for widget in self.contenido.winfo_children():
+            widget.destroy()
+
+    def _boton_atras(self, texto, comando):
+        RoundedButton(
+            self.contenido, text=texto, command=comando, width=190,
+        ).pack(anchor="w", padx=20, pady=(14, 0))
+
+    # ---- Paso 1: pregunta y métodos como opciones ----
+
+    def mostrar_eleccion(self):
+        self._limpiar()
+        self._boton_atras("\u2190  Inicio", self.al_inicio)
+
+        tk.Label(
+            self.contenido, text="Ejercicios para práctica",
+            font=FUENTE_TITULO, bg=COLOR_FONDO, fg=COLOR_TEXTO,
+        ).pack(pady=(14, 4))
+
+        tk.Label(
+            self.contenido,
+            text="¿Para qué método te gustaría tener ejercicios de ejemplo "
+                 "y práctica?",
+            font=FUENTE_NORMAL, bg=COLOR_FONDO, fg=COLOR_TEXTO,
+            wraplength=560,
+        ).pack(pady=(0, 18))
+
+        self.opciones = {}
+        for clave, nombre in METODOS_EJERCICIOS:
+            fila = tk.Frame(self.contenido, bg=COLOR_FONDO)
+            fila.pack(pady=6)
+
+            boton = RoundedButton(
+                fila, text=nombre, font=FUENTE_SUBTIT, width=300, height=44,
+                command=lambda c=clave, n=nombre: self.mostrar_lista(c, n),
+            )
+            boton.pack()
+
+            tk.Label(
+                fila, text=f"{len(self.catalogo[clave])} ejercicios",
+                font=FUENTE_NORMAL, bg=COLOR_FONDO, fg=COLOR_TEXTO,
+            ).pack(pady=(3, 0))
+
+            self.opciones[clave] = boton
+
+    # ---- Paso 2: lista desplazable de ejercicios ----
+
+    def mostrar_lista(self, clave, nombre):
+        self._limpiar()
+        self._boton_atras("\u2190  Elegir otro método", self.mostrar_eleccion)
+
+        tk.Label(
+            self.contenido, text=f"Ejercicios de {nombre}",
+            font=FUENTE_TITULO, bg=COLOR_FONDO, fg=COLOR_TEXTO,
+        ).pack(pady=(10, 2))
+
+        tk.Label(
+            self.contenido,
+            text='Pulsa "Probar ejercicio" para cargar los datos en la '
+                 "calculadora.",
+            font=FUENTE_NORMAL, bg=COLOR_FONDO, fg=COLOR_TEXTO,
+        ).pack(pady=(0, 8))
+
+        marco = tk.Frame(self.contenido, bg=COLOR_FONDO)
+        marco.pack(fill="both", expand=True, padx=15, pady=(0, 10))
+
+        self.lienzo = tk.Canvas(marco, bg=COLOR_FONDO, highlightthickness=0)
+        barra = tk.Scrollbar(marco, orient="vertical", command=self.lienzo.yview)
+        self.lienzo.configure(yscrollcommand=barra.set)
+        barra.pack(side="right", fill="y")
+        self.lienzo.pack(side="left", fill="both", expand=True)
+
+        lista = tk.Frame(self.lienzo, bg=COLOR_FONDO)
+        ventana = self.lienzo.create_window((0, 0), window=lista, anchor="nw")
+        lista.bind(
+            "<Configure>",
+            lambda e: self.lienzo.configure(scrollregion=self.lienzo.bbox("all")),
+        )
+        self.lienzo.bind(
+            "<Configure>",
+            lambda e: self.lienzo.itemconfigure(ventana, width=e.width),
+        )
+        self._activar_rueda()
+
+        for i, ejercicio in enumerate(self.catalogo[clave]):
+            if i:
+                Separador(lista).pack(fill="x", padx=10, pady=6)
+            self._tarjeta_ejercicio(lista, clave, ejercicio)
+
+    def _tarjeta_ejercicio(self, padre, clave, ejercicio):
+        tarjeta = tk.Frame(padre, bg=COLOR_FONDO)
+        tarjeta.pack(fill="x", padx=10, pady=4)
+
+        cabecera = tk.Frame(tarjeta, bg=COLOR_FONDO)
+        cabecera.pack(anchor="w")
+        tk.Label(
+            cabecera, text=ejercicio["titulo"], font=FUENTE_SUBTIT,
+            bg=COLOR_FONDO, fg=COLOR_TEXTO,
+        ).pack(side="left")
+        EtiquetaDificultad(cabecera, ejercicio["dificultad"]).pack(
+            side="left", padx=10
+        )
+
+        tk.Label(
+            tarjeta, text=ejercicio["descripcion"], font=FUENTE_NORMAL,
+            bg=COLOR_FONDO, fg=COLOR_TEXTO, wraplength=620, justify="left",
+        ).pack(anchor="w", pady=(2, 4))
+
+        tk.Label(
+            tarjeta, text=ejercicio["vista_previa"], font=FUENTE_MONO,
+            bg=COLOR_FONDO, fg=COLOR_TEXTO, justify="left",
+        ).pack(anchor="w", pady=(0, 6))
+
+        RoundedButton(
+            tarjeta, text="Probar ejercicio", width=170,
+            command=lambda: self.al_probar(clave, ejercicio),
+        ).pack(anchor="w")
+
+    def _activar_rueda(self):
+        """Desplaza la lista con la rueda del ratón mientras el puntero está
+        sobre ella."""
+
+        lienzo = self.lienzo
+
+        def desplazar(evento):
+            try:
+                if evento.num == 4:
+                    lienzo.yview_scroll(-1, "units")
+                elif evento.num == 5:
+                    lienzo.yview_scroll(1, "units")
+                else:
+                    lienzo.yview_scroll(-1 if evento.delta > 0 else 1, "units")
+            except tk.TclError:
+                pass  # El lienzo ya se destruyó.
+
+        def conectar(_):
+            lienzo.bind_all("<MouseWheel>", desplazar)
+            lienzo.bind_all("<Button-4>", desplazar)
+            lienzo.bind_all("<Button-5>", desplazar)
+
+        def desconectar(_=None):
+            for secuencia in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+                try:
+                    lienzo.unbind_all(secuencia)
+                except tk.TclError:
+                    pass
+
+        lienzo.bind("<Enter>", conectar)
+        lienzo.bind("<Leave>", desconectar)
+        lienzo.bind("<Destroy>", desconectar)
 
 
 # ======================================================
@@ -1657,6 +1984,21 @@ class Aplicacion:
             boton.pack(fill="x", padx=PAD, pady=4)
             self.botones_sidebar[nombre] = boton
 
+        Separador(self.sidebar).pack(fill="x", padx=PAD + 4, pady=6)
+
+        boton_ejercicios = RoundedButton(
+            self.sidebar,
+            text="\u270E  " + NOMBRE_EJERCICIOS,
+            font=FUENTE_NORMAL,
+            bg=COLOR_BOTON,
+            active_background=COLOR_BOTON_ACT,
+            cursor="hand2",
+            width=180,
+            command=self.mostrar_ejercicios
+        )
+        boton_ejercicios.pack(fill="x", padx=PAD, pady=4)
+        self.botones_sidebar[NOMBRE_EJERCICIOS] = boton_ejercicios
+
         # Cambio de tema, siempre visible en la parte inferior del sidebar.
         self.boton_tema = RoundedButton(
             self.sidebar,
@@ -1672,16 +2014,34 @@ class Aplicacion:
 
     def mostrar_inicio(self):
         self.mostrar_vista(
-            lambda padre: VistaInicio(padre, self.mostrar_vista),
+            lambda padre: VistaInicio(
+                padre, self.mostrar_vista, self.mostrar_ejercicios
+            ),
             NOMBRE_INICIO,
         )
 
-    def mostrar_vista(self, fabrica, nombre=None):
+    def mostrar_ejercicios(self):
+        self.mostrar_vista(
+            lambda padre: VistaEjercicios(
+                padre, self.abrir_ejercicio, self.mostrar_inicio
+            ),
+            NOMBRE_EJERCICIOS,
+        )
+
+    def abrir_ejercicio(self, clave, ejercicio):
+        """Abre la vista del método con los datos del ejercicio cargados."""
+        nombre = dict(METODOS_EJERCICIOS)[clave]
+        self.mostrar_vista(dict(METODOS)[nombre], nombre, ejercicio)
+
+    def mostrar_vista(self, fabrica, nombre=None, ejercicio=None):
 
         for widget in self.contenedor.winfo_children():
             widget.destroy()
 
-        self.vista_actual = fabrica(self.contenedor)
+        if ejercicio is None:
+            self.vista_actual = fabrica(self.contenedor)
+        else:
+            self.vista_actual = fabrica(self.contenedor, ejercicio)
         self._resaltar_boton(nombre)
 
     # ==================================================
@@ -1734,6 +2094,10 @@ class Aplicacion:
             widget.aplicar_tema(fondo_de(widget))
         elif isinstance(widget, Separador):
             widget.config(bg=nuevo["separador"])
+        elif isinstance(widget, EtiquetaDificultad):
+            widget.config(bg=fondo_de(widget), fg=nuevo["dif_" + widget.nivel])
+        elif isinstance(widget, tk.Canvas):
+            widget.config(bg=fondo_de(widget))
         elif isinstance(widget, tk.Frame):
             widget.config(bg=fondo_de(widget))
         elif isinstance(widget, tk.Label):

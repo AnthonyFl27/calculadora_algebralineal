@@ -32,6 +32,15 @@ class InicioTests(unittest.TestCase):
     def activos(self):
         return [n for n, b in self.app.botones_sidebar.items() if b.activo]
 
+    def test_inicio_tiene_la_tarjeta_de_ejercicios_bajo_un_separador(self):
+        hijos = self.app.contenedor.winfo_children()
+        self.assertTrue(any(isinstance(h, gui.Separador) for h in hijos))
+        self.assertEqual(
+            self.app.vista_actual.tarjeta_ejercicios.text,
+            gui.NOMBRE_TARJETA_EJERCICIOS,
+        )
+        self.assertIn(gui.NOMBRE_EJERCICIOS, self.app.botones_sidebar)
+
     def test_abre_en_inicio_con_una_tarjeta_por_modulo(self):
         self.assertIsInstance(self.app.vista_actual, gui.VistaInicio)
         self.assertEqual(self.activos(), [gui.NOMBRE_INICIO])
@@ -54,7 +63,10 @@ class InicioTests(unittest.TestCase):
         self.app.alternar_tema()
         oscuro = gui.PALETAS["oscuro"]
         for hijo in self.app.contenedor.winfo_children():
-            self.assertEqual(hijo.cget("bg"), oscuro["fondo"])
+            if isinstance(hijo, gui.Separador):
+                self.assertEqual(hijo.cget("bg"), oscuro["separador"])
+            else:
+                self.assertEqual(hijo.cget("bg"), oscuro["fondo"])
         self.assertEqual(
             self.app.vista_actual.tarjetas["Pivoteo"].bg, oscuro["boton"]
         )

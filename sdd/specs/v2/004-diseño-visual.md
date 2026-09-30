@@ -52,9 +52,8 @@ mostrado.
 
 - Los colores se manejan como **variables CSS** (`:root` para el claro y un
   bloque para el oscuro, activado con un atributo en `<html>`, por ejemplo
-  `data-theme="dark"`). Hoy hay unos 60 colores escritos directamente en el
-  CSS fuera de `:root` (hex y `rgba`); todos deben pasar a variables para que
-  el tema los controle.
+  `data-theme="dark"`). Los ~60 colores que había escritos directamente en el
+  CSS (hex y `rgba`) pasan a variables para que el tema los controle.
 - **Tema inicial:** el que el usuario eligió la última vez (guardado en
   `localStorage`); si no hay elección guardada, se sigue la preferencia del
   sistema (`prefers-color-scheme`). El acceso a `localStorage` va protegido
@@ -65,8 +64,8 @@ mostrado.
 
 ### Interfaz de escritorio (`gui.py`)
 
-- Hoy los colores son constantes de módulo (`COLOR_FONDO`, `COLOR_SIDEBAR`,
-  `COLOR_BOTON`, `COLOR_BOTON_ACT`, `COLOR_TEXTO_SB`) y hay valores escritos
+- Los colores eran constantes de módulo (`COLOR_FONDO`, `COLOR_SIDEBAR`,
+  `COLOR_BOTON`, `COLOR_BOTON_ACT`, `COLOR_TEXTO_SB`) y había valores escritos
   directamente (`bg="white"` en las áreas de texto, colores del botón
   deshabilitado en `RoundedButton`, etc.). Se centralizan en un diccionario de
   temas (claro/oscuro) y el resto del código deja de usar colores sueltos.
@@ -148,7 +147,7 @@ mostrado.
 
 ### Menú de inicio
 
-**Estado de este cambio: implementado** (pendiente el visto bueno visual). Archivos: `gui.py`, `index.html` (no toca
+Archivos: `gui.py`, `index.html` (no toca
 `metodos/` ni `server.py`). Se mantiene en ambas interfaces por la regla de
 sincronía de `AGENTS.md`.
 

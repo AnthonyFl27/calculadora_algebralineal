@@ -18,16 +18,15 @@ Spec-Driven Development:
    librerías matemáticas externas, reutilizando `general_metodos.py` cuando
    aplique, etc.).
 3. **Integrar en las interfaces.** Se conecta el módulo nuevo a las dos
-   interfaces, sin duplicar cálculos en ninguna:
-   - **Escritorio:** entrada en el sidebar de `gui.py`, reutilizando los
-     componentes visuales existentes (`RoundedButton`, paleta de colores,
-     fuentes, área de resultados).
-   - **Web:** endpoint `POST /api/...` en `server.py` (con su bloque de
-     datos ya formateado) y su vista en `index.html`.
-4. **Probar y cerrar el ciclo.** Se corren las pruebas de `tests/`, se
-   prueba manualmente en ambas interfaces (`python gui.py` y
-   `python server.py`) y se marca la spec como `implementado` (ver tabla de
-   seguimiento) antes de pasar al siguiente módulo.
+   interfaces, sin duplicar cálculos en ninguna. El detalle de qué hay que
+   tocar está en "Checklist para un método o módulo nuevo" (más abajo):
+   sidebar, tarjeta de Inicio, salida de resultados, consola del servidor,
+   ejercicios de práctica, temas y documentación.
+4. **Probar y cerrar el ciclo.** Se corren las pruebas de `tests/`
+   (`python -m unittest discover -s tests`), se prueba manualmente en ambas
+   interfaces (`python gui.py` y `python server.py`) y se marca la spec como
+   `implementado` (ver tabla de seguimiento) antes de pasar al siguiente
+   módulo.
 
 No se trabajan varios módulos nuevos a la vez sin terminar el ciclo del
 anterior, salvo que el usuario indique lo contrario explícitamente.
@@ -35,7 +34,9 @@ anterior, salvo que el usuario indique lo contrario explícitamente.
 ## Organización de archivos dentro de `sdd/`
 
 - `sdd/plan.md` — este archivo. Metodología, convenciones y seguimiento.
-- `sdd/task.md` — desglose de tareas por spec y su avance.
+- `sdd/task.md` — solo lo **en curso o pendiente**: tareas de la spec que se
+  está trabajando y pendientes abiertos. Al cerrar una spec, su bloque se
+  borra (el detalle vive en la spec y en la tabla de seguimiento de abajo).
 - `sdd/specs/vN/NNN-nombre-del-modulo.md` — una spec por módulo o
   funcionalidad, agrupada por versión. `v1/` contiene las specs ya
   implementadas; `v2/` es para las nuevas. La numeración (`001`, `002`,
@@ -48,36 +49,118 @@ anterior, salvo que el usuario indique lo contrario explícitamente.
     contexto de referencia (para el LLM y para quien retome el proyecto),
     documentando qué se decidió construir y por qué.
 
-Las specs no se reescriben para "quitarles" contenido ya implementado; solo
+Las specs ya implementadas no se reescriben ni se les quita contenido; solo
 se actualiza su estado. Si un módulo cambia de comportamiento más adelante,
 se agrega una sección "Cambios posteriores" a su spec en vez de reescribir la
-original.
+original. Sirven como contexto histórico confiable de lo que la calculadora
+hace.
 
 ## Convenciones generales del proyecto
 
-(Aplican a todos los módulos, presentes y futuros; se repiten aquí para no
-depender de recordarlas spec por spec.)
+Aplican a todos los módulos, presentes y futuros.
 
-- Sin librerías matemáticas externas (NumPy, SciPy, SymPy, etc.). Solo
-  librería estándar de Python (`fractions`, `math` para UI, etc.).
-- Un archivo por módulo dentro de `metodos/`. La lógica matemática vive ahí,
-  nunca en `gui.py`, `server.py` ni `index.html`.
-- Reutilizar `metodos/general_metodos.py` para formateo de números,
-  impresión de matrices, comprobaciones, etc., en vez de duplicar lógica.
-- Todo módulo debe poder mostrar el procedimiento paso a paso, no solo el
-  resultado final.
-- Ambas interfaces mantienen el mismo diseño: sidebar a la izquierda para
-  elegir método/módulo, panel derecho con el formulario y los resultados.
-  `gui.py` reutiliza sus componentes visuales; `index.html` es un solo
-  archivo (HTML, CSS y JS) sin librerías externas.
-- Un módulo nuevo = una entrada nueva en el sidebar de cada interfaz. Los
-  métodos existentes nunca se reemplazan, solo se agregan nuevos.
-- Toda funcionalidad debe existir en ambas interfaces. `server.py` solo
-  traduce entre JSON y `metodos/`; `index.html` solo presenta.
-- Validación de errores amigable, nunca tracebacks crudos: `messagebox` en
-  `gui.py`; en la web, `server.py` responde `{"error": "..."}` con código 400
-  y `index.html` muestra el mensaje.
-- Cada módulo de `metodos/` nuevo debe tener pruebas en `tests/`.
+- **Sin librerías matemáticas externas** (NumPy, SciPy, SymPy, etc.): solo
+  librería estándar de Python.
+- **La lógica vive en `metodos/`**, un archivo por módulo, reutilizando
+  `general_metodos.py`. `gui.py`, `server.py` e `index.html` solo presentan:
+  `server.py` traduce entre JSON y `metodos/`; `index.html` nunca calcula.
+- **Dos interfaces sincronizadas:** toda funcionalidad existe en `gui.py` y en
+  `server.py` + `index.html`, con el mismo diseño (sidebar + panel) y sin
+  duplicar cálculos. Los métodos existentes nunca se reemplazan, solo se
+  agregan nuevos.
+- **Procedimiento paso a paso**, no solo el resultado final.
+- **Errores amigables, nunca tracebacks:** `messagebox` en la GUI; en la web,
+  `{"error": "..."}` con código 400 y un modal.
+- **Colores solo en la paleta central** de cada interfaz (`PALETAS` en
+  `gui.py`, variables CSS en `index.html`).
+- **Pruebas** en `tests/` para cada módulo nuevo, y **ejercicios de práctica**
+  para cada método nuevo.
+
+## Checklist para un método o módulo nuevo
+
+Cada vez que se pida un método, operación o módulo nuevo (ejemplo: "agrega
+el método de Cramer"), el LLM debe cubrir **todo** lo siguiente, no solo la
+parte matemática. Se usa como lista de tareas al redactar la spec y su bloque
+en `sdd/task.md`.
+
+### 1. Lógica (`metodos/`)
+
+- [ ] Archivo nuevo `metodos/<modulo>.py` con docstring de módulo; reutiliza
+      `general_metodos.py` (fracciones, `formatear()`, comprobaciones) y los
+      motores existentes (`gauss_jordan.py`, `pivote.py`) en vez de
+      reimplementarlos.
+- [ ] Devuelve un diccionario estándar con el resultado **y los pasos** del
+      procedimiento (tipo, entradas, pasos, resultado, comprobación cuando
+      aplique), y errores controlados con `ValueError` (mensajes en español).
+- [ ] Pruebas en `tests/` (casos normales, casos borde y errores).
+
+### 2. Cómo se imprime el resultado (las dos interfaces)
+
+- [ ] **Escritorio:** función `procedimiento_texto()` (o equivalente) que
+      muestra pasos y resultado en el área de texto monoespaciada, con
+      fracción o decimal según el modo elegido.
+- [ ] **Servidor:** endpoint `POST /api/<ruta>` en `server.py` que solo
+      traduce JSON ↔ `metodos/`; arma un *bloque* con celdas ya formateadas
+      (`_armar_bloque_sistema` / `_armar_bloque_operacion` o una función
+      nueva) y responde `{"ok": true, ...}` o `{"error": "..."}` con 400.
+- [ ] **Web:** la vista en `index.html` dibuja tablas reales por paso
+      (stepper, pivote y filas afectadas resaltados), tarjeta de resultado
+      (verde = éxito/única, ámbar = infinitas, rojo = error/incompatible) y
+      tarjeta de comprobación, reutilizando los componentes existentes.
+      `index.html` solo presenta; nunca calcula.
+- [ ] Modo de visualización **fracciones / decimales** disponible y respetado
+      en ambas interfaces.
+
+### 3. Consola del servidor
+
+- [ ] Agregar la ruta a `DESTINO` y su caso en `_descripcion_peticion()` de
+      `server.py`, para que la consola muestre la función de `metodos/`
+      usada, la entrada y la salida (o el error) de cada petición, y aparezca
+      en el banner de arranque.
+
+### 4. Navegación y diseño
+
+- [ ] **Escritorio:** entrada en la lista `METODOS` de `gui.py` (el sidebar y
+      las tarjetas de Inicio salen de ahí) y su texto en `DESCRIPCIONES`.
+- [ ] **Web:** entrada en `METODOS` de `index.html` con `clave`, `nombre`,
+      `icono` (añadirlo a `ICONOS` si es nuevo), `descripcion` y `vista`;
+      el sidebar y las tarjetas de Inicio salen de esa lista.
+- [ ] Mismo nombre y misma descripción en ambas interfaces.
+- [ ] Se ve bien en modo claro y oscuro (contraste 4.5:1 en oscuro) y el
+      cambio de tema no pierde datos ni resultados.
+- [ ] Vista adaptable (web: pantallas angostas y sidebar replegado; GUI: el
+      recoloreo por árbol de widgets cubre los widgets nuevos; si se crea un
+      widget con color propio, registrarlo en `_recolorear`).
+
+### 5. Ejercicios de práctica
+
+- [ ] Agregar el método a `METODOS_EJERCICIOS` y sus ejercicios a `EJERCICIOS`
+      en `metodos/ejercicios.py` (al menos 5; con casos básico, intermedio y
+      avanzado y los casos límite del método, p. ej. sin solución). Cada uno:
+      `id`, `titulo`, `dificultad`, `descripcion`, `datos` y
+      `resultado_esperado`; añadir su caso a `vista_previa()`.
+- [ ] Hacer que la vista del método acepte un `ejercicio` opcional y cargue
+      sus datos **sin resolver** (`cargar_ejercicio` en `gui.py`; parámetro
+      `ejercicio` de la vista en `index.html`), sin cambiar su comportamiento
+      por defecto.
+- [ ] Pruebas: extender `tests/test_ejercicios.py` (cada ejercicio coincide con
+      lo que calcula `metodos/`) y `tests/test_gui_ejercicios.py` (se carga y
+      se resuelve sin errores).
+
+### 6. Documentación y cierre
+
+- [ ] Spec nueva `sdd/specs/vN/NNN-nombre.md` (`Estado: pendiente`), fila en
+      la tabla de seguimiento y su bloque en `sdd/task.md` **antes** de
+      programar.
+- [ ] Al terminar: spec en `implementado` (con "Cambios y decisiones tomadas
+      al implementar" si hubo), fila actualizada, bloque borrado de
+      `sdd/task.md` (dejando solo lo que siga abierto) y `AGENTS.md`
+      actualizado (funcionalidades, archivos, endpoints, pruebas).
+- [ ] Si el cambio es solo visual, se documenta en "Cambios posteriores" de la
+      spec 004 (diseño visual); si cambia el comportamiento de un módulo,
+      en la sección "Cambios posteriores" de la spec de ese módulo.
+- [ ] Pendiente del usuario: visto bueno visual en su máquina (las pruebas
+      con `jsdom` y de Tkinter validan comportamiento, no apariencia).
 
 ## Seguimiento de módulos
 
@@ -90,21 +173,9 @@ depender de recordarlas spec por spec.)
 | 002 (2.4) | `sdd/specs/v1/002-vectores-matrices.md` | Matriz inversa (cambio posterior) | implementado |
 | 003 | `sdd/specs/v1/003-diseño-visual-html.md` | Diseño visual web (index.html) | implementado |
 | 004 | `sdd/specs/v2/004-diseño-visual.md` | Diseño visual: modo oscuro/claro y mejoras de interfaz (GUI y web) | implementado |
+| 005 | `sdd/specs/v2/005-ejercicios-practica.md` | Ejercicios para práctica (GUI y web) | implementado |
 
-Esta tabla se actualiza cada vez que se agrega una spec nueva o se cierra el
-ciclo de una existente.
-
-## Cómo se agregan módulos nuevos a futuro
-
-Cuando el usuario traiga un módulo nuevo:
-
-1. Se crea `sdd/specs/v2/NNN-nombre.md` (o la carpeta de la versión en
-   curso) con su especificación, usando el siguiente número disponible.
-2. Se agrega una fila a la tabla de seguimiento con estado `pendiente` y
-   sus tareas a `sdd/task.md`.
-3. Se sigue el ciclo de la sección "Metodología" hasta marcarlo
-   `implementado`.
-
-Las specs ya implementadas no se tocan salvo para documentar cambios de
-comportamiento explícitamente pedidos; sirven como contexto histórico
-confiable de lo que la calculadora ya hace.
+Esta tabla es el único seguimiento de módulos: se actualiza cada vez que se
+agrega una spec nueva (estado `pendiente`) o se cierra el ciclo de una
+existente. Un módulo nuevo sigue el ciclo de "Metodología" y el checklist de
+arriba.

@@ -30,6 +30,7 @@ from metodos.general_metodos import formatear
 from metodos.gauss_jordan import resolver as resolver_gauss_jordan
 from metodos.pivote import resolver as resolver_pivote
 from metodos.conversion import NOMBRES_BASE, resolver as resolver_conversion
+from metodos.ejercicios import METODOS_EJERCICIOS, catalogo as catalogo_ejercicios
 from metodos.vectores_matrices import (
     combinacion_lineal,
     ecuacion_matricial,
@@ -544,6 +545,21 @@ class Manejador(BaseHTTPRequestHandler):
             self._enviar_archivo(RAIZ / "index.html", "text/html; charset=utf-8")
         elif ruta == "/api/estado":
             self._enviar_json({"ok": True})
+        elif ruta == "/api/ejercicios":
+            ejercicios = catalogo_ejercicios()
+            self._enviar_json({
+                "ok": True,
+                "metodos": [
+                    {"clave": clave, "nombre": nombre}
+                    for clave, nombre in METODOS_EJERCICIOS
+                ],
+                "ejercicios": ejercicios,
+            })
+            total = sum(len(lista) for lista in ejercicios.values())
+            self._detalle = {"calculo": (
+                "metodos.ejercicios.catalogo", "",
+                f"{total} ejercicios en {len(ejercicios)} métodos",
+            )}
         elif ruta == "/favicon.ico":
             self.send_response(204)
             self.end_headers()
@@ -614,6 +630,8 @@ def _banner(puerto):
     ]
 
     lineas.append([("GET  ", "azul"), ("/api/estado", ), ("  (sin registro)", "tenue")])
+    lineas.append([("GET  ", "azul"), (f"{'/api/ejercicios':<24}", ),
+                   ("metodos.ejercicios.catalogo", "tenue")])
 
     for ruta, destino in DESTINO.items():
         lineas.append([("POST ", "magenta"), (f"{ruta:<24}", ), (destino, "tenue")])

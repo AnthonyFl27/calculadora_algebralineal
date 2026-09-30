@@ -70,9 +70,7 @@ simples apoyándose en los métodos de resolución de sistemas ya construidos
 
 ### 2.4 — Matriz inversa
 
-**Estado de este cambio:** implementado (pendiente solo el visto bueno
-visual del usuario). El `Estado` de arriba se conserva: 2.1–2.3 ya estaban
-implementados.
+**Estado:** implementado.
 
 #### Propósito
 
@@ -149,14 +147,8 @@ defecto.
 - Fuera de alcance: cálculo de determinante o método de la adjunta (no se
   pidió; el criterio de existencia es el rango por pivotes).
 
-#### Casos de prueba esperados
+#### Pruebas
 
-| Caso | Resultado esperado |
-|------|--------------------|
-| `[[1,-2,-1],[-1,5,6],[5,-4,5]]` (imagen) | No existe (singular) |
-| `[[2,1],[5,3]]` | `[[3,-1],[-5,2]]` |
-| `[[0,1],[1,0]]` (requiere intercambio) | ella misma |
-| `[[4]]` (1×1) | `[[1/4]]` |
-| Matriz con fracciones, p. ej. `[[1/2,0],[0,1/3]]` | `[[2,0],[0,3]]` |
-| Matriz 2×3 (no cuadrada) | Error controlado |
-| Matriz con una fila de ceros | No existe |
+Los casos (matriz de la imagen, 2×2, con intercambio de filas, 1×1, con
+fracciones, no cuadrada y con fila de ceros, con ambos métodos) están en
+`tests/test_vectores_matrices.py`.

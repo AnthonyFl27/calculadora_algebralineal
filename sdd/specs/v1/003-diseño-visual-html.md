@@ -27,13 +27,14 @@ Conversión de bases, Vectores y matrices), igual que hace `gui.py` hoy.
   (`COLOR_FONDO`, `COLOR_SIDEBAR`, `COLOR_BOTON`, `COLOR_BOTON_ACT`,
   `FUENTE_TITULO`, `FUENTE_MONO`, etc.), de modo que ambas interfaces se
   sientan como la misma calculadora.
-- Debe incluir las mismas 4 entradas del sidebar que existen hoy en
-  `METODOS` dentro de `gui.py`: Gauss-Jordan, Pivoteo, Conversión de bases, y
+- Debe incluir las mismas entradas del sidebar que `METODOS` de `gui.py` (en
+  esta primera versión, 4: Gauss-Jordan, Pivoteo, Conversión de bases, y
   Vectores y matrices (con sus sub-vistas de vectores, matrices, y ecuación
   `A·X = B`), con el mismo comportamiento funcional: capturar dimensiones,
   generar el formulario/matriz dinámicamente, resolver, mostrar pasos,
   comprobar resultado donde aplique, y elegir formato de salida
-  (fracción/decimal).
+  (fracción/decimal). Las entradas posteriores (Inicio, Ejercicios) se
+  documentan en las specs 004 y 005.
 
 ## Funcionalidad 2 — Servidor local que expone `metodos/`
 
@@ -66,19 +67,15 @@ Conversión de bases, Vectores y matrices), igual que hace `gui.py` hoy.
   `server.py` es responsable de convertirlos a una representación
   serializable (texto) antes de enviarlos como JSON, sin alterar la lógica
   de cálculo en sí.
-- `gui.py` y los métodos que ya expone (nunca se reemplazan ni se tocan)
-  sirven como referencia funcional exacta de qué debe hacer cada vista
+- `gui.py` sirve como referencia funcional de qué debe hacer cada vista
   equivalente en la web.
 
 ## Cambios posteriores — Mejora visual e interactividad de los pasos
 
-La primera versión de `index.html` cumple el objetivo funcional (réplica
-exacta de `gui.py`, delegando todo el cálculo en `metodos/`), pero su
-presentación se siente básica: el procedimiento paso a paso se muestra
-como un único bloque de texto monoespaciado dentro de un `<pre>`, igual
-que el widget `Text` de Tkinter. Eso es aceptable para una interfaz de
-escritorio, pero en la web se puede aprovechar mejor el medio sin perder
-la simplicidad ni las restricciones del proyecto.
+La primera versión de `index.html` mostraba el procedimiento como un único
+bloque de texto monoespaciado (`<pre>`), igual que la GUI. En la web se
+aprovecha mejor el medio sin perder la simplicidad ni las restricciones del
+proyecto.
 
 **Objetivo de esta mejora:** que la calculadora web se sienta más
 interactiva y menos plana al mostrar el procedimiento, manteniendo el
@@ -129,8 +126,7 @@ dependencias externas, sin tocar la lógica matemática de `metodos/`).
 
 Como `index.html` depende por completo de `server.py` (no funciona en modo
 standalone, ver Funcionalidad 2), se agregó un indicador visual en la
-esquina inferior izquierda del sidebar, justo encima de la nota "Requiere:
-python server.py", que muestra si el servidor sigue respondiendo:
+esquina inferior izquierda del sidebar, que muestra si el servidor sigue respondiendo:
 
 - Un punto de color (`.estado-punto`) verde (`conectado`) o rojo
   (`desconectado`), con el texto "Server connected" / "Server disconnected"
