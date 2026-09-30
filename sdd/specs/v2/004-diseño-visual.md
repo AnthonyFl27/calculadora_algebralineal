@@ -1,13 +1,18 @@
 Estado: implementado
 
-# 004 — Modo oscuro y modo claro
+# 004 — Diseño visual (temas y mejoras de interfaz)
 
-**Archivos destino:** `gui.py`, `index.html`
-(no toca `metodos/` ni `server.py`: es solo presentación).
+**Archivos destino:** `gui.py`, `index.html` y, para la consola, `server.py`
+(no toca `metodos/`: es solo presentación).
+
+Esta spec es la **casa de los cambios de diseño visual** de la v2. Empezó con
+el modo oscuro/claro y ahí sigue su detalle; los ajustes visuales posteriores
+(sidebar, pestaña del navegador, consola del servidor, etc.) se registran en
+"Cambios posteriores".
 
 ## Propósito
 
-Permitir que el usuario cambie entre un **tema claro** (el diseño actual) y un
+La primera funcionalidad de esta spec: permitir que el usuario cambie entre un **tema claro** (el diseño actual) y un
 **tema oscuro** en las dos interfaces de la calculadora, `gui.py` (Tkinter) y
 `index.html` (web), con un control visible y fácil de encontrar. El cambio es
 puramente visual: no altera ningún cálculo, dato capturado ni resultado
@@ -118,3 +123,21 @@ mostrado.
 | Web/GUI: recorrer todas las vistas y pestañas en oscuro | Ninguna zona queda con colores del tema claro |
 | Web/GUI: tarjetas verde/ámbar/roja, pivote resaltado, botón deshabilitado | Se distinguen y cumplen contraste en ambos temas |
 | Cambiar de tema varias veces seguidas | Sin errores ni acumulación de widgets/estilos |
+
+## Cambios posteriores
+
+- **Web: sidebar replegable.** Se añadió un botón con ícono de panel lateral en la cabecera del
+  sidebar, junto a "Calculadora", que lo repliega a una franja de 56 px (solo
+  queda el botón) y lo vuelve a desplegar. El estado se recuerda en
+  `localStorage` (clave `sidebar-colapsado`, protegido con `try/catch`). Solo
+  afecta a `index.html`; la GUI no lo incluye.
+- **Web: se quitó la nota "Requiere: python server.py"** del pie del sidebar;
+  el indicador "Server connected/disconnected" se conserva.
+- **Web: título e ícono de la pestaña.** El título es "Calculadora" (antes
+  "Calculadora de Matrices") y se añadió un ícono de calculadora (SVG
+  incrustado como `data:` URI en `index.html`, color de acento `#1abc9c`).
+- **Consola de `server.py`.** El arranque muestra un banner con la URL y los
+  endpoints, y cada petición se registra en una línea (hora, método, ruta,
+  estado, tiempo, bytes) con el detalle del cálculo (función de `metodos/`,
+  entrada y salida) o del error. `/api/estado` no se registra. Solo
+  presentación: no cambia las respuestas ni `metodos/`.

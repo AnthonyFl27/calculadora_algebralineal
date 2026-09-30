@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Calculadora de Matrices</title>
+<title>Calculadora</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='5' y='2' width='22' height='28' rx='4' fill='%231abc9c'/><rect x='9' y='6' width='14' height='6' rx='1.5' fill='%23fff'/><g fill='%23fff'><circle cx='11' cy='17' r='1.8'/><circle cx='16' cy='17' r='1.8'/><circle cx='21' cy='17' r='1.8'/><circle cx='11' cy='22' r='1.8'/><circle cx='16' cy='22' r='1.8'/><circle cx='21' cy='22' r='1.8'/><circle cx='11' cy='26.2' r='1.8'/><circle cx='16' cy='26.2' r='1.8'/><circle cx='21' cy='26.2' r='1.8'/></g></svg>">
 <script>
 /* Aplica el tema antes de pintar (evita el parpadeo del tema claro). */
 (function () {
@@ -163,11 +164,43 @@
     gap: 6px;
   }
 
+  .sidebar-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 0 14px 6px;
+  }
+
   .sidebar h1 {
     font-size: 15px;
     font-weight: bold;
-    margin: 0 0 14px 6px;
+    margin: 0;
   }
+
+  .btn-colapsar {
+    background: transparent;
+    color: var(--color-texto-sb);
+    border: none;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s ease;
+  }
+
+  .btn-colapsar:hover { background: var(--color-boton); }
+
+  /* Sidebar replegado: solo queda visible el botón para desplegarlo. */
+  .sidebar.colapsado { width: 56px; padding: 16px 0; align-items: center; }
+  .sidebar.colapsado .sidebar-cabecera { margin: 0; justify-content: center; }
+  .sidebar.colapsado h1,
+  .sidebar.colapsado > :not(.sidebar-cabecera) { display: none; }
 
   .nav-btn {
     background: var(--color-boton);
@@ -183,13 +216,6 @@
 
   .nav-btn:hover { background: var(--color-boton-act); }
   .nav-btn.active { background: var(--color-boton-act); font-weight: bold; }
-
-  .sidebar-nota {
-    font-size: 10px;
-    color: var(--texto-sb-suave);
-    padding: 6px;
-    line-height: 1.4;
-  }
 
   .btn-tema {
     margin-top: auto;
@@ -933,7 +959,10 @@
 
 <div class="app">
   <nav class="sidebar" id="sidebar">
-    <h1>Calculadora</h1>
+    <div class="sidebar-cabecera">
+      <h1>Calculadora</h1>
+      <!-- Botón de replegar/desplegar insertado por JS -->
+    </div>
     <!-- Botones de navegación insertados por JS -->
   </nav>
 
@@ -1160,7 +1189,40 @@
   const panel = document.getElementById("panel");
   const sidebar = document.getElementById("sidebar");
 
+  function leerSidebarColapsado() {
+    try { return localStorage.getItem("sidebar-colapsado") === "1"; } catch (e) { return false; }
+  }
+
+  function aplicarSidebarColapsado(colapsado, guardar) {
+    sidebar.classList.toggle("colapsado", colapsado);
+    const boton = sidebar.querySelector(".btn-colapsar");
+    if (boton) {
+      const accion = colapsado ? "Mostrar menú" : "Ocultar menú";
+      boton.title = accion;
+      boton.setAttribute("aria-label", accion);
+      boton.setAttribute("aria-expanded", String(!colapsado));
+    }
+    if (guardar) {
+      try { localStorage.setItem("sidebar-colapsado", colapsado ? "1" : "0"); } catch (e) {}
+    }
+  }
+
+  const ICONO_SIDEBAR =
+    '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" ' +
+    'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M10 4v16M6.5 9h.01M6.5 12h.01"/></svg>';
+
+  function crearBotonColapsar() {
+    const boton = el("button", { class: "btn-colapsar", html: ICONO_SIDEBAR });
+    boton.type = "button";
+    boton.onclick = () => aplicarSidebarColapsado(!sidebar.classList.contains("colapsado"), true);
+    sidebar.querySelector(".sidebar-cabecera").appendChild(boton);
+  }
+
   function construirSidebar() {
+    crearBotonColapsar();
+    aplicarSidebarColapsado(leerSidebarColapsado(), false);
+
     for (const metodo of METODOS) {
       const boton = el("button", {
         class: "nav-btn",
@@ -1180,11 +1242,6 @@
       puntoEstado,
       textoEstado,
     ]));
-
-    sidebar.appendChild(el("div", {
-      class: "sidebar-nota",
-      texto: "Requiere: python server.py",
-    }));
 
     iniciarMonitorEstado(puntoEstado, textoEstado);
   }
