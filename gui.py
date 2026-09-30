@@ -56,6 +56,7 @@ PALETAS = {
         "boton": "#34495e",
         "boton_act": "#1abc9c",
         "texto_sb": "#ffffff",
+        "separador": "#4d6278",        # línea entre Inicio y los métodos
         "texto": "#000000",
         "superficie": "#ffffff",       # áreas de texto y campos de captura
         "borde": "#d9d9d9",            # anillo de foco / bordes de widgets
@@ -75,6 +76,7 @@ PALETAS = {
         "boton": "#2f3b46",
         "boton_act": "#0f7f6b",
         "texto_sb": "#ffffff",
+        "separador": "#34404a",
         "texto": "#e6eaed",
         "superficie": "#242b31",
         "borde": "#4a5660",
@@ -343,6 +345,15 @@ class RoundedButton(tk.Canvas):
         if self.state == "normal":
             self.bg = self.active_bg if self.activo else COLOR_BOTON
             self.draw_button()
+
+class Separador(tk.Frame):
+    """Línea fina del sidebar; se recolorea con la clave "separador"."""
+
+    def __init__(self, padre):
+        super().__init__(
+            padre, height=1, bg=PALETAS[TEMA_ACTUAL]["separador"]
+        )
+
 
 class VistaBase:
     """Clase base de las vistas montadas en el panel derecho."""
@@ -1495,6 +1506,85 @@ METODOS = [
 ]
 
 
+# Descripción de cada módulo para las tarjetas de Inicio (misma clave que
+# el nombre usado en METODOS y en el sidebar).
+DESCRIPCIONES = {
+    "Gauss-Jordan": "Resuelve sistemas de ecuaciones lineales reduciendo "
+                    "la matriz aumentada, paso a paso.",
+    "Pivoteo": "Gauss-Jordan con pivoteo parcial: elige el mejor pivote "
+               "de cada columna.",
+    "Conversión de bases": "Convierte números entre decimal, binario, octal "
+                           "y hexadecimal con su procedimiento.",
+    "Vectores y matrices": "Suma, resta, escalares, combinación lineal, "
+                           "multiplicación, ecuación matricial e inversa.",
+}
+
+NOMBRE_INICIO = "Inicio"
+
+
+class VistaInicio(VistaBase):
+    """Menú de inicio: una tarjeta por módulo que abre esa vista."""
+
+    COLUMNAS = 2
+
+    def __init__(self, padre, al_abrir):
+        self.al_abrir = al_abrir
+        super().__init__(padre)
+
+    def construir(self):
+        tk.Label(
+            self.padre,
+            text="Calculadora de Álgebra Lineal",
+            font=FUENTE_TITULO,
+            bg=COLOR_FONDO,
+            fg=COLOR_TEXTO,
+        ).pack(pady=(24, 4))
+
+        tk.Label(
+            self.padre,
+            text="Elige un método u operación para empezar.",
+            font=FUENTE_NORMAL,
+            bg=COLOR_FONDO,
+            fg=COLOR_TEXTO,
+        ).pack(pady=(0, 20))
+
+        cuadricula = tk.Frame(self.padre, bg=COLOR_FONDO)
+        cuadricula.pack(padx=30)
+        self.tarjetas = {}
+
+        for i, (nombre, fabrica) in enumerate(METODOS):
+            tarjeta = tk.Frame(cuadricula, bg=COLOR_FONDO)
+            tarjeta.grid(
+                row=i // self.COLUMNAS, column=i % self.COLUMNAS,
+                padx=12, pady=12, sticky="n",
+            )
+
+            boton = RoundedButton(
+                tarjeta,
+                text=nombre,
+                font=FUENTE_SUBTIT,
+                bg=COLOR_BOTON,
+                active_background=COLOR_BOTON_ACT,
+                cursor="hand2",
+                width=300,
+                height=48,
+                command=lambda n=nombre, f=fabrica: self.al_abrir(f, n),
+            )
+            boton.pack()
+
+            tk.Label(
+                tarjeta,
+                text=DESCRIPCIONES[nombre],
+                font=FUENTE_NORMAL,
+                bg=COLOR_FONDO,
+                fg=COLOR_TEXTO,
+                wraplength=290,
+                justify="left",
+            ).pack(pady=(6, 0))
+
+            self.tarjetas[nombre] = boton
+
+
 # ======================================================
 # APLICACIÓN
 # ======================================================
@@ -1525,8 +1615,7 @@ class Aplicacion:
 
         self._construir_sidebar()
 
-        nombre, fabrica = METODOS[0]
-        self.mostrar_vista(fabrica, nombre)
+        self.mostrar_inicio()
 
     def _construir_sidebar(self):
 
@@ -1537,6 +1626,21 @@ class Aplicacion:
             bg=COLOR_SIDEBAR,
             fg=COLOR_TEXTO_SB
         ).pack(fill="x", padx=PAD, pady=PAD * 2)
+
+        boton_inicio = RoundedButton(
+            self.sidebar,
+            text="\u2302  " + NOMBRE_INICIO,
+            font=FUENTE_NORMAL,
+            bg=COLOR_BOTON,
+            active_background=COLOR_BOTON_ACT,
+            cursor="hand2",
+            width=180,
+            command=self.mostrar_inicio
+        )
+        boton_inicio.pack(fill="x", padx=PAD, pady=4)
+        self.botones_sidebar[NOMBRE_INICIO] = boton_inicio
+
+        Separador(self.sidebar).pack(fill="x", padx=PAD + 4, pady=6)
 
         for nombre, fabrica in METODOS:
 
@@ -1565,6 +1669,12 @@ class Aplicacion:
             command=self.alternar_tema
         )
         self.boton_tema.pack(side="bottom", fill="x", padx=PAD, pady=PAD)
+
+    def mostrar_inicio(self):
+        self.mostrar_vista(
+            lambda padre: VistaInicio(padre, self.mostrar_vista),
+            NOMBRE_INICIO,
+        )
 
     def mostrar_vista(self, fabrica, nombre=None):
 
@@ -1622,6 +1732,8 @@ class Aplicacion:
 
         if isinstance(widget, RoundedButton):
             widget.aplicar_tema(fondo_de(widget))
+        elif isinstance(widget, Separador):
+            widget.config(bg=nuevo["separador"])
         elif isinstance(widget, tk.Frame):
             widget.config(bg=fondo_de(widget))
         elif isinstance(widget, tk.Label):

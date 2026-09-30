@@ -9,7 +9,7 @@ El programa está escrito en **Python** y tiene **dos interfaces** que comparten
 - **Interfaz de escritorio (Tkinter)**: se lanza con `python gui.py`. Muestra un panel principal con una barra lateral (sidebar) desde la cual el usuario elige el método u operación que desea usar.
 - **Interfaz web (HTML)**: se lanza con `python server.py` y se abre `http://127.0.0.1:8000` en el navegador. Ofrece el mismo tipo de flujo con una vista visual más cuidada (tablas por paso, pivote resaltado, comprobación).
 
-Ambas interfaces tienen **modo claro y oscuro** con un botón en la parte inferior del sidebar (la web recuerda la elección en `localStorage` y sigue el tema del sistema por defecto; la GUI arranca en claro). Los colores viven en un solo lugar por interfaz: `PALETAS` en `gui.py` y las variables CSS de `index.html`. No hay que escribir colores sueltos.
+Ambas interfaces abren en un **menú de Inicio** con una tarjeta por módulo y tienen **modo claro y oscuro** con un botón en la parte inferior del sidebar (la web recuerda la elección en `localStorage` y sigue el tema del sistema por defecto; la GUI arranca en claro). Los colores viven en un solo lugar por interfaz: `PALETAS` en `gui.py` y las variables CSS de `index.html`. No hay que escribir colores sueltos.
 
 Actualmente la calculadora incluye: resolución de sistemas (**Gauss-Jordan** y **Pivoteo**, o Gauss-Jordan con pivoteo parcial), **conversión** entre bases numéricas, **operaciones con vectores** (suma, resta, escalar, combinación lineal), **operaciones con matrices** (suma, resta, escalar, multiplicación A × B), **ecuación matricial** y **matriz inversa** (Gauss-Jordan o Pivoteo sobre `[A | I]`).
 

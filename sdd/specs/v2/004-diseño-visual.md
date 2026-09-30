@@ -141,3 +141,59 @@ mostrado.
   estado, tiempo, bytes) con el detalle del cálculo (función de `metodos/`,
   entrada y salida) o del error. `/api/estado` no se registra. Solo
   presentación: no cambia las respuestas ni `metodos/`.
+- **Web: punto de estado con el sidebar replegado.** Al replegar el sidebar
+  queda visible, al pie, el punto del estado del servidor (verde = conectado,
+  rojo = desconectado) sin su texto; el texto aparece como tooltip al pasar el
+  cursor.
+
+### Menú de inicio
+
+**Estado de este cambio: implementado** (pendiente el visto bueno visual). Archivos: `gui.py`, `index.html` (no toca
+`metodos/` ni `server.py`). Se mantiene en ambas interfaces por la regla de
+sincronía de `AGENTS.md`.
+
+**Propósito.** Hoy al abrir la calculadora se muestra directamente
+Gauss-Jordan. Se añade una pantalla de **Inicio** como punto de entrada, desde
+la que el usuario elige el método u operación que quiere usar.
+
+**Requisitos funcionales**
+
+- **Vista de inicio por defecto:** al abrir cualquiera de las dos interfaces se
+  muestra Inicio, no Gauss-Jordan.
+- **Contenido:** título "Calculadora de Álgebra Lineal", una frase corta de
+  subtítulo y una **cuadrícula de tarjetas**, una por módulo (Gauss-Jordan,
+  Pivoteo, Conversión de bases, Vectores y matrices), cada una con ícono,
+  nombre y una línea de descripción.
+- **Navegación:** pulsar una tarjeta abre ese módulo, con el mismo efecto que
+  su botón del sidebar (el botón correspondiente queda resaltado).
+- **Sidebar:** nueva entrada **"Inicio"** (con ícono de casa) arriba de los
+  módulos; queda resaltada cuando Inicio es la vista activa. También se puede
+  volver a Inicio desde cualquier módulo. En la web, con el sidebar replegado
+  todo lo anterior sigue funcionando (el sidebar no cambia de comportamiento).
+- **Sin estado propio:** Inicio no guarda datos, historial ni estadísticas;
+  es solo navegación. Los módulos conservan su comportamiento actual.
+- **Temas y paleta:** usa solo los colores de la paleta central
+  (`PALETAS` en `gui.py`, variables CSS en `index.html`), sin colores sueltos,
+  y se ve bien en modo claro y oscuro; cambiar de tema con Inicio a la vista lo
+  recolorea sin perder nada.
+- **Una sola lista por interfaz:** nombre, ícono y descripción de cada módulo
+  salen de la misma lista que construye el sidebar, para no duplicar textos.
+- **Web:** la cuadrícula se adapta al ancho (menos columnas en pantallas
+  angostas); las tarjetas son botones accesibles (foco visible, `Enter`).
+- **GUI:** las tarjetas se construyen con los componentes existentes
+  (`RoundedButton`/`Frame`) y se recolorean con el recorrido de widgets del
+  cambio de tema.
+
+**Fuera de alcance:** historial de operaciones, accesos recientes, estadísticas,
+ajustes, buscador.
+
+**Casos de prueba esperados**
+
+| Caso | Resultado esperado |
+|------|--------------------|
+| Abrir la web / la GUI | Se muestra Inicio con las 4 tarjetas; "Inicio" resaltado en el sidebar |
+| Pulsar cada tarjeta | Abre el módulo correcto y resalta su botón en el sidebar |
+| Pulsar "Inicio" desde un módulo | Vuelve al menú |
+| Cambiar de tema en Inicio | Todo recoloreado, sin zonas del tema anterior |
+| Web: ventana angosta | Tarjetas en una sola columna, sin scroll horizontal |
+| Web: sidebar replegado y volver a desplegar | Inicio y navegación intactos |
