@@ -147,6 +147,8 @@ class VistaVectoresMatricesTests(unittest.TestCase):
         self.assertIn("La matriz es invertible", self.salida())
         self.assertIn("[  3  -1 ]", self.salida())
         self.assertIn("A · A⁻¹ = I: correcto", self.salida())
+        self.assertIn("Comprobación A⁻¹ · A:", self.salida())
+        self.assertIn("A⁻¹ · A = I: correcto", self.salida())
 
         self.vista.metodo_inversa.set("Pivoteo")
         self.vista._calcular_inversa()

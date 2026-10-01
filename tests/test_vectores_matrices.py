@@ -153,6 +153,21 @@ class MatrizInversaTests(unittest.TestCase):
                 self.assertTrue(r["filas_cero"])
                 self.assertIn("NO existe", procedimiento_texto(r))
 
+    def test_comprobacion_por_ambos_lados(self):
+        identidad = [[1, 0], [0, 1]]
+        for metodo in self.METODOS:
+            with self.subTest(metodo=metodo):
+                r = matriz_inversa([[2, 1], [5, 3]], metodo)
+                c = r["comprobacion"]
+                self.assertEqual(c["producto"], identidad)
+                self.assertEqual(c["producto_izquierda"], identidad)
+                self.assertTrue(c["correcto_derecha"])
+                self.assertTrue(c["correcto_izquierda"])
+                self.assertTrue(c["correcto"])
+                texto = procedimiento_texto(r)
+                self.assertIn("A · A⁻¹ = I: correcto.", texto)
+                self.assertIn("A⁻¹ · A = I: correcto.", texto)
+
     def test_inversa_2x2(self):
         self.assert_inversa([[2, 1], [5, 3]], [[3, -1], [-5, 2]])
 

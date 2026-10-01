@@ -115,7 +115,8 @@ defecto.
   lineales (en la web: stepper con pivote resaltado; en la GUI: texto).
 - **Resultado destacado:** o bien `A⁻¹` completa, o bien la conclusión "A no
   es invertible (matriz singular)" con su motivo.
-- **Comprobación** cuando existe: mostrar `A · A⁻¹` y verificar que da `I`
+- **Comprobación por ambos lados** cuando existe: mostrar `A · A⁻¹` y
+  `A⁻¹ · A` y verificar que ambos dan `I`
   (reutilizando la multiplicación de matrices ya implementada).
 - Formato de salida fracción/decimal según el `modo` ya existente.
 

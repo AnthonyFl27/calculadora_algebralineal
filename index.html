@@ -2482,19 +2482,28 @@
     }));
 
     const comp = bloque.comprobacion;
-    contenedor.appendChild(crearTarjetaVeredicto({
-      tipoClase: comp.correcto ? "tipo-unica" : "tipo-incompatible",
-      icono: comp.correcto ? "✓" : "✕",
-      titulo: comp.correcto ? "Comprobación correcta" : "Comprobación incorrecta",
-      detalle: "Se verifica que A · A⁻¹ = I",
-      cuerpoNodo: el("div", { class: "ecuacion-comprobacion" }, [
-        tablaConEtiqueta("A", bloque.entradas.matriz),
-        el("span", { class: "simbolo-ecuacion", texto: "·" }),
-        tablaConEtiqueta("A⁻¹", bloque.resultado),
-        el("span", { class: "simbolo-ecuacion", texto: "=" }),
-        tablaConEtiqueta("A · A⁻¹", comp.producto),
-      ]),
-    }));
+    const tarjetaComp = (ok, formula, izquierda, derecha, producto, etiquetaProducto) =>
+      crearTarjetaVeredicto({
+        tipoClase: ok ? "tipo-unica" : "tipo-incompatible",
+        icono: ok ? "✓" : "✕",
+        titulo: ok ? "Comprobación correcta" : "Comprobación incorrecta",
+        detalle: `Se verifica que ${formula} = I`,
+        cuerpoNodo: el("div", { class: "ecuacion-comprobacion" }, [
+          tablaConEtiqueta(izquierda[0], izquierda[1]),
+          el("span", { class: "simbolo-ecuacion", texto: "·" }),
+          tablaConEtiqueta(derecha[0], derecha[1]),
+          el("span", { class: "simbolo-ecuacion", texto: "=" }),
+          tablaConEtiqueta(etiquetaProducto, producto),
+        ]),
+      });
+    contenedor.appendChild(tarjetaComp(
+      comp.correcto_derecha, "A · A⁻¹",
+      ["A", bloque.entradas.matriz], ["A⁻¹", bloque.resultado],
+      comp.producto, "A · A⁻¹"));
+    contenedor.appendChild(tarjetaComp(
+      comp.correcto_izquierda, "A⁻¹ · A",
+      ["A⁻¹", bloque.resultado], ["A", bloque.entradas.matriz],
+      comp.producto_izquierda, "A⁻¹ · A"));
   }
 
   function renderBloqueOperacion(contenedor, bloque) {

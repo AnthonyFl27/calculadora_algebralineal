@@ -422,11 +422,18 @@ def matriz_inversa(matriz, metodo="gauss_jordan", modo="fraccion"):
 
     if existe:
         inversa = [fila[n:] for fila in matriz_final]
+        # Se comprueba por ambos lados: A · A⁻¹ = I y A⁻¹ · A = I.
         producto = multiplicar_matrices(matriz, inversa)["resultado"]
+        producto_izquierda = multiplicar_matrices(inversa, matriz)["resultado"]
+        correcto_derecha = producto == identidad
+        correcto_izquierda = producto_izquierda == identidad
         comprobacion = {
             "producto": producto,
+            "producto_izquierda": producto_izquierda,
             "identidad": identidad,
-            "correcto": producto == identidad,
+            "correcto_derecha": correcto_derecha,
+            "correcto_izquierda": correcto_izquierda,
+            "correcto": correcto_derecha and correcto_izquierda,
         }
         motivo = "El bloque izquierdo se redujo a la identidad."
     else:
@@ -626,11 +633,17 @@ def procedimiento_texto(datos, modo="fraccion"):
             lineas.extend(("La matriz es invertible. A⁻¹ =",
                            matriz_general_texto(datos["resultado"], modo), "",
                            "Comprobación A · A⁻¹:",
-                           matriz_general_texto(datos["comprobacion"]["producto"], modo)))
-            if datos["comprobacion"]["correcto"]:
-                lineas.append("A · A⁻¹ = I: correcto.")
-            else:
-                lineas.append("A · A⁻¹ no dio la identidad: revisar.")
+                           matriz_general_texto(datos["comprobacion"]["producto"], modo),
+                           "A · A⁻¹ = I: "
+                           + ("correcto." if datos["comprobacion"]["correcto_derecha"]
+                              else "no dio la identidad, revisar."),
+                           "",
+                           "Comprobación A⁻¹ · A:",
+                           matriz_general_texto(
+                               datos["comprobacion"]["producto_izquierda"], modo),
+                           "A⁻¹ · A = I: "
+                           + ("correcto." if datos["comprobacion"]["correcto_izquierda"]
+                              else "no dio la identidad, revisar.")))
         else:
             lineas.append("La inversa NO existe. " + datos["motivo"])
         return "\n".join(lineas)
