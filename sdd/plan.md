@@ -23,7 +23,8 @@ Spec-Driven Development:
    sidebar, tarjeta de Inicio, salida de resultados, consola del servidor,
    ejercicios de práctica, temas y documentación.
 4. **Probar y cerrar el ciclo.** Se corren las pruebas de `tests/`
-   (`python -m unittest discover -s tests`), se prueba manualmente en ambas
+   (`python -m unittest discover -s tests`, y para `features/`:
+   `python -m unittest discover -s features/tests -t .`), se prueba manualmente en ambas
    interfaces (`python gui.py` y `python server.py`) y se marca la spec como
    `implementado` (ver tabla de seguimiento) antes de pasar al siguiente
    módulo.
@@ -174,6 +175,7 @@ en `sdd/task.md`.
 | 003 | `sdd/specs/v1/003-diseño-visual-html.md` | Diseño visual web (index.html) | implementado |
 | 004 | `sdd/specs/v2/004-diseño-visual.md` | Diseño visual: modo oscuro/claro y mejoras de interfaz (GUI y web) | implementado |
 | 005 | `sdd/specs/v2/005-ejercicios-practica.md` | Ejercicios para práctica (GUI y web) | implementado |
+| 006 | `sdd/specs/v2/006-funcionalidades.md` | Funcionalidades: exportar respuestas a PNG y PDF (GUI y web) | implementado |
 
 Esta tabla es el único seguimiento de módulos: se actualiza cada vez que se
 agrega una spec nueva (estado `pendiente`) o se cierra el ciclo de una

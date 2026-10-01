@@ -10,8 +10,9 @@ etc.). Aquí solo se capturan datos y se muestran resultados.
 import math
 import tkinter as tk
 import tkinter.font as tkfont
-from tkinter import messagebox, ttk
+from tkinter import filedialog, messagebox, ttk
 
+from features.exportar import exportar, nombre_archivo, titulo_documento
 from metodos.general_metodos import matriz_texto, texto_comprobacion
 from metodos.ejercicios import METODOS_EJERCICIOS, catalogo as catalogo_ejercicios
 from metodos.gauss_jordan import resolver as resolver_gauss_jordan
@@ -55,12 +56,13 @@ PALETAS = {
         "fondo": "#f5f5f5",
         "sidebar": "#2c3e50",
         "boton": "#34495e",
-        "boton_act": "#1abc9c",
+        "boton_act": "#0e7a67",
         "texto_sb": "#ffffff",
+        "acento": "#0f7360",           # ícono de exportar (menú de funcionalidades)
         "separador": "#4d6278",        # línea entre Inicio y los métodos
-        "dif_basico": "#117a65",       # etiquetas de dificultad (ejercicios)
-        "dif_intermedio": "#b9770e",
-        "dif_avanzado": "#c0392b",
+        "dif_basico": "#0f7360",       # etiquetas de dificultad (ejercicios)
+        "dif_intermedio": "#8a5604",
+        "dif_avanzado": "#b03024",
         "texto": "#000000",
         "superficie": "#ffffff",       # áreas de texto y campos de captura
         "borde": "#d9d9d9",            # anillo de foco / bordes de widgets
@@ -80,6 +82,7 @@ PALETAS = {
         "boton": "#2f3b46",
         "boton_act": "#0f7f6b",
         "texto_sb": "#ffffff",
+        "acento": "#4fd8bd",
         "separador": "#34404a",
         "dif_basico": "#4fd8bd",
         "dif_intermedio": "#f0b45a",
@@ -395,12 +398,156 @@ class EtiquetaDificultad(tk.Label):
         )
 
 
+class BotonMenu(tk.Canvas):
+    """Botón de exportar (arriba a la derecha del panel) con las funcionalidades
+    generales de la vista actual: por ahora, exportar la respuesta a PNG o
+    PDF. La generación del archivo vive en features/exportar.py. El ícono
+    (descarga) se dibuja con líneas: no depende de ninguna fuente."""
+
+    FORMATOS = {"png": "Imagen PNG", "pdf": "Documento PDF"}
+    TEXTO_SIN_RESULTADO = "Resuelve primero para exportar"
+    TAMANO = 32
+
+    def __init__(self, padre, vista):
+        super().__init__(
+            padre, width=self.TAMANO, height=self.TAMANO, bg=COLOR_FONDO,
+            highlightthickness=0, bd=0, cursor="hand2",
+        )
+        self.vista = vista
+        self.incluir_pasos = tk.BooleanVar(value=True)
+        self.menu = tk.Menu(self, tearoff=0, postcommand=self._armar_menu)
+        self._fondo = COLOR_FONDO
+        self._dibujar(PALETAS[TEMA_ACTUAL]["acento"])
+
+        self.bind("<Button-1>", lambda _: self.abrir_menu())
+        self.bind("<Enter>", lambda _: self._pintar_fondo(
+            PALETAS[TEMA_ACTUAL]["control_act"]))
+        self.bind("<Leave>", lambda _: self._pintar_fondo(self._fondo))
+        self.place(relx=1.0, x=-12, y=8, anchor="ne")
+        tk.Misc.lift(self)  # Canvas.lift() sería tag_raise
+
+    def _dibujar(self, color):
+        """Ícono de descarga (Font Awesome): flecha de trazo grueso sobre una
+        bandeja sólida con un punto. Los trazos llevan la etiqueta "trazo"
+        y el punto "agujero" (toma el color del fondo)."""
+        self.delete("all")
+        t = self.TAMANO
+        centro = t / 2
+        trazo = dict(width=3, fill=color, capstyle="round",
+                     joinstyle="round", tags="trazo")
+        self.create_line(centro, t * 0.10, centro, t * 0.46, **trazo)
+        self.create_line(
+            centro - t * 0.15, t * 0.32, centro, t * 0.47,
+            centro + t * 0.15, t * 0.32, **trazo,
+        )
+
+        x1, y1, x2, y2, r = t * 0.12, t * 0.64, t * 0.88, t * 0.90, t * 0.07
+        self.create_polygon(
+            x1 + r, y1, x1 + r, y1, x2 - r, y1, x2 - r, y1, x2, y1,
+            x2, y1 + r, x2, y1 + r, x2, y2 - r, x2, y2 - r, x2, y2,
+            x2 - r, y2, x2 - r, y2, x1 + r, y2, x1 + r, y2, x1, y2,
+            x1, y2 - r, x1, y2 - r, x1, y1 + r, x1, y1 + r, x1, y1,
+            smooth=True, fill=color, outline=color, tags="trazo",
+        )
+        cx, cy, rp = x2 - t * 0.13, (y1 + y2) / 2, t * 0.05
+        self.create_oval(
+            cx - rp, cy - rp, cx + rp, cy + rp,
+            fill=self._fondo, outline=self._fondo, tags="agujero",
+        )
+
+    def _pintar_fondo(self, fondo):
+        self.config(bg=fondo)
+        self.itemconfig("agujero", fill=fondo, outline=fondo)
+
+    def aplicar_tema(self, fondo_canvas):
+        self._fondo = fondo_canvas
+        self.config(bg=fondo_canvas)
+        self._dibujar(PALETAS[TEMA_ACTUAL]["acento"])
+
+    def abrir_menu(self):
+        self.menu.tk_popup(
+            self.winfo_rootx() + self.TAMANO - 4,
+            self.winfo_rooty() + self.TAMANO + 2,
+        )
+        self.menu.grab_release()
+
+    def hay_resultado(self):
+        return self.vista.obtener_exportable() is not None
+
+    def _armar_menu(self):
+        """Se reconstruye al abrirse: las opciones dependen de si ya hay
+        un resultado a la vista."""
+        self.menu.delete(0, "end")
+        estado = "normal" if self.hay_resultado() else "disabled"
+        self.menu.add_command(
+            label="Exportar como PNG", state=estado,
+            command=lambda: self.exportar("png"),
+        )
+        self.menu.add_command(
+            label="Exportar como PDF", state=estado,
+            command=lambda: self.exportar("pdf"),
+        )
+        self.menu.add_separator()
+        self.menu.add_checkbutton(
+            label="Incluir pasos", variable=self.incluir_pasos
+        )
+        if estado == "disabled":
+            self.menu.add_separator()
+            self.menu.add_command(
+                label=self.TEXTO_SIN_RESULTADO, state="disabled"
+            )
+
+    def exportar(self, formato):
+        datos = self.vista.obtener_exportable()
+        if datos is None:
+            messagebox.showwarning("Aviso", self.TEXTO_SIN_RESULTADO + ".")
+            return
+
+        modulo, resultado, modo, titulo = datos
+        try:
+            contenido, _, extension = exportar(
+                modulo, resultado, formato, modo,
+                self.incluir_pasos.get(), titulo,
+            )
+        except ValueError as error:
+            messagebox.showerror("Error", str(error))
+            return
+
+        ruta = filedialog.asksaveasfilename(
+            title="Exportar respuesta",
+            initialfile=nombre_archivo(
+                titulo_documento(modulo, resultado, titulo), formato
+            ),
+            defaultextension="." + extension,
+            filetypes=[(self.FORMATOS[formato], "*." + extension)],
+        )
+        if not ruta:  # Diálogo cancelado.
+            return
+
+        try:
+            with open(ruta, "wb") as archivo:
+                archivo.write(contenido)
+        except OSError as error:
+            messagebox.showerror(
+                "Error",
+                f"No se pudo guardar el archivo:\n{error.strerror or error}",
+            )
+            return
+
+        messagebox.showinfo("Exportar", f"Archivo guardado:\n{ruta}")
+
+
 class VistaBase:
     """Clase base de las vistas montadas en el panel derecho.
 
     `ejercicio` es opcional: si se pasa (desde la sección de ejercicios), la
     vista abre con los datos del ejercicio ya cargados, sin resolver.
     """
+
+    # Las vistas con resultado exportable (menú de exportar) ponen permite_exportar en
+    # True y devuelven (modulo, resultado, modo, titulo) en obtener_exportable.
+    permite_exportar = False
+    exportable = None
 
     def __init__(self, padre, ejercicio=None):
         self.padre = padre
@@ -413,6 +560,10 @@ class VistaBase:
 
     def cargar_ejercicio(self, ejercicio):
         """Rellena el formulario con los datos de un ejercicio."""
+
+    def obtener_exportable(self):
+        """Datos de la respuesta a exportar, o None si no hay resultado."""
+        return self.exportable
 
     def limpiar_salida(self):
         self.salida.config(state="normal")
@@ -436,10 +587,18 @@ class VistaSistemaLineal(VistaBase):
     métodos reutilicen la misma interfaz cambiando solo el resolvedor.
     """
 
+    permite_exportar = True
+
     def __init__(self, padre, funcion_resolver, titulo, ejercicio=None):
         self.funcion_resolver = funcion_resolver
         self.titulo = titulo
         super().__init__(padre, ejercicio)
+
+    def obtener_exportable(self):
+        if self.ultimo_resultado is None:
+            return None
+        return ("sistema", self.ultimo_resultado, self.modo_resultado,
+                self.titulo)
 
     def cargar_ejercicio(self, ejercicio):
         matriz = ejercicio["datos"]["matriz"]
@@ -800,6 +959,7 @@ class VistaSistemaLineal(VistaBase):
             matriz,
             self.modo.get()
         )
+        self.modo_resultado = self.modo.get()
         self.boton_comprobar.set_state("normal")
 
         resultado = self.ultimo_resultado
@@ -857,6 +1017,7 @@ class VistaSistemaLineal(VistaBase):
                 matriz,
                 self.modo.get()
             )
+            self.modo_resultado = self.modo.get()
             self.boton_comprobar.set_state("normal")
 
         resultado = self.ultimo_resultado
@@ -945,6 +1106,8 @@ class VistaSistemaLineal(VistaBase):
 
 class VistaConversion(VistaBase):
     """Formulario para convertir entre decimal, binario, octal y hex."""
+
+    permite_exportar = True
 
     BASES_A_OTRA = ["binario", "octal", "hexadecimal"]
     BASES_A_DECIMAL = ["binario", "octal", "hexadecimal", "decimal"]
@@ -1111,6 +1274,7 @@ class VistaConversion(VistaBase):
             messagebox.showerror("Error", str(error))
             return
 
+        self.exportable = ("conversion", resultado, "fraccion", None)
         self.limpiar_salida()
 
         self.escribir(
@@ -1141,6 +1305,8 @@ class VistaConversion(VistaBase):
 
 class VistaVectoresMatrices(VistaBase):
     """Interfaz para operaciones vectoriales, matriciales y A·X = B."""
+
+    permite_exportar = True
 
     def construir(self):
         tk.Label(
@@ -1278,6 +1444,9 @@ class VistaVectoresMatrices(VistaBase):
         return [self._leer_vector(fila) for fila in entradas]
 
     def _mostrar_resultado(self, resultado):
+        self.exportable = (
+            "vectores_matrices", resultado, self.modo.get(), None
+        )
         self.limpiar_salida()
         self.escribir(
             procedimiento_vectores_matrices_texto(resultado, self.modo.get())
@@ -2042,6 +2211,11 @@ class Aplicacion:
             self.vista_actual = fabrica(self.contenedor)
         else:
             self.vista_actual = fabrica(self.contenedor, ejercicio)
+
+        # El menú de exportar solo aparece en las vistas con resultado exportable.
+        self.menu_funciones = None
+        if self.vista_actual.permite_exportar:
+            self.menu_funciones = BotonMenu(self.contenedor, self.vista_actual)
         self._resaltar_boton(nombre)
 
     # ==================================================
@@ -2096,6 +2270,8 @@ class Aplicacion:
             widget.config(bg=nuevo["separador"])
         elif isinstance(widget, EtiquetaDificultad):
             widget.config(bg=fondo_de(widget), fg=nuevo["dif_" + widget.nivel])
+        elif isinstance(widget, BotonMenu):
+            widget.aplicar_tema(fondo_de(widget))
         elif isinstance(widget, tk.Canvas):
             widget.config(bg=fondo_de(widget))
         elif isinstance(widget, tk.Frame):

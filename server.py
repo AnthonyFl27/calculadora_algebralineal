@@ -26,6 +26,7 @@ from fractions import Fraction
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from features.exportar import exportar, nombre_archivo, titulo_documento
 from metodos.general_metodos import formatear
 from metodos.gauss_jordan import resolver as resolver_gauss_jordan
 from metodos.pivote import resolver as resolver_pivote
@@ -185,7 +186,7 @@ def _armar_bloque_sistema(resultado, modo):
     }
 
 
-def _resolver_sistema(datos):
+def _calcular_sistema(datos):
     metodo = datos.get("metodo")
     funcion = RESOLVER_SISTEMA.get(metodo)
 
@@ -194,17 +195,29 @@ def _resolver_sistema(datos):
 
     modo = datos.get("modo", "fraccion")
     matriz = _matriz_desde_texto(datos.get("matriz", []))
-    resultado = funcion(matriz, modo)
+    titulo = "Gauss-Jordan" if metodo == "gauss-jordan" else "Pivoteo"
+
+    return "sistema", funcion(matriz, modo), modo, titulo
+
+
+def _resolver_sistema(datos):
+    _, resultado, modo, _ = _calcular_sistema(datos)
 
     return _armar_bloque_sistema(resultado, modo)
 
 
-def _resolver_conversion(datos):
+def _calcular_conversion(datos):
     numero = datos.get("numero", "")
     base_entrada = int(datos.get("base_entrada"))
     base_salida = int(datos.get("base_salida"))
 
     resultado = resolver_conversion(numero, base_entrada, base_salida)
+
+    return "conversion", resultado, "fraccion", None
+
+
+def _resolver_conversion(datos):
+    _, resultado, _, _ = _calcular_conversion(datos)
 
     return {
         "tipo": resultado["tipo"],
@@ -273,7 +286,7 @@ def _armar_bloque_operacion(resultado, modo):
     return bloque
 
 
-def _resolver_vectores(datos):
+def _calcular_vectores(datos):
     operacion = datos.get("operacion")
     modo = datos.get("modo", "fraccion")
     vectores = datos.get("vectores", [])
@@ -293,10 +306,16 @@ def _resolver_vectores(datos):
     else:
         raise ValueError(f"Operación de vectores no soportada: {operacion}")
 
+    return "vectores_matrices", resultado, modo, None
+
+
+def _resolver_vectores(datos):
+    _, resultado, modo, _ = _calcular_vectores(datos)
+
     return _armar_bloque_operacion(resultado, modo)
 
 
-def _resolver_matrices(datos):
+def _calcular_matrices(datos):
     operacion = datos.get("operacion")
     modo = datos.get("modo", "fraccion")
     matriz_a = datos.get("matriz_a", [])
@@ -315,22 +334,40 @@ def _resolver_matrices(datos):
         else:
             raise ValueError(f"Operación de matrices no soportada: {operacion}")
 
+    return "vectores_matrices", resultado, modo, None
+
+
+def _resolver_matrices(datos):
+    _, resultado, modo, _ = _calcular_matrices(datos)
+
     return _armar_bloque_operacion(resultado, modo)
 
 
-def _resolver_ecuacion_matricial(datos):
+def _calcular_ecuacion_matricial(datos):
     modo = datos.get("modo", "fraccion")
     resultado = ecuacion_matricial(
         datos.get("matriz_a", []), datos.get("matriz_b", []), modo
     )
 
+    return "vectores_matrices", resultado, modo, None
+
+
+def _resolver_ecuacion_matricial(datos):
+    _, resultado, modo, _ = _calcular_ecuacion_matricial(datos)
+
     return _armar_bloque_operacion(resultado, modo)
 
 
-def _resolver_inversa(datos):
+def _calcular_inversa(datos):
     modo = datos.get("modo", "fraccion")
     metodo = datos.get("metodo", "gauss_jordan")
     resultado = matriz_inversa(datos.get("matriz", []), metodo, modo)
+
+    return "vectores_matrices", resultado, modo, None
+
+
+def _resolver_inversa(datos):
+    _, resultado, modo, _ = _calcular_inversa(datos)
 
     return _armar_bloque_operacion(resultado, modo)
 
@@ -343,6 +380,44 @@ RUTAS = {
     "/api/ecuacion-matricial": _resolver_ecuacion_matricial,
     "/api/inversa": _resolver_inversa,
 }
+
+# Cálculo crudo de cada módulo (el mismo que usan las rutas de arriba);
+# /api/exportar lo vuelve a ejecutar y entrega el resultado como archivo.
+CALCULOS = {
+    "sistema": _calcular_sistema,
+    "conversion": _calcular_conversion,
+    "vectores": _calcular_vectores,
+    "matrices": _calcular_matrices,
+    "ecuacion-matricial": _calcular_ecuacion_matricial,
+    "inversa": _calcular_inversa,
+}
+
+RUTA_EXPORTAR = "/api/exportar"
+
+
+def _exportar(datos):
+    """Calcula con metodos/ y genera el archivo con features/exportar.py.
+
+    Cuerpo: {"modulo": <clave de CALCULOS>, "datos": <mismo cuerpo que la
+    ruta de resolución>, "formato": "png"|"pdf", "incluir_pasos": bool}.
+    Devuelve (contenido, tipo_mime, nombre_de_archivo).
+    """
+
+    calcular = CALCULOS.get(datos.get("modulo"))
+
+    if calcular is None:
+        raise ValueError("Módulo no soportado para exportar.")
+
+    formato = str(datos.get("formato", "")).lower()
+    modulo, resultado, modo, titulo = calcular(datos.get("datos") or {})
+    contenido, mime, _ = exportar(
+        modulo, resultado, formato, modo,
+        bool(datos.get("incluir_pasos", True)), titulo,
+    )
+
+    return contenido, mime, nombre_archivo(
+        titulo_documento(modulo, resultado, titulo), formato
+    )
 
 
 # ======================================================================
@@ -363,6 +438,7 @@ DESTINO = {
     "/api/matrices": "metodos.vectores_matrices (matrices)",
     "/api/ecuacion-matricial": "metodos.vectores_matrices.ecuacion_matricial",
     "/api/inversa": "metodos.vectores_matrices.matriz_inversa",
+    RUTA_EXPORTAR: "features.exportar.exportar",
 }
 
 RUTAS_SILENCIOSAS = {"/api/estado"}  # El sidebar la consulta cada 5 s.
@@ -444,6 +520,14 @@ def _descripcion_peticion(ruta, datos, resultado):
         existe = "existe inversa" if resultado.get("existe") else "no invertible"
         return (DESTINO[ruta], f"método={datos.get('metodo')} · modo={modo}",
                 f"{existe} · {pasos} pasos")
+
+    if ruta == RUTA_EXPORTAR:
+        return (DESTINO[ruta],
+                f"{datos.get('formato')} · {datos.get('modulo')} · "
+                + ("con pasos" if datos.get("incluir_pasos", True)
+                   else "sin pasos") + f" · modo={modo}",
+                f"{resultado.get('archivo')} · "
+                f"{_bytes_legibles(resultado.get('bytes', 0))}")
 
     return (DESTINO.get(ruta, ruta), "", "")
 
@@ -577,6 +661,9 @@ class Manejador(BaseHTTPRequestHandler):
     def _procesar_post(self, ruta):
         funcion = RUTAS.get(ruta)
 
+        if ruta == RUTA_EXPORTAR:
+            funcion = _exportar
+
         if funcion is None:
             self._detalle = {"error": "ruta no encontrada"}
             self._enviar_json({"error": "Ruta no encontrada."}, 404)
@@ -594,6 +681,9 @@ class Manejador(BaseHTTPRequestHandler):
 
         try:
             resultado = funcion(datos)
+            if ruta == RUTA_EXPORTAR:
+                self._responder_exportacion(datos, *resultado)
+                return
         except ValueError as error:
             self._detalle = {"error": str(error),
                              "calculo": (DESTINO.get(ruta, ""), "", "")}
@@ -612,6 +702,29 @@ class Manejador(BaseHTTPRequestHandler):
             self._detalle = {}  # El registro nunca debe romper la respuesta.
 
         self._enviar_json({"ok": True, **resultado})
+
+    def _responder_exportacion(self, datos, contenido, mime, archivo):
+        """Entrega el archivo generado como descarga (no JSON)."""
+
+        try:
+            self._detalle = {"calculo": _descripcion_peticion(
+                RUTA_EXPORTAR, {**datos, "modo": (datos.get("datos") or {})
+                                .get("modo", "fraccion")},
+                {"archivo": archivo, "bytes": len(contenido)},
+            )}
+        except Exception:
+            self._detalle = {}
+
+        self._enviados = len(contenido)
+        self.send_response(200)
+        self.send_header("Content-Type", mime)
+        self.send_header("Content-Length", str(len(contenido)))
+        self.send_header(
+            "Content-Disposition", f'attachment; filename="{archivo}"'
+        )
+        self.send_header("Access-Control-Expose-Headers", "Content-Disposition")
+        self.end_headers()
+        self.wfile.write(contenido)
 
     def log_message(self, formato, *args):
         pass  # Reemplazado por el registro propio de _registrar().
@@ -633,7 +746,7 @@ def _banner(puerto):
     lineas.append([("GET  ", "azul"), (f"{'/api/ejercicios':<24}", ),
                    ("metodos.ejercicios.catalogo", "tenue")])
 
-    for ruta, destino in DESTINO.items():
+    for ruta, destino in DESTINO.items():  # incluye /api/exportar
         lineas.append([("POST ", "magenta"), (f"{ruta:<24}", ), (destino, "tenue")])
 
     print()

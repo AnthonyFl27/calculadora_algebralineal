@@ -196,3 +196,20 @@ ajustes, buscador.
 | Cambiar de tema en Inicio | Todo recoloreado, sin zonas del tema anterior |
 | Web: ventana angosta | Tarjetas en una sola columna, sin scroll horizontal |
 | Web: sidebar replegado y volver a desplegar | Inicio y navegación intactos |
+
+
+## Cambios posteriores
+
+- **Contraste 4.5:1 también en el tema claro.** Se oscurecieron solo los
+  colores de texto que no llegaban: botón activo (`--color-boton-act`
+  `#0e7a67`, blanco encima 5.3:1), `--texto-suave-2/3` y `--texto-tenue`,
+  `--exito-texto`, `--alerta-texto`, `--error-texto` y `--pivote-texto`
+  (y sus equivalentes de `PALETAS["claro"]` en la GUI: `boton_act`,
+  `dif_*`). Los colores de fondo, bordes y puntos de estado no cambian.
+- **Token `--acento-texto`** (web): verde de acento para texto/símbolos
+  (`=`, `÷`, flecha del acordeón). Antes usaban el relleno `--color-boton-act`,
+  que en oscuro daba solo 2.6–3.4:1. Ajustes menores en oscuro:
+  `--texto-suave-3` y `--error-texto`.
+- Quedan fuera los controles **deshabilitados** (WCAG los exime).
+- `tests/test_contraste.py` fija el 4.5:1 para ambos temas de web y GUI.
+

@@ -23,7 +23,8 @@
     --color-fondo: #f5f5f5;
     --color-sidebar: #2c3e50;
     --color-boton: #34495e;
-    --color-boton-act: #1abc9c;
+    --color-boton-act: #0e7a67;
+    --acento-texto: #0e7a67;   /* verde de acento usado como color de texto */
     --color-texto-sb: #ffffff;
     --color-exito: #1abc9c;
     --color-alerta: #f39c12;
@@ -35,9 +36,9 @@
     --texto-titulo: #2c3e50;
     --texto-acento: #34495e;
     --texto-suave-1: #55636b;
-    --texto-suave-2: #5b6b73;
-    --texto-suave-3: #6b7a82;
-    --texto-tenue: #8a979d;
+    --texto-suave-2: #55646c;
+    --texto-suave-3: #5d6c74;
+    --texto-tenue: #5d6c74;
     --texto-sb-suave: #cfd8dc;
 
     --superficie: #ffffff;
@@ -57,16 +58,16 @@
 
     --pivote-fondo: rgba(26, 188, 156, 0.16);
     --pivote-fondo-fuerte: rgba(26, 188, 156, 0.22);
-    --pivote-texto: #0e8c73;
+    --pivote-texto: #0b6b58;
     --fila-resaltada: rgba(52, 73, 94, 0.05);
-    --exito-texto: #117a65;
+    --exito-texto: #0f7360;
     --exito-fondo: rgba(26, 188, 156, 0.15);
     --exito-fondo-suave: rgba(26, 188, 156, 0.12);
     --alerta-fondo: rgba(243, 156, 18, 0.15);
-    --alerta-texto: #b9770e;
+    --alerta-texto: #8a5604;
     --error-fondo: rgba(231, 76, 60, 0.15);
     --error-fondo-suave: rgba(231, 76, 60, 0.06);
-    --error-texto: #c0392b;
+    --error-texto: #b03024;
 
     --op-inter-fondo: #fdebd0;
     --op-inter-texto: #935116;
@@ -84,6 +85,7 @@
     --color-sidebar: #11161a;
     --color-boton: #2f3b46;
     --color-boton-act: #0f7f6b;
+    --acento-texto: #4fd8bd;
     --color-texto-sb: #ffffff;
     --color-exito: #1abc9c;
     --color-alerta: #f39c12;
@@ -96,7 +98,7 @@
     --texto-acento: #b9c6d0;
     --texto-suave-1: #9fadb6;
     --texto-suave-2: #a3b1ba;
-    --texto-suave-3: #9aa8b1;
+    --texto-suave-3: #a3b1ba;
     --texto-tenue: #a0adb7;
     --texto-sb-suave: #9fb0ba;
 
@@ -126,7 +128,7 @@
     --alerta-texto: #f0b45a;
     --error-fondo: rgba(231, 76, 60, 0.24);
     --error-fondo-suave: rgba(231, 76, 60, 0.12);
-    --error-texto: #f1867a;
+    --error-texto: #f59a90;
 
     --op-inter-fondo: #4a3a20;
     --op-inter-texto: #f5b971;
@@ -271,6 +273,7 @@
   /* ---------- PANEL PRINCIPAL ---------- */
 
   .panel {
+    position: relative;
     flex: 1;
     padding: 10px 24px 30px;
     overflow-y: auto;
@@ -871,9 +874,9 @@
     flex-shrink: 0;
   }
 
-  .tipo-unica .tarjeta-icono { background: var(--exito-fondo); color: var(--color-exito); }
-  .tipo-infinitas .tarjeta-icono { background: var(--alerta-fondo); color: var(--color-alerta); }
-  .tipo-incompatible .tarjeta-icono { background: var(--error-fondo); color: var(--color-error); }
+  .tipo-unica .tarjeta-icono { background: var(--exito-fondo); color: var(--exito-texto); }
+  .tipo-infinitas .tarjeta-icono { background: var(--alerta-fondo); color: var(--alerta-texto); }
+  .tipo-incompatible .tarjeta-icono { background: var(--error-fondo); color: var(--error-texto); }
 
   .tarjeta-titulo {
     font-size: 15px;
@@ -952,7 +955,7 @@
   .simbolo-ecuacion {
     font-size: 22px;
     font-weight: bold;
-    color: var(--color-boton-act);
+    color: var(--acento-texto);
   }
 
   .fila-comprobacion {
@@ -968,8 +971,8 @@
     flex-shrink: 0;
   }
 
-  .badge-comprobacion.ok { color: var(--color-exito); }
-  .badge-comprobacion.fallo { color: var(--color-error); }
+  .badge-comprobacion.ok { color: var(--exito-texto); }
+  .badge-comprobacion.fallo { color: var(--error-texto); }
 
   /* ---------- CONVERSIÓN DE BASES: tarjetas de paso ---------- */
 
@@ -992,7 +995,7 @@
   }
 
   .division-operador, .division-igual, .termino-igual {
-    color: var(--color-boton-act);
+    color: var(--acento-texto);
   }
 
   .division-cociente, .termino-resultado {
@@ -1039,7 +1042,7 @@
     content: "+";
     position: absolute;
     right: 14px;
-    color: var(--color-boton-act);
+    color: var(--acento-texto);
     font-weight: bold;
   }
 
@@ -1089,6 +1092,113 @@
   .modal-box .btn {
     display: block;
     margin-left: auto;
+  }
+
+  /* ---------- MENÚ DE FUNCIONALIDADES (exportar) ---------- */
+
+  /* Contenedor pegajoso de alto cero: el botón queda arriba a la derecha
+     del panel aunque se desplace el contenido. */
+  .menu-funciones {
+    position: sticky;
+    top: 0;
+    height: 0;
+    z-index: 20;
+  }
+
+  .menu-funciones-caja {
+    position: absolute;
+    top: 6px;
+    right: -8px;
+  }
+
+  .menu-funciones-boton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    color: var(--exito-texto);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .menu-funciones-boton:hover,
+  .menu-funciones-boton[aria-expanded="true"] { background: var(--chip-fondo); }
+
+  .menu-funciones-boton:focus-visible,
+  .menu-funciones-lista button:focus-visible {
+    outline: 2px solid var(--color-exito);
+    outline-offset: 2px;
+  }
+
+  .menu-funciones-boton[aria-disabled="true"] {
+    color: var(--desact-texto);
+    cursor: default;
+  }
+
+  .menu-funciones-boton[aria-disabled="true"]:hover { background: transparent; }
+
+  .menu-funciones-lista {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    min-width: 210px;
+    padding: 6px;
+    background: var(--superficie);
+    border: 1px solid var(--color-borde);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px var(--sombra);
+    animation: apareceSuave 0.15s ease;
+  }
+
+  .menu-funciones-lista[hidden] { display: none; }
+
+  .menu-funciones-lista button {
+    display: block;
+    width: 100%;
+    padding: 9px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    color: var(--texto);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .menu-funciones-lista button:hover { background: var(--chip-fondo); }
+
+  .menu-funciones-opcion {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    padding: 9px 12px 6px;
+    border-top: 1px solid var(--color-borde);
+    font-size: 13px;
+    color: var(--texto-suave-1);
+    cursor: pointer;
+  }
+
+  .toast {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 110;
+    max-width: 320px;
+    padding: 11px 16px;
+    background: var(--superficie);
+    border: 1px solid var(--color-exito);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px var(--sombra);
+    color: var(--exito-texto);
+    font-size: 13px;
+    animation: apareceSuave 0.2s ease;
   }
 
   /* ---------- ANIMACIONES ---------- */
@@ -1207,6 +1317,11 @@
 
     if (!respuesta.ok || datos.error) {
       throw new Error(datos.error || "Ocurrió un error en el servidor.");
+    }
+
+    // Recuerda el último cálculo correcto para poder exportarlo.
+    if (MODULO_EXPORTAR[ruta]) {
+      exportable = { modulo: MODULO_EXPORTAR[ruta], datos: cuerpo };
     }
 
     return datos;
@@ -1362,22 +1477,22 @@
 
   const METODOS = [
     {
-      clave: "gauss-jordan", nombre: "Gauss-Jordan", icono: "sistema",
+      exportar: true, clave: "gauss-jordan", nombre: "Gauss-Jordan", icono: "sistema",
       descripcion: "Resuelve sistemas de ecuaciones lineales reduciendo la matriz aumentada, paso a paso.",
       vista: (ejercicio) => vistaSistemaLineal("gauss-jordan", "Gauss-Jordan", ejercicio),
     },
     {
-      clave: "pivoteo", nombre: "Pivoteo", icono: "pivoteo",
+      exportar: true, clave: "pivoteo", nombre: "Pivoteo", icono: "pivoteo",
       descripcion: "Gauss-Jordan con pivoteo parcial: elige el mejor pivote de cada columna.",
       vista: (ejercicio) => vistaSistemaLineal("pivoteo", "Pivoteo", ejercicio),
     },
     {
-      clave: "conversion", nombre: "Conversión de bases", icono: "conversion",
+      exportar: true, clave: "conversion", nombre: "Conversión de bases", icono: "conversion",
       descripcion: "Convierte números entre decimal, binario, octal y hexadecimal con su procedimiento.",
       vista: vistaConversion,
     },
     {
-      clave: "vectores-matrices", nombre: "Vectores y matrices", icono: "vectores",
+      exportar: true, clave: "vectores-matrices", nombre: "Vectores y matrices", icono: "vectores",
       descripcion: "Suma, resta, escalares, combinación lineal, multiplicación, ecuación matricial e inversa.",
       vista: vistaVectoresMatrices,
     },
@@ -1500,9 +1615,191 @@
     for (const boton of sidebar.querySelectorAll(".nav-btn")) {
       boton.classList.toggle("active", boton.dataset.nombre === metodo.nombre);
     }
+    exportable = null;
+    menuExportar = null;
     panel.innerHTML = "";
     panel.appendChild(metodo.vista(ejercicio));
+    // El menú de exportar solo aparece en las vistas con resultado exportable.
+    if (metodo.exportar) {
+      menuExportar = crearMenuExportar();
+      panel.insertBefore(menuExportar.nodo, panel.firstChild);
+      menuExportar.actualizar();
+    }
   }
+
+  /* ==========================================================
+     FUNCIONALIDADES: EXPORTAR RESPUESTA (PNG / PDF)
+     ========================================================== */
+
+  /* Ruta de resolución -> clave de módulo que entiende /api/exportar. */
+  const MODULO_EXPORTAR = {
+    "/api/sistema": "sistema",
+    "/api/conversion": "conversion",
+    "/api/vectores": "vectores",
+    "/api/matrices": "matrices",
+    "/api/ecuacion-matricial": "ecuacion-matricial",
+    "/api/inversa": "inversa",
+  };
+
+  const TEXTO_SIN_RESULTADO = "Resuelve primero para exportar";
+
+  let exportable = null;     // { modulo, datos } del último cálculo correcto
+  let menuExportar = null;   // menú de la vista actual
+  let incluirPasosExportar = true;
+
+  function mostrarToast(mensaje) {
+    const toast = el("div", { class: "toast", role: "status", texto: mensaje });
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2600);
+  }
+
+  /* Hay algo que exportar si hubo un cálculo correcto y su resultado sigue
+     a la vista (las vistas vacían el panel al limpiar o cambiar de pestaña). */
+  function hayResultadoExportable() {
+    const resultado = panel.querySelector(".resultado-panel");
+    return !!exportable && !!resultado && resultado.childNodes.length > 0;
+  }
+
+  async function exportarRespuesta(formato) {
+    if (!hayResultadoExportable()) {
+      mostrarAviso(TEXTO_SIN_RESULTADO + ".");
+      return;
+    }
+
+    let respuesta;
+    try {
+      respuesta = await fetch("/api/exportar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          modulo: exportable.modulo,
+          datos: exportable.datos,
+          formato,
+          incluir_pasos: incluirPasosExportar,
+        }),
+      });
+    } catch (error) {
+      mostrarError(
+        "No se pudo conectar con el servidor. ¿Está corriendo 'python server.py'?"
+      );
+      return;
+    }
+
+    if (!respuesta.ok) {
+      let mensaje = "No se pudo exportar la respuesta.";
+      try { mensaje = (await respuesta.json()).error || mensaje; } catch (e) {}
+      mostrarError(mensaje);
+      return;
+    }
+
+    const coincidencia = /filename="([^"]+)"/.exec(
+      respuesta.headers.get("Content-Disposition") || ""
+    );
+    const nombre = coincidencia ? coincidencia[1] : "respuesta." + formato;
+    const url = URL.createObjectURL(await respuesta.blob());
+    const enlace = el("a", { href: url, download: nombre });
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    mostrarToast("Archivo guardado: " + nombre);
+  }
+
+  function crearMenuExportar() {
+    const boton = el("button", {
+      class: "menu-funciones-boton", type: "button",
+      "aria-haspopup": "menu", "aria-expanded": "false",
+      "aria-label": "Exportar respuesta",
+      html: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" ' +
+            'aria-hidden="true">' +
+            // Flecha de trazo grueso sobre una bandeja sólida con su "led".
+            '<path d="M12 2.5v10M7.5 8.5L12 13l4.5-4.5" fill="none" ' +
+            'stroke="currentColor" stroke-width="2.6" stroke-linecap="round" ' +
+            'stroke-linejoin="round"/>' +
+            '<path fill-rule="evenodd" d="M5 16h14a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2zM17.5 18a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/></svg>',
+    });
+
+    const itemPng = el("button", { type: "button", role: "menuitem", texto: "Exportar como PNG" });
+    const itemPdf = el("button", { type: "button", role: "menuitem", texto: "Exportar como PDF" });
+    const casilla = el("input", { type: "checkbox" });
+    casilla.checked = incluirPasosExportar;
+    casilla.addEventListener("change", () => { incluirPasosExportar = casilla.checked; });
+
+    const lista = el("div", { class: "menu-funciones-lista", role: "menu", hidden: "hidden" }, [
+      itemPng,
+      itemPdf,
+      el("label", { class: "menu-funciones-opcion" }, [casilla, document.createTextNode("Incluir pasos")]),
+    ]);
+
+    const nodo = el("div", { class: "menu-funciones" }, [
+      el("div", { class: "menu-funciones-caja" }, [boton, lista]),
+    ]);
+
+    function abierto() { return !lista.hidden; }
+
+    function cerrar(devolverFoco) {
+      lista.hidden = true;
+      boton.setAttribute("aria-expanded", "false");
+      if (devolverFoco) boton.focus();
+    }
+
+    function abrir() {
+      lista.hidden = false;
+      boton.setAttribute("aria-expanded", "true");
+      itemPng.focus();
+    }
+
+    function actualizar() {
+      const habilitado = hayResultadoExportable();
+      boton.setAttribute("aria-disabled", habilitado ? "false" : "true");
+      boton.title = habilitado ? "Exportar respuesta" : TEXTO_SIN_RESULTADO;
+      if (!habilitado && abierto()) cerrar(false);
+    }
+
+    boton.addEventListener("click", () => {
+      if (!hayResultadoExportable()) {
+        mostrarAviso(TEXTO_SIN_RESULTADO + ".");
+        return;
+      }
+      if (abierto()) cerrar(false); else abrir();
+    });
+
+    for (const [item, formato] of [[itemPng, "png"], [itemPdf, "pdf"]]) {
+      item.addEventListener("click", () => {
+        cerrar(true);
+        exportarRespuesta(formato);
+      });
+    }
+
+    nodo.addEventListener("keydown", (evento) => {
+      if (!abierto()) return;
+      if (evento.key === "Escape") {
+        evento.preventDefault();
+        cerrar(true);
+      } else if (evento.key === "ArrowDown" || evento.key === "ArrowUp") {
+        evento.preventDefault();
+        const items = [itemPng, itemPdf, casilla];
+        const i = items.indexOf(document.activeElement);
+        const paso = evento.key === "ArrowDown" ? 1 : -1;
+        items[(i + paso + items.length) % items.length].focus();
+      }
+    });
+
+    function cerrarSiFuera(destino) {
+      if (abierto() && !nodo.contains(destino)) cerrar(false);
+    }
+
+    return { nodo, actualizar, cerrarSiFuera };
+  }
+
+  // Un clic fuera del menú lo cierra (un solo listener para todas las vistas).
+  document.addEventListener("click", (evento) => {
+    if (menuExportar) menuExportar.cerrarSiFuera(evento.target);
+  });
+
+  // El estado del botón sigue al contenido del panel (resultado a la vista).
+  new MutationObserver(() => { if (menuExportar) menuExportar.actualizar(); })
+    .observe(panel, { childList: true, subtree: true });
 
   /* Rellena una cuadrícula de inputs (lista de listas) con valores de texto. */
   function llenarEntradas(entradas, valores) {
