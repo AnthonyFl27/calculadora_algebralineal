@@ -4,8 +4,8 @@
  * en marcha.
  *
  *   npm install jsdom            (en una carpeta temporal)
- *   python server.py 8124
- *   node features/tests/prueba_web_menu.js
+ *   python server.py 8124      (desde la raíz del proyecto)
+ *   node src/features/tests/prueba_web_menu.js
  */
 const { JSDOM } = require(process.env.JSDOM_PATH || "jsdom");
 const BASE = "http://127.0.0.1:8124";

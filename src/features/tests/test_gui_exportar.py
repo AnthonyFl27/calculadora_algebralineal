@@ -6,7 +6,7 @@ import tkinter as tk
 import unittest
 from unittest.mock import patch
 
-import gui
+import main as gui
 from metodos.ejercicios import EJERCICIOS, METODOS_EJERCICIOS
 
 NOMBRES = dict(METODOS_EJERCICIOS)
@@ -56,9 +56,9 @@ class MenuExportarGuiTests(unittest.TestCase):
 
     def exportar(self, formato, nombre="salida"):
         ruta = os.path.join(self.carpeta.name, f"{nombre}.{formato}")
-        with patch("gui.filedialog.asksaveasfilename", return_value=ruta), \
-                patch("gui.messagebox.showinfo") as info, \
-                patch("gui.messagebox.showerror") as error:
+        with patch("main.filedialog.asksaveasfilename", return_value=ruta), \
+                patch("main.messagebox.showinfo") as info, \
+                patch("main.messagebox.showerror") as error:
             self.app.menu_funciones.exportar(formato)
         error.assert_not_called()
         return ruta, info
@@ -82,7 +82,7 @@ class MenuExportarGuiTests(unittest.TestCase):
             with self.subTest(clave):
                 vista = self.abrir(clave, EJERCICIOS[clave][0])
                 self.assertEqual(self.estados(), ["disabled", "disabled"])
-                with patch("gui.messagebox.showwarning") as aviso:
+                with patch("main.messagebox.showwarning") as aviso:
                     self.app.menu_funciones.exportar("pdf")
                 aviso.assert_called_once()
 
@@ -123,9 +123,9 @@ class MenuExportarGuiTests(unittest.TestCase):
     def test_cancelar_el_dialogo_no_escribe_nada(self):
         vista = self.abrir("pivoteo", EJERCICIOS["pivoteo"][0])
         vista.resolver_sistema()
-        with patch("gui.filedialog.asksaveasfilename", return_value=""), \
-                patch("gui.messagebox.showinfo") as info, \
-                patch("gui.messagebox.showerror") as error:
+        with patch("main.filedialog.asksaveasfilename", return_value=""), \
+                patch("main.messagebox.showinfo") as info, \
+                patch("main.messagebox.showerror") as error:
             self.app.menu_funciones.exportar("pdf")
         info.assert_not_called()
         error.assert_not_called()
@@ -134,8 +134,8 @@ class MenuExportarGuiTests(unittest.TestCase):
         vista = self.abrir("pivoteo", EJERCICIOS["pivoteo"][0])
         vista.resolver_sistema()
         ruta = os.path.join(self.carpeta.name, "no_existe", "x.pdf")
-        with patch("gui.filedialog.asksaveasfilename", return_value=ruta), \
-                patch("gui.messagebox.showerror") as error:
+        with patch("main.filedialog.asksaveasfilename", return_value=ruta), \
+                patch("main.messagebox.showerror") as error:
             self.app.menu_funciones.exportar("pdf")
         error.assert_called_once()
         self.assertIn("No se pudo guardar", error.call_args[0][1])

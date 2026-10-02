@@ -1,5 +1,5 @@
 """
-gui.py
+main.py
 Interfaz gráfica de panel único con sidebar para resolver sistemas de
 ecuaciones lineales.
 

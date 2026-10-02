@@ -1,11 +1,16 @@
 """Pruebas de POST /api/exportar con un servidor real en un puerto libre."""
 
 import json
+import sys
 import threading
 import unittest
 import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
+from pathlib import Path
+
+# server.py vive en la raíz del proyecto (dos niveles arriba de src/).
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 import server
 

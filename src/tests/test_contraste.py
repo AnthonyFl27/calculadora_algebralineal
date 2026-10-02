@@ -6,7 +6,7 @@ import re
 import unittest
 from pathlib import Path
 
-import gui
+import main as gui
 
 MINIMO = 4.5
 RAIZ = Path(__file__).resolve().parent.parent
@@ -41,7 +41,7 @@ def sobre(rgba, base):
 
 def variables_css(tema):
     """Variables CSS del bloque `:root` (claro) o del tema oscuro."""
-    html = (RAIZ / "index.html").read_text(encoding="utf-8")
+    html = (RAIZ / "web" / "index.html").read_text(encoding="utf-8")
     inicio = html.index(":root {" if tema == "claro" else 'html[data-theme="dark"] {')
     bloque = html[inicio:html.index("}", inicio)]
     return dict(re.findall(r"(--[\w-]+):\s*([^;]+);", bloque))

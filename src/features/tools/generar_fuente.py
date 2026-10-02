@@ -2,10 +2,10 @@
 Herramienta de desarrollo (NO se usa al ejecutar la calculadora).
 
 Rasteriza una fuente monoespaciada a una tabla de glifos en escala de grises
-y la guarda, comprimida, en features/_fuente_exportar.py. Así el PNG exportado
+y la guarda, comprimida, en src/features/_fuente_exportar.py. Así el PNG exportado
 se dibuja solo con la librería estándar. Requiere Pillow únicamente aquí:
 
-    python features/tools/generar_fuente.py
+    python src/features/tools/generar_fuente.py
 
 Fuente base: Hack (licencia MIT / Bitstream Vera); ✓ ✗ ✕ salen de Symbola.
 """
@@ -55,7 +55,7 @@ salida = Path(__file__).resolve().parent.parent / "_fuente_exportar.py"
 salida.write_text(
     '"""\n'
     "Fuente bitmap monoespaciada para el PNG exportado (generada con\n"
-    "features/tools/generar_fuente.py; no editar a mano).\n\n"
+    "src/features/tools/generar_fuente.py; no editar a mano).\n\n"
     "Basada en Hack (licencia MIT / Bitstream Vera). Cada glifo es una\n"
     "rejilla ANCHO×ALTO en escala de grises (0-255), comprimida con zlib y\n"
     "codificada en base64.\n"

@@ -5,7 +5,7 @@ Catálogo de ejercicios de práctica para la calculadora.
 Solo contiene datos (sin lógica matemática ni librerías externas): cada
 ejercicio trae los valores listos para cargarse en el formulario de su
 método, y `resultado_esperado` para que las pruebas comprueben que el
-catálogo coincide con lo que calcula metodos/. Tanto gui.py (importándolo)
+catálogo coincide con lo que calcula metodos/. Tanto main.py (importándolo)
 como server.py (GET /api/ejercicios) leen de aquí, así no se escriben
 ejercicios a mano en ninguna interfaz.
 

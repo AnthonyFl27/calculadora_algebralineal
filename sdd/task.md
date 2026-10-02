@@ -17,4 +17,4 @@ Ninguno por ahora.
 
 ## Specs en curso
 
-Ninguna por ahora. La siguiente spec lleva el número `007`.
+Ninguna por ahora. La siguiente spec lleva el número `008`.

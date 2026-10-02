@@ -13,7 +13,7 @@ Spec-Driven Development:
 1. **Especificar.** Antes de escribir código, se redacta o se ajusta la spec
    del módulo en `sdd/specs/` (una spec por módulo, dentro de la carpeta de
    la versión en curso; ver "Organización de archivos" abajo). La spec describe comportamiento y requisitos, no implementación.
-2. **Implementar.** Se crea el archivo correspondiente en `metodos/`
+2. **Implementar.** Se crea el archivo correspondiente en `src/metodos/`
    siguiendo esa spec y las convenciones generales del proyecto (sin
    librerías matemáticas externas, reutilizando `general_metodos.py` cuando
    aplique, etc.).
@@ -22,10 +22,11 @@ Spec-Driven Development:
    tocar está en "Checklist para un método o módulo nuevo" (más abajo):
    sidebar, tarjeta de Inicio, salida de resultados, consola del servidor,
    ejercicios de práctica, temas y documentación.
-4. **Probar y cerrar el ciclo.** Se corren las pruebas de `tests/`
-   (`python -m unittest discover -s tests`, y para `features/`:
-   `python -m unittest discover -s features/tests -t .`), se prueba manualmente en ambas
-   interfaces (`python gui.py` y `python server.py`) y se marca la spec como
+4. **Probar y cerrar el ciclo.** Desde la raíz del proyecto se corren las
+   pruebas de `src/tests/` (`python -m unittest discover -s src/tests -t src`)
+   y de `src/features/` (`python -m unittest discover -s src/features/tests -t src`),
+   se prueba manualmente en ambas interfaces (`python src/main.py` y
+   `python server.py`) y se marca la spec como
    `implementado` (ver tabla de seguimiento) antes de pasar al siguiente
    módulo.
 
@@ -62,19 +63,23 @@ Aplican a todos los módulos, presentes y futuros.
 
 - **Sin librerías matemáticas externas** (NumPy, SciPy, SymPy, etc.): solo
   librería estándar de Python.
-- **La lógica vive en `metodos/`**, un archivo por módulo, reutilizando
-  `general_metodos.py`. `gui.py`, `server.py` e `index.html` solo presentan:
-  `server.py` traduce entre JSON y `metodos/`; `index.html` nunca calcula.
-- **Dos interfaces sincronizadas:** toda funcionalidad existe en `gui.py` y en
-  `server.py` + `index.html`, con el mismo diseño (sidebar + panel) y sin
+- **Todo el código fuente vive en `src/`**, salvo `server.py`, que queda en
+  la raíz para que se ejecute con `python server.py` sin navegar carpetas
+  (agrega `src/` a `sys.path`). `AGENTS.md` y `sdd/` también quedan fuera.
+- **La lógica vive en `src/metodos/`**, un archivo por módulo, reutilizando
+  `general_metodos.py`. `src/main.py`, `server.py` y `src/web/index.html` solo
+  presentan: `server.py` traduce entre JSON y `metodos/`; `index.html` nunca
+  calcula.
+- **Dos interfaces sincronizadas:** toda funcionalidad existe en `src/main.py` y en
+  `server.py` + `src/web/index.html`, con el mismo diseño (sidebar + panel) y sin
   duplicar cálculos. Los métodos existentes nunca se reemplazan, solo se
   agregan nuevos.
 - **Procedimiento paso a paso**, no solo el resultado final.
 - **Errores amigables, nunca tracebacks:** `messagebox` en la GUI; en la web,
   `{"error": "..."}` con código 400 y un modal.
 - **Colores solo en la paleta central** de cada interfaz (`PALETAS` en
-  `gui.py`, variables CSS en `index.html`).
-- **Pruebas** en `tests/` para cada módulo nuevo, y **ejercicios de práctica**
+  `src/main.py`, variables CSS en `src/web/index.html`).
+- **Pruebas** en `src/tests/` para cada módulo nuevo, y **ejercicios de práctica**
   para cada método nuevo.
 
 ## Checklist para un método o módulo nuevo
@@ -84,16 +89,16 @@ el método de Cramer"), el LLM debe cubrir **todo** lo siguiente, no solo la
 parte matemática. Se usa como lista de tareas al redactar la spec y su bloque
 en `sdd/task.md`.
 
-### 1. Lógica (`metodos/`)
+### 1. Lógica (`src/metodos/`)
 
-- [ ] Archivo nuevo `metodos/<modulo>.py` con docstring de módulo; reutiliza
+- [ ] Archivo nuevo `src/metodos/<modulo>.py` con docstring de módulo; reutiliza
       `general_metodos.py` (fracciones, `formatear()`, comprobaciones) y los
       motores existentes (`gauss_jordan.py`, `pivote.py`) en vez de
       reimplementarlos.
 - [ ] Devuelve un diccionario estándar con el resultado **y los pasos** del
       procedimiento (tipo, entradas, pasos, resultado, comprobación cuando
       aplique), y errores controlados con `ValueError` (mensajes en español).
-- [ ] Pruebas en `tests/` (casos normales, casos borde y errores).
+- [ ] Pruebas en `src/tests/` (casos normales, casos borde y errores).
 
 ### 2. Cómo se imprime el resultado (las dos interfaces)
 
@@ -104,7 +109,7 @@ en `sdd/task.md`.
       traduce JSON ↔ `metodos/`; arma un *bloque* con celdas ya formateadas
       (`_armar_bloque_sistema` / `_armar_bloque_operacion` o una función
       nueva) y responde `{"ok": true, ...}` o `{"error": "..."}` con 400.
-- [ ] **Web:** la vista en `index.html` dibuja tablas reales por paso
+- [ ] **Web:** la vista en `src/web/index.html` dibuja tablas reales por paso
       (stepper, pivote y filas afectadas resaltados), tarjeta de resultado
       (verde = éxito/única, ámbar = infinitas, rojo = error/incompatible) y
       tarjeta de comprobación, reutilizando los componentes existentes.
@@ -121,9 +126,9 @@ en `sdd/task.md`.
 
 ### 4. Navegación y diseño
 
-- [ ] **Escritorio:** entrada en la lista `METODOS` de `gui.py` (el sidebar y
+- [ ] **Escritorio:** entrada en la lista `METODOS` de `src/main.py` (el sidebar y
       las tarjetas de Inicio salen de ahí) y su texto en `DESCRIPCIONES`.
-- [ ] **Web:** entrada en `METODOS` de `index.html` con `clave`, `nombre`,
+- [ ] **Web:** entrada en `METODOS` de `src/web/index.html` con `clave`, `nombre`,
       `icono` (añadirlo a `ICONOS` si es nuevo), `descripcion` y `vista`;
       el sidebar y las tarjetas de Inicio salen de esa lista.
 - [ ] Mismo nombre y misma descripción en ambas interfaces.
@@ -136,16 +141,16 @@ en `sdd/task.md`.
 ### 5. Ejercicios de práctica
 
 - [ ] Agregar el método a `METODOS_EJERCICIOS` y sus ejercicios a `EJERCICIOS`
-      en `metodos/ejercicios.py` (al menos 5; con casos básico, intermedio y
+      en `src/metodos/ejercicios.py` (al menos 5; con casos básico, intermedio y
       avanzado y los casos límite del método, p. ej. sin solución). Cada uno:
       `id`, `titulo`, `dificultad`, `descripcion`, `datos` y
       `resultado_esperado`; añadir su caso a `vista_previa()`.
 - [ ] Hacer que la vista del método acepte un `ejercicio` opcional y cargue
-      sus datos **sin resolver** (`cargar_ejercicio` en `gui.py`; parámetro
-      `ejercicio` de la vista en `index.html`), sin cambiar su comportamiento
+      sus datos **sin resolver** (`cargar_ejercicio` en `src/main.py`; parámetro
+      `ejercicio` de la vista en `src/web/index.html`), sin cambiar su comportamiento
       por defecto.
-- [ ] Pruebas: extender `tests/test_ejercicios.py` (cada ejercicio coincide con
-      lo que calcula `metodos/`) y `tests/test_gui_ejercicios.py` (se carga y
+- [ ] Pruebas: extender `src/tests/test_ejercicios.py` (cada ejercicio coincide con
+      lo que calcula `metodos/`) y `src/tests/test_gui_ejercicios.py` (se carga y
       se resuelve sin errores).
 
 ### 6. Documentación y cierre
@@ -176,6 +181,7 @@ en `sdd/task.md`.
 | 004 | `sdd/specs/v2/004-diseño-visual.md` | Diseño visual: modo oscuro/claro y mejoras de interfaz (GUI y web) | implementado |
 | 005 | `sdd/specs/v2/005-ejercicios-practica.md` | Ejercicios para práctica (GUI y web) | implementado |
 | 006 | `sdd/specs/v2/006-funcionalidades.md` | Funcionalidades: exportar respuestas a PNG y PDF (GUI y web) | implementado |
+| 007 | `sdd/specs/v2/007-reestructura-src.md` | Reestructura: código fuente en `src/` (`gui.py` → `src/main.py`) | implementado |
 
 Esta tabla es el único seguimiento de módulos: se actualiza cada vez que se
 agrega una spec nueva (estado `pendiente`) o se cierra el ciclo de una

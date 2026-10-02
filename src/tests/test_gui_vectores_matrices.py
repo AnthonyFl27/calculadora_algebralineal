@@ -4,8 +4,8 @@ import tkinter as tk
 import unittest
 from unittest.mock import patch
 
-import gui
-from gui import VistaVectoresMatrices
+import main as gui
+from main import VistaVectoresMatrices
 
 
 def llenar_vector(entradas, valores):
@@ -112,7 +112,7 @@ class VistaVectoresMatricesTests(unittest.TestCase):
         llenar_matriz(self.vista.entradas_matriz_a, [[1, 2], [3, 4]])
         llenar_matriz(self.vista.entradas_matriz_b, [[5, 6]])
 
-        with patch("gui.messagebox.showerror") as mostrar_error:
+        with patch("main.messagebox.showerror") as mostrar_error:
             self.vista._calcular_matrices()
         mostrar_error.assert_called_once()
         self.assertIn("mismas dimensiones", mostrar_error.call_args.args[1])
@@ -121,7 +121,7 @@ class VistaVectoresMatricesTests(unittest.TestCase):
         self.vista._crear_campos_matrices()
         llenar_matriz(self.vista.entradas_matriz_a, [[1, 2], [3, 4]])
         llenar_matriz(self.vista.entradas_matriz_b, [[5, 6]])
-        with patch("gui.messagebox.showerror") as mostrar_error:
+        with patch("main.messagebox.showerror") as mostrar_error:
             self.vista._calcular_matrices()
         mostrar_error.assert_called_once()
         self.assertIn("columnas de A", mostrar_error.call_args.args[1])
@@ -166,13 +166,13 @@ class VistaVectoresMatricesTests(unittest.TestCase):
     def test_errores_de_la_inversa_se_muestran_con_messagebox(self):
         llenar_matriz(self.vista.entradas_inversa,
                       [["x", 0, 0], [0, 1, 0], [0, 0, 1]])
-        with patch("gui.messagebox.showerror") as mostrar_error:
+        with patch("main.messagebox.showerror") as mostrar_error:
             self.vista._calcular_inversa()
         mostrar_error.assert_called_once()
 
         self.vista.inv_n.delete(0, tk.END)
         self.vista.inv_n.insert(0, "0")
-        with patch("gui.messagebox.showerror") as mostrar_error:
+        with patch("main.messagebox.showerror") as mostrar_error:
             self.vista._crear_campos_inversa()
         mostrar_error.assert_called_once()
 

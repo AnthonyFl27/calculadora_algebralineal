@@ -3,7 +3,7 @@
 import tkinter as tk
 import unittest
 
-import gui
+import main as gui
 
 
 class InicioTests(unittest.TestCase):

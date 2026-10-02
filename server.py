@@ -1,11 +1,11 @@
 """
 server.py
 Servidor HTTP local que expone la lógica de metodos/ como endpoints JSON,
-para que index.html pueda usarla desde el navegador mediante fetch().
+para que web/index.html pueda usarla desde el navegador mediante fetch().
 
 No contiene lógica matemática propia: recibe los datos capturados en el
 formulario web, llama directamente a las funciones ya existentes en
-metodos/ (las mismas que usa gui.py) y devuelve el resultado -incluyendo
+metodos/ (las mismas que usa main.py, la interfaz de escritorio) y devuelve el resultado -incluyendo
 los pasos del procedimiento- en JSON. Usa únicamente la librería estándar
 de Python (http.server, json).
 
@@ -14,7 +14,7 @@ Al iniciar muestra un banner y, por cada petición, una línea de registro con
 la ruta, el código de estado, el tiempo y qué función de metodos/ se usó.
 Luego abrir http://127.0.0.1:8000 en el navegador. index.html no funciona
 si se abre directamente con doble clic: necesita este servidor corriendo,
-igual que gui.py necesita "python gui.py".
+igual que la interfaz de escritorio necesita "python src/main.py".
 """
 
 import json
@@ -25,6 +25,11 @@ import time
 from fractions import Fraction
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+
+# Este archivo vive en la raíz del proyecto; el resto del código está en src/.
+RAIZ = Path(__file__).resolve().parent
+SRC = RAIZ / "src"
+sys.path.insert(0, str(SRC))
 
 from features.exportar import exportar, nombre_archivo, titulo_documento
 from metodos.general_metodos import formatear
@@ -45,7 +50,6 @@ from metodos.vectores_matrices import (
     suma_vectores,
 )
 
-RAIZ = Path(__file__).resolve().parent
 PUERTO = 8000
 
 RESOLVER_SISTEMA = {
@@ -97,7 +101,7 @@ def _formatear_estructura(valor, modo):
 
 def _matriz_desde_texto(filas):
     """Convierte la matriz capturada en el navegador a floats, igual que
-    VistaSistemaLineal.obtener_matriz en gui.py."""
+    VistaSistemaLineal.obtener_matriz en src/main.py."""
 
     matriz = []
 
@@ -626,7 +630,7 @@ class Manejador(BaseHTTPRequestHandler):
         ruta = self.path.split("?", 1)[0]
 
         if ruta in ("/", "/index.html"):
-            self._enviar_archivo(RAIZ / "index.html", "text/html; charset=utf-8")
+            self._enviar_archivo(SRC / "web" / "index.html", "text/html; charset=utf-8")
         elif ruta == "/api/estado":
             self._enviar_json({"ok": True})
         elif ruta == "/api/ejercicios":
@@ -734,7 +738,7 @@ def _banner(puerto):
     url = f"http://127.0.0.1:{puerto}"
     lineas = [
         [("Calculadora de Álgebra Lineal", "negrita", "verde")],
-        [("Sirviendo index.html y la API de metodos/", "tenue")],
+        [("Sirviendo web/index.html y la API de metodos/", "tenue")],
         [("", )],
         [("Local:    ", "tenue"), (url, "cian", "negrita")],
         [("Detener:  ", "tenue"), ("Ctrl+C", "negrita")],

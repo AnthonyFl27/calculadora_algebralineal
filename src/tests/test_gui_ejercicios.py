@@ -5,7 +5,7 @@ import tkinter as tk
 import unittest
 from unittest.mock import patch
 
-import gui
+import main as gui
 from metodos.ejercicios import EJERCICIOS, METODOS_EJERCICIOS
 
 NOMBRES = dict(METODOS_EJERCICIOS)
@@ -81,8 +81,8 @@ class EjerciciosGuiTests(unittest.TestCase):
         for clave, lista in EJERCICIOS.items():
             for ejercicio in lista:
                 with self.subTest(ejercicio["id"]), \
-                        patch("gui.messagebox.showerror") as error, \
-                        patch("gui.messagebox.showwarning") as aviso:
+                        patch("main.messagebox.showerror") as error, \
+                        patch("main.messagebox.showwarning") as aviso:
                     vista = self.abrir(clave, ejercicio)
 
                     # Los datos quedaron en los campos.
@@ -131,7 +131,7 @@ class EjerciciosGuiTests(unittest.TestCase):
             self.raiz.update()
             self.assertIn(f"Ejercicios de {nombre}", etiquetas(self.app.contenedor))
 
-            with patch("gui.messagebox.showerror"):
+            with patch("main.messagebox.showerror"):
                 vista.al_probar(clave, EJERCICIOS[clave][0])
             self.raiz.update()
             self.assertEqual(self.activos(), [nombre])
