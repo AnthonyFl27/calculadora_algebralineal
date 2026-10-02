@@ -734,8 +734,8 @@ class Manejador(BaseHTTPRequestHandler):
         pass  # Reemplazado por el registro propio de _registrar().
 
 
-def _banner(puerto):
-    url = f"http://127.0.0.1:{puerto}"
+def _banner(puerto, host="127.0.0.1"):
+    url = f"http://{host}:{puerto}"
     lineas = [
         [("Calculadora de Álgebra Lineal", "negrita", "verde")],
         [("Sirviendo web/index.html y la API de metodos/", "tenue")],
@@ -761,14 +761,19 @@ def _banner(puerto):
 
 
 def iniciar(puerto=PUERTO):
+    # En hosting (Render, etc.) la plataforma define PORT y exige escuchar en 0.0.0.0.
+    host = "127.0.0.1"
+    if os.environ.get("PORT", "").isdigit():
+        host, puerto = "0.0.0.0", int(os.environ["PORT"])
+
     try:
-        servidor = ThreadingHTTPServer(("127.0.0.1", puerto), Manejador)
+        servidor = ThreadingHTTPServer((host, puerto), Manejador)
     except OSError as error:
         print(_c(f"\n  No se pudo abrir el puerto {puerto}: {error.strerror}.", "rojo"))
         print("  Cierre el otro servidor o use otro puerto: python server.py 8001\n")
         sys.exit(1)
 
-    _banner(puerto)
+    _banner(puerto, host)
 
     try:
         servidor.serve_forever()
