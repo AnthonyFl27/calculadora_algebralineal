@@ -11,7 +11,7 @@ ciclo, el bloque se borra y solo se conservan las tareas que sigan abiertas.
 
 ## Pendientes
 
-- [ ] Spec 008 (web adaptable a móviles): visto bueno visual en un iPhone y un
+- [x] Spec 008 (web adaptable a móviles): visto bueno visual en un iPhone y un
       Android reales (comprobar también que PNG y PDF se descargan o se abren
       desde el aviso "Abrir") y despliegue en Render. Las pruebas automáticas
       (`unittest` y `src/features/tests/prueba_web_movil.js`) validan medidas y
