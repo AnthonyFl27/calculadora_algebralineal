@@ -182,6 +182,7 @@ en `sdd/task.md`.
 | 005 | `sdd/specs/v2/005-ejercicios-practica.md` | Ejercicios para práctica (GUI y web) | implementado |
 | 006 | `sdd/specs/v2/006-funcionalidades.md` | Funcionalidades: exportar respuestas a PNG y PDF (GUI y web) | implementado |
 | 007 | `sdd/specs/v2/007-reestructura-src.md` | Reestructura: código fuente en `src/` (`gui.py` → `src/main.py`) | implementado |
+| 008 | `sdd/specs/v2/008-adaptable-movil.md` | Web adaptable a móviles (solo `index.html`; la GUI queda fuera) | pendiente |
 
 Esta tabla es el único seguimiento de módulos: se actualiza cada vez que se
 agrega una spec nueva (estado `pendiente`) o se cierra el ciclo de una
