@@ -144,6 +144,11 @@ mostrado.
   queda visible, al pie, el punto del estado del servidor (verde = conectado,
   rojo = desconectado) sin su texto; el texto aparece como tooltip al pasar el
   cursor.
+- **Web: adaptable a móviles (spec 008).** El "ventana angosta: una columna,
+  sin scroll horizontal" ahora también cubre el layout general: con ≤ 768 px
+  el sidebar pasa a un drawer con barra superior, y las matrices, las tablas,
+  las pestañas y los controles se adaptan desde 320 px. Ver
+  `sdd/specs/v2/008-adaptable-movil.md`.
 
 ### Menú de inicio
 

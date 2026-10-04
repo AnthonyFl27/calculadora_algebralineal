@@ -1,4 +1,4 @@
-Estado: pendiente
+Estado: implementado
 
 # 008 — Web adaptable a móviles
 
@@ -148,3 +148,60 @@ calculadora, como `prueba_web_menu.js`) que recorra los anchos y compruebe el
 
 **Pendiente del usuario:** visto bueno visual en sus dispositivos y despliegue
 en Render.
+
+## Cambios y decisiones tomadas al implementar
+
+Todo en `src/web/index.html`; no se tocaron `src/main.py`, `src/metodos/` ni la
+lógica de `server.py`. Los 10 requisitos se cumplieron; estas son las decisiones
+que la spec no fijaba:
+
+- **Un único breakpoint (768 px)**, compartido por el CSS (`@media`) y el JS
+  (`MQ_MOVIL = matchMedia("(max-width: 768px)")`). Hay dos ajustes finos
+  dentro de la vista móvil: tablas de resultado más compactas bajo 480 px y,
+  bajo 380 px, el estado del servidor de la barra superior queda solo como punto.
+- **Barra superior + drawer.** `.topbar` es fija (`sticky`) con hamburguesa,
+  título y un segundo indicador de estado; el monitor del servidor actualiza
+  ambos indicadores con una sola petición. El drawer deja el panel `inert`
+  mientras está abierto y bloquea el scroll de fondo. Para que `focus()` entre
+  al abrirlo, `visibility` cambia sin retraso al abrir.
+- **`sidebar-colapsado` en móvil:** solo se quita la clase `colapsado` mientras
+  dura la vista móvil; nunca se escribe en `localStorage`. Al ensanchar, se
+  restaura el valor guardado.
+- **Centrado seguro con márgenes `auto`** (`.marco-matriz`, `.marco-tabla`,
+  `.tabs`) en vez de `justify-content: safe center`, que no es fiable en todos
+  los navegadores. Los contenedores con scroll horizontal centran solo si
+  cabe. En escritorio el resultado es el mismo salvo antialiasing de bordes.
+- **Celdas:** `clamp(56px, 15vw, 68px)` en móvil. Nada limita el tamaño de la
+  matriz: si no cabe, hace scroll su contenedor (referencia 8×8 a 320 px).
+- **Etiquetas con su campo:** `crearControles()` agrupa cada etiqueta de texto
+  con su campo en un `label.campo`, para que no queden separados al saltar de
+  línea (y tocar la etiqueta enfoca el campo).
+- **Celdas sin `inputmode`:** `crearCelda()` agrega `autocomplete`,
+  `autocapitalize`, `autocorrect`, `spellcheck` y `enterkeyhint`, pero no
+  `inputmode`, porque los teclados numéricos de iOS no tienen `/` ni `-`.
+- **Stepper:** en móvil se oculta la fila de puntos (CSS) y quedan el contador
+  y los botones grandes; en escritorio no cambia.
+- **Menú de exportar:** en móvil el botón es de 44 px, tiene fondo propio y su
+  contenedor pegajoso se ancla bajo la barra superior
+  (`top: calc(56px + env(safe-area-inset-top))`).
+- **Descarga PNG/PDF:** se mantiene `<a download>` con un blob. Como
+  alternativa, en móvil (o si el navegador no admite `download`) el aviso
+  incluye un enlace "Abrir" que abre el archivo en otra pestaña; la URL del
+  blob vive 60 s (antes 1 s). No se tocó `server.py`.
+- **Modal y toast:** el modal usa `min/max-width` con `100vw − 32px`, `dvh` y
+  scroll interno (válido también en escritorio); el toast va de borde a borde
+  con 16 px de margen en móvil.
+- **Extra no previsto:** la tarjeta de resultado (`pre.tarjeta-cuerpo-mono`)
+  desbordaba la página con números grandes; se añadió `overflow-wrap: anywhere`.
+- **Servidor sin cambios, pero ojo:** `server.py` convierte los sistemas de
+  Gauss-Jordan/Pivoteo con `float()`, así que esas celdas no aceptan `1/2`
+  (las de vectores y matrices sí). No es parte de esta spec.
+
+**Verificación.** `python -m unittest discover -s src/tests -t src` (63) y
+`... -s src/features/tests -t src` (30) en verde. Además,
+`src/features/tests/prueba_web_movil.js` (Playwright, opcional; ver su
+cabecera) recorre los 9 anchos de 8.6 en todos los módulos y pestañas, el
+drawer, la matriz 8×8 a 320 px, los tamaños táctiles, las descargas, el tema y
+el contraste: 261 comprobaciones sin fallos en Chromium. A 1024 y 1280 px la
+web es idéntica a la anterior, salvo antialiasing en las esquinas de las
+pestañas.

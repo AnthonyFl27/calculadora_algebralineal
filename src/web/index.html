@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Calculadora</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='5' y='2' width='22' height='28' rx='4' fill='%231abc9c'/><rect x='9' y='6' width='14' height='6' rx='1.5' fill='%23fff'/><g fill='%23fff'><circle cx='11' cy='17' r='1.8'/><circle cx='16' cy='17' r='1.8'/><circle cx='21' cy='17' r='1.8'/><circle cx='11' cy='22' r='1.8'/><circle cx='16' cy='22' r='1.8'/><circle cx='21' cy='22' r='1.8'/><circle cx='11' cy='26.2' r='1.8'/><circle cx='16' cy='26.2' r='1.8'/><circle cx='21' cy='26.2' r='1.8'/></g></svg>">
 <script>
@@ -142,6 +142,8 @@
 
   * { box-sizing: border-box; }
 
+  button, input, select, label, a, .inicio-tarjeta { touch-action: manipulation; }
+
   html, body {
     margin: 0;
     height: 100%;
@@ -153,7 +155,13 @@
   .app {
     display: flex;
     min-height: 100vh;
+    min-height: 100dvh;
   }
+
+  /* Barra superior y overlay del drawer: solo existen en vista móvil. */
+  .topbar,
+  .drawer-overlay,
+  .btn-cerrar-drawer { display: none; }
 
   /* ---------- SIDEBAR ---------- */
 
@@ -198,7 +206,7 @@
     transition: background 0.15s ease;
   }
 
-  .btn-colapsar:hover { background: var(--color-boton); }
+  @media (hover: hover) { .btn-colapsar:hover { background: var(--color-boton); } }
 
   /* Sidebar replegado: solo queda visible el botón para desplegarlo. */
   .sidebar.colapsado { width: 56px; padding: 16px 0; align-items: center; }
@@ -231,7 +239,7 @@
 
   .nav-icono { display: flex; flex-shrink: 0; }
 
-  .nav-btn:hover { background: var(--color-boton-act); }
+  @media (hover: hover) { .nav-btn:hover { background: var(--color-boton-act); } }
   .nav-btn.active { background: var(--color-boton-act); font-weight: bold; }
 
   .btn-tema {
@@ -275,6 +283,7 @@
   .panel {
     position: relative;
     flex: 1;
+    min-width: 0;
     padding: 10px 24px 30px;
     overflow-y: auto;
   }
@@ -292,7 +301,7 @@
 
   .inicio-cuadricula {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
     gap: 16px;
   }
 
@@ -392,10 +401,12 @@
     transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
   }
 
-  .inicio-tarjeta:hover {
-    border-color: var(--color-exito);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 14px var(--sombra);
+  @media (hover: hover) {
+    .inicio-tarjeta:hover {
+      border-color: var(--color-exito);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px var(--sombra);
+    }
   }
 
   .inicio-tarjeta:focus-visible {
@@ -437,6 +448,13 @@
     font-size: 13px;
   }
 
+  /* Etiqueta + control que viajan juntos al saltar de línea. */
+  .controles .campo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
   input[type="text"], input[type="number"], select {
     font-family: inherit;
     font-size: 13px;
@@ -459,7 +477,7 @@
     transition: background 0.15s ease;
   }
 
-  .btn:hover:not(:disabled) { background: var(--color-boton-act); }
+  @media (hover: hover) { .btn:hover:not(:disabled) { background: var(--color-boton-act); } }
 
   .btn:disabled {
     background: var(--desact-fondo);
@@ -499,12 +517,15 @@
 
   /* ---------- MATRIZ (formularios de entrada) ---------- */
 
+  /* Centrado seguro: los márgenes auto centran solo si el contenido cabe;
+     si no cabe, el borde izquierdo sigue alcanzable con el scroll. */
   .marco-matriz {
     display: flex;
-    justify-content: center;
     margin: 16px 0;
     overflow-x: auto;
   }
+
+  .marco-matriz > * { margin: 0 auto; }
 
   .grid-matriz {
     display: grid;
@@ -531,20 +552,27 @@
   .marco-tabla {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    max-width: 100%;
     margin: 4px 12px;
+    overflow-x: auto;
   }
 
   .marco-tabla .titulo-tabla {
     font-size: 13px;
     font-weight: bold;
     margin-bottom: 6px;
+    text-align: center;
   }
 
   .tabla-genérica {
     display: grid;
     gap: 4px;
+    width: max-content;
+    margin: 0 auto;
   }
+
+  /* Un campo suelto (escalar) se centra como antes. */
+  .marco-tabla > input { align-self: center; }
 
   .tabla-genérica input { width: 56px; }
 
@@ -581,14 +609,22 @@
 
   /* ---------- PESTAÑAS (Vectores y matrices) ---------- */
 
+  /* Centradas si caben; si no, scroll horizontal propio con la primera
+     pestaña alcanzable (márgenes auto en vez de justify-content: center). */
   .tabs {
     display: flex;
-    justify-content: center;
     gap: 4px;
     margin: 10px 0 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
   }
 
+  .tabs > :first-child { margin-left: auto; }
+  .tabs > :last-child { margin-right: auto; }
+
   .tab-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
     padding: 8px 20px;
     border: 1px solid var(--borde-tab);
     border-bottom: none;
@@ -740,7 +776,7 @@
     transition: background 0.15s ease, transform 0.15s ease;
   }
 
-  .stepper-punto:hover { background: var(--punto-hover); }
+  @media (hover: hover) { .stepper-punto:hover { background: var(--punto-hover); } }
   .stepper-punto.activo { background: var(--color-boton-act); transform: scale(1.3); }
 
   .stepper-nav {
@@ -825,7 +861,7 @@
   }
 
   .fila-paso:last-child { border-bottom: none; }
-  .fila-paso:hover { background: var(--superficie-2); }
+  @media (hover: hover) { .fila-paso:hover { background: var(--superficie-2); } }
 
   .fila-paso .paso-etiqueta {
     color: var(--texto-tenue);
@@ -892,6 +928,7 @@
     font-family: "Courier New", Courier, monospace;
     font-size: 13px;
     white-space: pre-wrap;
+    overflow-wrap: anywhere;
     margin: 10px 0 0;
     line-height: 1.5;
   }
@@ -941,6 +978,8 @@
     flex-direction: column;
     align-items: center;
     gap: 5px;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .matriz-etiquetada .tabla-matriz-envoltorio { margin: 0; }
@@ -1061,6 +1100,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 16px;
     z-index: 100;
   }
 
@@ -1068,8 +1108,12 @@
     background: var(--superficie);
     border-radius: 8px;
     padding: 20px 24px;
-    min-width: 280px;
-    max-width: 440px;
+    min-width: min(280px, calc(100vw - 32px));
+    max-width: min(440px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    overflow-wrap: anywhere;
     box-shadow: 0 8px 24px var(--sombra);
     animation: apareceSuave 0.2s ease;
   }
@@ -1126,8 +1170,8 @@
     transition: background 0.15s ease;
   }
 
-  .menu-funciones-boton:hover,
   .menu-funciones-boton[aria-expanded="true"] { background: var(--chip-fondo); }
+  @media (hover: hover) { .menu-funciones-boton:hover { background: var(--chip-fondo); } }
 
   .menu-funciones-boton:focus-visible,
   .menu-funciones-lista button:focus-visible {
@@ -1140,13 +1184,14 @@
     cursor: default;
   }
 
-  .menu-funciones-boton[aria-disabled="true"]:hover { background: transparent; }
+  @media (hover: hover) { .menu-funciones-boton[aria-disabled="true"]:hover { background: transparent; } }
 
   .menu-funciones-lista {
     position: absolute;
     top: 40px;
     right: 0;
     min-width: 210px;
+    max-width: calc(100vw - 24px);
     padding: 6px;
     background: var(--superficie);
     border: 1px solid var(--color-borde);
@@ -1171,7 +1216,7 @@
     cursor: pointer;
   }
 
-  .menu-funciones-lista button:hover { background: var(--chip-fondo); }
+  @media (hover: hover) { .menu-funciones-lista button:hover { background: var(--chip-fondo); } }
 
   .menu-funciones-opcion {
     display: flex;
@@ -1201,6 +1246,8 @@
     animation: apareceSuave 0.2s ease;
   }
 
+  .toast a { color: inherit; font-weight: bold; margin-left: 10px; white-space: nowrap; }
+
   /* ---------- ANIMACIONES ---------- */
 
   @keyframes apareceSuave {
@@ -1213,18 +1260,213 @@
     to { opacity: 1; transform: translateX(0); }
   }
 
-  @media (max-width: 720px) {
-    .sidebar { width: 150px; }
+  /* ---------- VISTA MÓVIL (≤ 768 px, spec 008) ----------
+     El sidebar pasa a un drawer superpuesto y aparece una barra superior.
+     Un único breakpoint: el JS usa la misma consulta (MQ_MOVIL). */
+
+  @media (max-width: 768px) {
+    .app { flex-direction: column; }
+
+    .topbar {
+      display: flex;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      align-items: center;
+      gap: 10px;
+      height: calc(56px + env(safe-area-inset-top));
+      padding: env(safe-area-inset-top) calc(8px + env(safe-area-inset-right)) 0 calc(8px + env(safe-area-inset-left));
+      background: var(--color-sidebar);
+      color: var(--color-texto-sb);
+    }
+
+    .topbar-titulo {
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+      font-size: 16px;
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .topbar .estado-servidor { padding: 0 6px; font-size: 12px; flex-shrink: 0; }
+
+    .btn-menu,
+    .btn-cerrar-drawer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--color-texto-sb);
+      cursor: pointer;
+      flex-shrink: 0;
+      touch-action: manipulation;
+    }
+
+    .btn-menu:active,
+    .btn-cerrar-drawer:active { background: var(--color-boton); }
+
+    .drawer-overlay {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: var(--sombra);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .drawer-overlay.visible { opacity: 1; visibility: visible; }
+
+    .sidebar {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 60;
+      width: min(300px, 85vw);
+      height: 100vh;
+      height: 100dvh;
+      padding: calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      transform: translateX(-100%);
+      visibility: hidden;
+      transition: transform 0.2s ease, visibility 0.2s ease;
+    }
+
+    /* Al abrir, visibility cambia sin retraso para poder enfocar el primer botón. */
+    .sidebar.abierto { transform: none; visibility: visible; transition: transform 0.2s ease; }
+
+    /* El drawer ya tiene su propio botón de cierre y el estado va arriba. */
+    .btn-colapsar,
+    .sidebar > .estado-servidor { display: none; }
+    .btn-cerrar-drawer { display: flex; }
+    .sidebar-cabecera { margin: 0 0 8px 6px; }
+
+    .nav-btn { min-height: 48px; font-size: 15px; }
+
+    .panel {
+      overflow-y: visible;
+      padding: 12px calc(12px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+    }
+
+    html.drawer-abierto, html.drawer-abierto body { overflow: hidden; }
+
+    /* Celdas de entrada con ancho fluido y un mínimo usable. Si la matriz no
+       cabe, hace scroll su contenedor (.marco-matriz / .marco-tabla), no la página. */
+    .grid-matriz input,
+    .tabla-genérica input,
+    .columna-vector input {
+      width: clamp(52px, 15vw, 68px);
+      padding-left: 3px;
+      padding-right: 3px;
+    }
+
+    .grid-matriz { gap: 5px; }
+    .grid-matriz .separador { padding: 0 2px; }
+    .marco-tabla { margin: 4px 0; }
+
+    /* Filas de controles: etiqueta + campo siguen juntos y los botones
+       comparten la fila o pasan al ancho completo si no caben. */
+    .controles { gap: 10px 14px; }
+    .controles > .btn { flex: 1 1 130px; }
+    .controles input[type="text"] { max-width: 100%; }
+    .botones .btn { flex: 1 1 140px; }
+
+    /* Rótulo ("Dirección:", "Mostrar resultados en:") en su propia línea. */
+    .formato { flex-wrap: wrap; gap: 6px 18px; }
+    .formato > span,
+    .controles-radios > span { flex: 1 0 100%; text-align: center; }
+
+    .tab-btn { padding: 8px 14px; }
+
+    /* Táctil e iOS: campos a 16 px (evita el zoom automático al enfocar) y
+       objetivos de al menos 44 px. No se limita el zoom del usuario. */
+    input[type="text"], input[type="number"], select {
+      font-size: 16px;
+      min-height: 44px;
+    }
+
+    .grid-matriz input,
+    .tabla-genérica input,
+    .columna-vector input { width: clamp(56px, 15vw, 68px); }
+
+    .btn { min-height: 44px; }
+    .tab-btn { min-height: 44px; }
+    .formato label,
+    .controles-radios label,
+    .menu-funciones-opcion { min-height: 44px; }
+    input[type="radio"], input[type="checkbox"] { width: 20px; height: 20px; margin: 0 6px 0 0; }
+
+    .titulo { font-size: 20px; padding: 0 38px; }
+
+    /* Stepper: sin puntos; contador y botones grandes. */
+    .stepper { padding: 12px; }
+    .stepper-cabecera { display: none; }
+    .stepper-nav { gap: 10px; }
+    .btn-paso { flex: 1 1 0; min-height: 48px; padding: 8px 10px; }
+    .stepper-contador { font-size: 14px; font-weight: bold; min-width: 56px; }
+
+    /* Menú de exportar: botón de 44 px, siempre bajo la barra superior. */
+    .menu-funciones { top: calc(56px + env(safe-area-inset-top)); }
+    .menu-funciones-caja { top: 4px; right: -6px; }
+    .menu-funciones-boton {
+      width: 44px;
+      height: 44px;
+      background: var(--superficie);
+      border-color: var(--color-borde);
+    }
+    .menu-funciones-lista { top: 48px; }
+    .menu-funciones-lista button { min-height: 44px; font-size: 15px; }
+
+    .toast {
+      left: 16px;
+      right: 16px;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      max-width: none;
+    }
+  }
+
+  /* Tablas de resultado por paso: menos relleno y fuente en pantallas angostas. */
+  @media (max-width: 480px) {
+    table.tabla-matriz th, table.tabla-matriz td { padding: 6px 8px; font-size: 12px; }
+    table.tabla-matriz th { font-size: 10px; }
+  }
+
+  /* Pantallas muy angostas: el estado del servidor queda solo como punto. */
+  @media (max-width: 380px) {
+    .topbar .estado-servidor span { display: none; }
   }
 </style>
 </head>
 <body>
 
 <div class="app">
-  <nav class="sidebar" id="sidebar">
+  <!-- Barra superior: solo visible en vista móvil (≤ 768 px). -->
+  <header class="topbar" id="topbar">
+    <button type="button" class="btn-menu" id="btn-menu" aria-label="Abrir menú"
+            aria-expanded="false" aria-controls="sidebar">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <h1 class="topbar-titulo">Calculadora</h1>
+    <!-- Estado del servidor insertado por JS -->
+  </header>
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+
+  <nav class="sidebar" id="sidebar" aria-label="Menú principal">
     <div class="sidebar-cabecera">
       <h1>Calculadora</h1>
-      <!-- Botón de replegar/desplegar insertado por JS -->
+      <!-- Botón de replegar/desplegar (escritorio) y de cerrar (móvil) insertados por JS -->
     </div>
     <!-- Botones de navegación insertados por JS -->
   </nav>
@@ -1264,6 +1506,33 @@
       }
     }
     return nodo;
+  }
+
+  /* Celdas de matrices y vectores: aceptan "1/2" y negativos, por eso NO llevan
+     inputmode (los teclados numéricos de iOS no tienen "/" ni "-"). */
+  const ATRIBUTOS_CELDA = {
+    type: "text", autocomplete: "off", autocapitalize: "off",
+    autocorrect: "off", spellcheck: "false", enterkeyhint: "next",
+  };
+
+  function crearCelda(extra) {
+    return el("input", Object.assign({}, ATRIBUTOS_CELDA, extra));
+  }
+
+  /* Fila de controles (.controles): cada etiqueta de texto se agrupa con el
+     campo que la sigue para que no se separen al saltar de línea. */
+  function crearControles(hijos) {
+    const grupos = [];
+    for (let i = 0; i < hijos.length; i++) {
+      const nodo = hijos[i], siguiente = hijos[i + 1];
+      if (nodo.tagName === "LABEL" && siguiente && (siguiente.tagName === "INPUT" || siguiente.tagName === "SELECT")) {
+        grupos.push(el("label", { class: "campo" }, [el("span", { texto: nodo.textContent }), siguiente]));
+        i++;
+      } else {
+        grupos.push(nodo);
+      }
+    }
+    return el("div", { class: "controles" }, grupos);
   }
 
   function mostrarModal(titulo, mensaje, claseTitulo) {
@@ -1379,7 +1648,7 @@
     let indice = 0;
     const cabecera = el("div", { class: "stepper-cabecera" });
     const cuerpo = el("div", { class: "stepper-cuerpo" });
-    const contador = el("span", { class: "stepper-contador" });
+    const contador = el("span", { class: "stepper-contador", "aria-live": "polite" });
     const btnAnterior = el("button", { class: "btn btn-paso", texto: "‹ Anterior" });
     const btnSiguiente = el("button", { class: "btn btn-paso", texto: "Siguiente ›" });
 
@@ -1524,6 +1793,71 @@
     'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M10 4v16M6.5 9h.01M6.5 12h.01"/></svg>';
 
+  /* ---- Vista móvil: drawer (spec 008) ----
+     En móvil el sidebar es un drawer. El estado "replegado" de escritorio
+     no se toca ni se guarda desde aquí: solo se quita la clase mientras dura
+     la vista móvil y se restaura al ensanchar. */
+  const MQ_MOVIL = window.matchMedia("(max-width: 768px)");
+  const btnMenu = document.getElementById("btn-menu");
+  const overlayDrawer = document.getElementById("drawer-overlay");
+  const ICONO_CERRAR =
+    '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+  function drawerAbierto() { return sidebar.classList.contains("abierto"); }
+
+  function abrirDrawer() {
+    if (!MQ_MOVIL.matches || drawerAbierto()) return;
+    sidebar.classList.add("abierto");
+    overlayDrawer.classList.add("visible");
+    document.documentElement.classList.add("drawer-abierto");
+    btnMenu.setAttribute("aria-expanded", "true");
+    btnMenu.setAttribute("aria-label", "Cerrar menú");
+    panel.inert = true;
+    const activo = sidebar.querySelector(".nav-btn.active") || sidebar.querySelector(".nav-btn");
+    if (activo) activo.focus();
+  }
+
+  function cerrarDrawer(devolverFoco) {
+    if (!drawerAbierto()) return;
+    sidebar.classList.remove("abierto");
+    overlayDrawer.classList.remove("visible");
+    document.documentElement.classList.remove("drawer-abierto");
+    btnMenu.setAttribute("aria-expanded", "false");
+    btnMenu.setAttribute("aria-label", "Abrir menú");
+    panel.inert = false;
+    if (devolverFoco) btnMenu.focus();
+  }
+
+  /* Escritorio: restaura el replegado guardado. Móvil: lo quita sin guardar. */
+  function aplicarModoNavegacion() {
+    if (MQ_MOVIL.matches) {
+      aplicarSidebarColapsado(false, false);
+    } else {
+      cerrarDrawer(false);
+      aplicarSidebarColapsado(leerSidebarColapsado(), false);
+    }
+  }
+
+  function crearBotonCerrarDrawer() {
+    const boton = el("button", { class: "btn-cerrar-drawer", html: ICONO_CERRAR });
+    boton.type = "button";
+    boton.title = "Cerrar menú";
+    boton.setAttribute("aria-label", "Cerrar menú");
+    boton.onclick = () => cerrarDrawer(true);
+    sidebar.querySelector(".sidebar-cabecera").appendChild(boton);
+  }
+
+  function iniciarDrawer() {
+    crearBotonCerrarDrawer();
+    btnMenu.onclick = () => (drawerAbierto() ? cerrarDrawer(true) : abrirDrawer());
+    overlayDrawer.onclick = () => cerrarDrawer(true);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && drawerAbierto()) cerrarDrawer(true);
+    });
+    MQ_MOVIL.addEventListener("change", aplicarModoNavegacion);
+  }
+
   function crearBotonColapsar() {
     const boton = el("button", { class: "btn-colapsar", html: ICONO_SIDEBAR });
     boton.type = "button";
@@ -1533,7 +1867,7 @@
 
   function construirSidebar() {
     crearBotonColapsar();
-    aplicarSidebarColapsado(leerSidebarColapsado(), false);
+    iniciarDrawer();
 
     for (const metodo of [INICIO, ...METODOS, EJERCICIOS]) {
       if (metodo === METODOS[0] || metodo === EJERCICIOS) {
@@ -1541,7 +1875,7 @@
       }
       const boton = el("button", {
         class: "nav-btn",
-        onclick: () => mostrarVista(metodo),
+        onclick: () => { mostrarVista(metodo); cerrarDrawer(true); },
       }, [
         el("span", { class: "nav-icono", html: icono(metodo.icono, 16) }),
         el("span", { texto: metodo.nombre }),
@@ -1552,15 +1886,20 @@
 
     sidebar.appendChild(crearBotonTema());
 
-    const puntoEstado = el("div", { class: "estado-punto" });
-    const textoEstado = el("span", { texto: "Verificando servidor..." });
+    // Un indicador en el sidebar (escritorio) y otro en la barra superior (móvil).
+    const indicadores = [];
+    for (const contenedor of [sidebar, document.getElementById("topbar")]) {
+      const puntoEstado = el("div", { class: "estado-punto" });
+      const textoEstado = el("span", { texto: "Verificando servidor..." });
+      contenedor.appendChild(el("div", { class: "estado-servidor", role: "status" }, [
+        puntoEstado,
+        textoEstado,
+      ]));
+      indicadores.push([puntoEstado, textoEstado]);
+    }
 
-    sidebar.appendChild(el("div", { class: "estado-servidor" }, [
-      puntoEstado,
-      textoEstado,
-    ]));
-
-    iniciarMonitorEstado(puntoEstado, textoEstado);
+    iniciarMonitorEstado(indicadores);
+    aplicarModoNavegacion();
   }
 
   function temaActual() {
@@ -1590,23 +1929,25 @@
     return boton;
   }
 
-  async function verificarEstadoServidor(puntoEstado, textoEstado) {
+  async function verificarEstadoServidor(indicadores) {
+    let conectado = true;
     try {
       const respuesta = await fetch("/api/estado", { cache: "no-store" });
       if (!respuesta.ok) throw new Error("estado no-ok");
-      puntoEstado.className = "estado-punto conectado";
-      textoEstado.textContent = "Server connected";
-      textoEstado.parentNode.title = "Server connected";
     } catch (error) {
-      puntoEstado.className = "estado-punto desconectado";
-      textoEstado.textContent = "Server disconnected";
-      textoEstado.parentNode.title = "Server disconnected";
+      conectado = false;
+    }
+    const texto = conectado ? "Server connected" : "Server disconnected";
+    for (const [puntoEstado, textoEstado] of indicadores) {
+      puntoEstado.className = "estado-punto " + (conectado ? "conectado" : "desconectado");
+      textoEstado.textContent = texto;
+      textoEstado.parentNode.title = texto;
     }
   }
 
-  function iniciarMonitorEstado(puntoEstado, textoEstado) {
-    verificarEstadoServidor(puntoEstado, textoEstado);
-    setInterval(() => verificarEstadoServidor(puntoEstado, textoEstado), 5000);
+  function iniciarMonitorEstado(indicadores) {
+    verificarEstadoServidor(indicadores);
+    setInterval(() => verificarEstadoServidor(indicadores), 5000);
   }
 
   /* `ejercicio` es opcional: si se pasa (desde la sección de ejercicios),
@@ -1647,10 +1988,14 @@
   let menuExportar = null;   // menú de la vista actual
   let incluirPasosExportar = true;
 
-  function mostrarToast(mensaje) {
-    const toast = el("div", { class: "toast", role: "status", texto: mensaje });
+  /* `enlace` (opcional): { texto, href } agrega un enlace tocable y alarga el aviso. */
+  function mostrarToast(mensaje, enlace) {
+    const toast = el("div", { class: "toast", role: "status" }, [document.createTextNode(mensaje)]);
+    if (enlace) {
+      toast.appendChild(el("a", { href: enlace.href, target: "_blank", rel: "noopener", texto: enlace.texto }));
+    }
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2600);
+    setTimeout(() => toast.remove(), enlace ? 9000 : 2600);
   }
 
   /* Hay algo que exportar si hubo un cálculo correcto y su resultado sigue
@@ -1701,8 +2046,20 @@
     document.body.appendChild(enlace);
     enlace.click();
     enlace.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    mostrarToast("Archivo guardado: " + nombre);
+    // La URL vive un minuto: en móvil el archivo puede abrirse desde el aviso.
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+
+    // Alternativa si el navegador no admite `download` (o en móvil, donde
+    // algunos navegadores lo ignoran): abrir el archivo en otra pestaña.
+    const sinDescarga = !("download" in enlace);
+    if (sinDescarga || MQ_MOVIL.matches) {
+      mostrarToast(
+        (sinDescarga ? "Archivo listo: " : "Archivo guardado: ") + nombre,
+        { texto: "Abrir", href: url }
+      );
+    } else {
+      mostrarToast("Archivo guardado: " + nombre);
+    }
   }
 
   function crearMenuExportar() {
@@ -2015,12 +2372,12 @@
       for (let i = 0; i < ecuaciones; i++) {
         const filaEntradas = [];
         for (let j = 0; j < variables; j++) {
-          const entrada = el("input", { type: "text" });
+          const entrada = crearCelda();
           grid.appendChild(entrada);
           filaEntradas.push(entrada);
         }
         grid.appendChild(el("div", { class: "separador", texto: "│" }));
-        const entradaB = el("input", { type: "text" });
+        const entradaB = crearCelda();
         grid.appendChild(entradaB);
         filaEntradas.push(entradaB);
         entradasMatriz.push(filaEntradas);
@@ -2106,7 +2463,7 @@
       panelResultado.appendChild(tarjetaComprobacion(ultimoResultado.comprobacion));
     }
 
-    const controles = el("div", { class: "controles" }, [
+    const controles = crearControles([
       el("label", { texto: "Ecuaciones:" }),
       entradaEcuaciones,
       el("label", { texto: "Variables:" }),
@@ -2234,13 +2591,13 @@
     radioAOtra.addEventListener("change", () => { direccion = "a_otra_base"; actualizarOpcionesBase(); });
     radioADecimal.addEventListener("change", () => { direccion = "a_decimal"; actualizarOpcionesBase(); });
 
-    const direccionMarco = el("div", { class: "controles" }, [
+    const direccionMarco = el("div", { class: "controles controles-radios" }, [
       el("span", { texto: "Dirección:" }),
       el("label", {}, [radioAOtra, document.createTextNode(" Decimal → otra base")]),
       el("label", {}, [radioADecimal, document.createTextNode(" Otra base → Decimal")]),
     ]);
 
-    const entradaNumero = el("input", { type: "text", placeholder: "Número" });
+    const entradaNumero = crearCelda({ placeholder: "Número" });
     entradaNumero.style.width = "220px";
 
     async function convertir() {
@@ -2282,7 +2639,7 @@
       panelResultado.appendChild(crearTarjetaResultadoConversion(resultado));
     }
 
-    const controles = el("div", { class: "controles" }, [
+    const controles = crearControles([
       el("label", { texto: "Base:" }),
       selectBase,
       el("label", { texto: "Número:" }),
@@ -2577,7 +2934,7 @@
         const columna = el("div", { class: "columna-vector" });
         columna.appendChild(el("div", { class: "titulo-tabla", texto: `v${j + 1}` }));
         for (let i = 0; i < dimension; i++) {
-          const entrada = el("input", { type: "text" });
+          const entrada = crearCelda();
           columna.appendChild(entrada);
           columnaEntradas.push(entrada);
         }
@@ -2589,13 +2946,13 @@
         const columna = el("div", { class: "columna-vector" });
         columna.appendChild(el("div", { class: "titulo-tabla", texto: "objetivo" }));
         for (let i = 0; i < dimension; i++) {
-          const entrada = el("input", { type: "text" });
+          const entrada = crearCelda();
           columna.appendChild(entrada);
           entradasObjetivo.push(entrada);
         }
         marcoVectores.appendChild(columna);
       } else if (operacion === "Vector por escalar") {
-        entradaEscalarVector = el("input", { type: "text" });
+        entradaEscalarVector = crearCelda();
         const columna = el("div", { class: "columna-vector" });
         columna.appendChild(el("div", { class: "titulo-tabla", texto: "Escalar" }));
         columna.appendChild(entradaEscalarVector);
@@ -2635,7 +2992,7 @@
       }
     }
 
-    const controlesVectores = el("div", { class: "controles" }, [
+    const controlesVectores = crearControles([
       el("label", { texto: "Operación:" }),
       operacionVector,
       el("label", { texto: "Dimensión:" }),
@@ -2685,7 +3042,7 @@
       for (let i = 0; i < filas; i++) {
         const fila = [];
         for (let j = 0; j < columnas; j++) {
-          const entrada = el("input", { type: "text" });
+          const entrada = crearCelda();
           grid.appendChild(entrada);
           fila.push(entrada);
         }
@@ -2726,7 +3083,7 @@
       if (operacion === "Matriz por escalar") {
         const marco = el("div", { class: "marco-tabla" });
         marco.appendChild(el("div", { class: "titulo-tabla", texto: "Escalar" }));
-        entradaEscalarMatriz = el("input", { type: "text" });
+        entradaEscalarMatriz = crearCelda();
         marco.appendChild(entradaEscalarMatriz);
         marcoMatrices.appendChild(marco);
       } else {
@@ -2757,7 +3114,7 @@
       }
     }
 
-    const controlesMatrices = el("div", { class: "controles" }, [
+    const controlesMatrices = crearControles([
       el("label", { texto: "Operación:" }),
       operacionMatriz,
       el("label", { texto: "A filas:" }), filasA,
@@ -2815,7 +3172,7 @@
       }
     }
 
-    const controlesEcuacion = el("div", { class: "controles" }, [
+    const controlesEcuacion = crearControles([
       el("label", { texto: "A filas:" }), ecFilasA,
       el("label", { texto: "A cols:" }), ecColumnasA,
       el("label", { texto: "B cols:" }), ecColumnasB,
@@ -2865,7 +3222,7 @@
       }
     }
 
-    const controlesInversa = el("div", { class: "controles" }, [
+    const controlesInversa = crearControles([
       el("label", { texto: "Tamaño n (n × n):" }), inversaN,
       el("label", { texto: "Método:" }), metodoInversa,
       el("button", { class: "btn", texto: "Crear campos", onclick: crearCamposInversa }),
@@ -2896,6 +3253,8 @@
         b.classList.toggle("active", b === boton);
         c.classList.toggle("activa", c === contenido);
       }
+      // En pantallas angostas las pestañas hacen scroll: la activa queda a la vista.
+      if (boton.isConnected) boton.scrollIntoView({ block: "nearest", inline: "nearest" });
       // El panel de resultado es compartido por todas las pestañas: se limpia
       // al cambiar de pestaña para no dejar visible el resultado de una
       // operación distinta (p. ej. un resultado de "Vectores" mientras se
