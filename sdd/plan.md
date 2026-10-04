@@ -137,6 +137,12 @@ en `sdd/task.md`.
 - [ ] Vista adaptable (web: pantallas angostas y sidebar replegado; GUI: el
       recoloreo por árbol de widgets cubre los widgets nuevos; si se crea un
       widget con color propio, registrarlo en `_recolorear`).
+- [ ] **Web móvil (spec 008):** se revisa a 320 px y 375 px (vertical) sin
+      scroll horizontal de la página; las tablas o matrices anchas van en un
+      contenedor con scroll interno; controles táctiles ≥ 44 px y campos de
+      16 px; los colores siempre por variables CSS. Se corre
+      `src/features/tests/prueba_web_movil.js` (ver su cabecera) cuando el
+      cambio toque la vista.
 
 ### 5. Ejercicios de práctica
 

@@ -54,6 +54,10 @@ Además de esta restricción, se busca que la calculadora sea **funcional, fáci
 
 Toda lógica nueva va en `src/metodos/`. Toda funcionalidad nueva o modificada se refleja en las dos interfaces (`src/main.py` y `server.py` + `src/web/index.html`), sin duplicar cálculos.
 
+## Regla para cambios visuales en la web
+
+`src/web/index.html` es una sola página para móvil y escritorio: lo móvil son reglas `@media` (≤ 768, ≤ 480 y ≤ 380 px), no otra versión. Los colores por variables CSS y el contenido nuevo valen para ambos sin trabajo extra. Pero todo cambio visual (elementos anchos, tamaños fijos, filas con varios controles) debe revisarse a 320 px y 375 px: sin scroll horizontal de la página, tablas y matrices anchas en un contenedor con scroll interno, controles táctiles ≥ 44 px y campos de 16 px. No agregar colores sueltos; usar las variables.
+
 ## Cómo agregar módulos o métodos nuevos
 
 Se sigue la metodología y el checklist de `sdd/plan.md` (spec, lógica, impresión en ambas interfaces, consola del servidor, ejercicios de práctica, temas y documentación).
