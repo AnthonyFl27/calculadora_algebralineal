@@ -1,12 +1,10 @@
 """Contraste mínimo 4.5:1 (WCAG AA) de los pares texto/fondo, en ambos temas
-de las dos interfaces. Los controles deshabilitados quedan fuera (WCAG los
+de la interfaz web. Los controles deshabilitados quedan fuera (WCAG los
 exime)."""
 
 import re
 import unittest
 from pathlib import Path
-
-import main as gui
 
 MINIMO = 4.5
 RAIZ = Path(__file__).resolve().parent.parent
@@ -94,23 +92,6 @@ class ContrasteWebTests(unittest.TestCase):
 
     def test_tema_oscuro(self):
         self.comprobar("oscuro")
-
-
-class ContrasteGuiTests(unittest.TestCase):
-
-    def test_ambos_temas(self):
-        for tema, p in gui.PALETAS.items():
-            pares = [("texto", p["texto"], p["fondo"]),
-                     ("texto en áreas de texto", p["texto"], p["superficie"]),
-                     ("texto sidebar", p["texto_sb"], p["sidebar"]),
-                     ("texto en botón", p["texto_sb"], p["boton"]),
-                     ("texto en botón activo", p["texto_sb"], p["boton_act"])]
-            for nivel in ("basico", "intermedio", "avanzado"):
-                pares.append((f"dificultad {nivel}", p["dif_" + nivel], p["fondo"]))
-            pares.append(("ícono de exportar", p["acento"], p["fondo"]))
-            for nombre, fg, bg in pares:
-                with self.subTest(tema=tema, par=nombre):
-                    self.assertGreaterEqual(contraste(fg, bg), MINIMO)
 
 
 if __name__ == "__main__":

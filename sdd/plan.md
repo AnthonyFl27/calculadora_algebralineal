@@ -17,16 +17,15 @@ Spec-Driven Development:
    siguiendo esa spec y las convenciones generales del proyecto (sin
    librerías matemáticas externas, reutilizando `general_metodos.py` cuando
    aplique, etc.).
-3. **Integrar en las interfaces.** Se conecta el módulo nuevo a las dos
-   interfaces, sin duplicar cálculos en ninguna. El detalle de qué hay que
+3. **Integrar en la web.** Se conecta el módulo nuevo al servidor y a la
+   interfaz web, sin duplicar cálculos en ninguna. El detalle de qué hay que
    tocar está en "Checklist para un método o módulo nuevo" (más abajo):
    sidebar, tarjeta de Inicio, salida de resultados, consola del servidor,
    ejercicios de práctica, temas y documentación.
 4. **Probar y cerrar el ciclo.** Desde la raíz del proyecto se corren las
    pruebas de `src/tests/` (`python -m unittest discover -s src/tests -t src`)
    y de `src/features/` (`python -m unittest discover -s src/features/tests -t src`),
-   se prueba manualmente en ambas interfaces (`python src/main.py` y
-   `python server.py`) y se marca la spec como
+   se prueba manualmente en la web (`python server.py`) y se marca la spec como
    `implementado` (ver tabla de seguimiento) antes de pasar al siguiente
    módulo.
 
@@ -67,18 +66,16 @@ Aplican a todos los módulos, presentes y futuros.
   la raíz para que se ejecute con `python server.py` sin navegar carpetas
   (agrega `src/` a `sys.path`). `AGENTS.md` y `sdd/` también quedan fuera.
 - **La lógica vive en `src/metodos/`**, un archivo por módulo, reutilizando
-  `general_metodos.py`. `src/main.py`, `server.py` y `src/web/index.html` solo
+  `general_metodos.py`. `server.py` y `src/web/index.html` solo
   presentan: `server.py` traduce entre JSON y `metodos/`; `index.html` nunca
   calcula.
-- **Dos interfaces sincronizadas:** toda funcionalidad existe en `src/main.py` y en
-  `server.py` + `src/web/index.html`, con el mismo diseño (sidebar + panel) y sin
+- **Interfaz web:** toda funcionalidad existe en `server.py` + `src/web/index.html`, sin
   duplicar cálculos. Los métodos existentes nunca se reemplazan, solo se
   agregan nuevos.
 - **Procedimiento paso a paso**, no solo el resultado final.
-- **Errores amigables, nunca tracebacks:** `messagebox` en la GUI; en la web,
+- **Errores amigables, nunca tracebacks:** en la web,
   `{"error": "..."}` con código 400 y un modal.
-- **Colores solo en la paleta central** de cada interfaz (`PALETAS` en
-  `src/main.py`, variables CSS en `src/web/index.html`).
+- **Colores solo en las variables CSS** de `src/web/index.html`.
 - **Pruebas** en `src/tests/` para cada módulo nuevo, y **ejercicios de práctica**
   para cada método nuevo.
 
@@ -100,11 +97,8 @@ en `sdd/task.md`.
       aplique), y errores controlados con `ValueError` (mensajes en español).
 - [ ] Pruebas en `src/tests/` (casos normales, casos borde y errores).
 
-### 2. Cómo se imprime el resultado (las dos interfaces)
+### 2. Cómo se imprime el resultado
 
-- [ ] **Escritorio:** función `procedimiento_texto()` (o equivalente) que
-      muestra pasos y resultado en el área de texto monoespaciada, con
-      fracción o decimal según el modo elegido.
 - [ ] **Servidor:** endpoint `POST /api/<ruta>` en `server.py` que solo
       traduce JSON ↔ `metodos/`; arma un *bloque* con celdas ya formateadas
       (`_armar_bloque_sistema` / `_armar_bloque_operacion` o una función
@@ -115,7 +109,7 @@ en `sdd/task.md`.
       tarjeta de comprobación, reutilizando los componentes existentes.
       `index.html` solo presenta; nunca calcula.
 - [ ] Modo de visualización **fracciones / decimales** disponible y respetado
-      en ambas interfaces.
+      en la web.
 
 ### 3. Consola del servidor
 
@@ -126,17 +120,12 @@ en `sdd/task.md`.
 
 ### 4. Navegación y diseño
 
-- [ ] **Escritorio:** entrada en la lista `METODOS` de `src/main.py` (el sidebar y
-      las tarjetas de Inicio salen de ahí) y su texto en `DESCRIPCIONES`.
 - [ ] **Web:** entrada en `METODOS` de `src/web/index.html` con `clave`, `nombre`,
       `icono` (añadirlo a `ICONOS` si es nuevo), `descripcion` y `vista`;
       el sidebar y las tarjetas de Inicio salen de esa lista.
-- [ ] Mismo nombre y misma descripción en ambas interfaces.
 - [ ] Se ve bien en modo claro y oscuro (contraste 4.5:1 en oscuro) y el
       cambio de tema no pierde datos ni resultados.
-- [ ] Vista adaptable (web: pantallas angostas y sidebar replegado; GUI: el
-      recoloreo por árbol de widgets cubre los widgets nuevos; si se crea un
-      widget con color propio, registrarlo en `_recolorear`).
+- [ ] Vista adaptable a pantallas angostas y con el sidebar replegado.
 - [ ] **Web móvil (spec 008):** se revisa a 320 px y 375 px (vertical) sin
       scroll horizontal de la página; las tablas o matrices anchas van en un
       contenedor con scroll interno; controles táctiles ≥ 44 px y campos de
@@ -152,12 +141,11 @@ en `sdd/task.md`.
       `id`, `titulo`, `dificultad`, `descripcion`, `datos` y
       `resultado_esperado`; añadir su caso a `vista_previa()`.
 - [ ] Hacer que la vista del método acepte un `ejercicio` opcional y cargue
-      sus datos **sin resolver** (`cargar_ejercicio` en `src/main.py`; parámetro
-      `ejercicio` de la vista en `src/web/index.html`), sin cambiar su comportamiento
+      sus datos **sin resolver** (parámetro `ejercicio` de la vista en
+      `src/web/index.html`), sin cambiar su comportamiento
       por defecto.
 - [ ] Pruebas: extender `src/tests/test_ejercicios.py` (cada ejercicio coincide con
-      lo que calcula `metodos/`) y `src/tests/test_gui_ejercicios.py` (se carga y
-      se resuelve sin errores).
+      lo que calcula `metodos/`) .
 
 ### 6. Documentación y cierre
 
@@ -172,7 +160,7 @@ en `sdd/task.md`.
       spec 004 (diseño visual); si cambia el comportamiento de un módulo,
       en la sección "Cambios posteriores" de la spec de ese módulo.
 - [ ] Pendiente del usuario: visto bueno visual en su máquina (las pruebas
-      con `jsdom` y de Tkinter validan comportamiento, no apariencia).
+      automáticas validan comportamiento, no apariencia).
 
 ## Seguimiento de módulos
 
@@ -184,11 +172,11 @@ en `sdd/task.md`.
 | 002 | `sdd/specs/v1/002-vectores-matrices.md` | Operaciones vectoriales y matriciales | implementado |
 | 002 (2.4) | `sdd/specs/v1/002-vectores-matrices.md` | Matriz inversa (cambio posterior) | implementado |
 | 003 | `sdd/specs/v1/003-diseño-visual-html.md` | Diseño visual web (index.html) | implementado |
-| 004 | `sdd/specs/v2/004-diseño-visual.md` | Diseño visual: modo oscuro/claro y mejoras de interfaz (GUI y web) | implementado |
-| 005 | `sdd/specs/v2/005-ejercicios-practica.md` | Ejercicios para práctica (GUI y web) | implementado |
-| 006 | `sdd/specs/v2/006-funcionalidades.md` | Funcionalidades: exportar respuestas a PNG y PDF (GUI y web) | implementado |
-| 007 | `sdd/specs/v2/007-reestructura-src.md` | Reestructura: código fuente en `src/` (`gui.py` → `src/main.py`) | implementado |
-| 008 | `sdd/specs/v2/008-adaptable-movil.md` | Web adaptable a móviles (solo `index.html`; la GUI queda fuera) | implementado |
+| 004 | `sdd/specs/v2/004-diseño-visual.md` | Diseño visual: modo oscuro/claro y mejoras de interfaz | implementado |
+| 005 | `sdd/specs/v2/005-ejercicios-practica.md` | Ejercicios para práctica | implementado |
+| 006 | `sdd/specs/v2/006-funcionalidades.md` | Funcionalidades: exportar respuestas a PNG y PDF | implementado |
+| 007 | `sdd/specs/v2/007-reestructura-src.md` | Reestructura: código fuente en `src/` | implementado |
+| 008 | `sdd/specs/v2/008-adaptable-movil.md` | Web adaptable a móviles | implementado |
 
 Esta tabla es el único seguimiento de módulos: se actualiza cada vez que se
 agrega una spec nueva (estado `pendiente`) o se cierra el ciclo de una

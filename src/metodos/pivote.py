@@ -7,7 +7,7 @@ columna como pivote).
 El formateo y la comprobación compartidos viven en general_metodos.py.
 No usa NumPy ni librerías externas: solo la librería estándar.
 Devuelve exactamente el mismo diccionario que
-metodos.gauss_jordan.resolver, para que la GUI/CLI puedan reutilizarse
+metodos.gauss_jordan.resolver, para que la interfaz pueda reutilizarse
 sin cambios.
 """
 

@@ -1,5 +1,7 @@
 Estado: implementado
 
+> **Nota:** la GUI de escritorio (Tkinter, `gui.py` / `src/main.py`) fue eliminada en la spec 009. Las menciones a ella en esta spec son solo contexto histórico; la web es la única interfaz.
+
 # 008 — Web adaptable a móviles
 
 **Archivos destino:** `src/web/index.html` (único archivo de código que cambia),

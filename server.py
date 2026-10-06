@@ -5,7 +5,7 @@ para que web/index.html pueda usarla desde el navegador mediante fetch().
 
 No contiene lógica matemática propia: recibe los datos capturados en el
 formulario web, llama directamente a las funciones ya existentes en
-metodos/ (las mismas que usa main.py, la interfaz de escritorio) y devuelve el resultado -incluyendo
+metodos/ y devuelve el resultado -incluyendo
 los pasos del procedimiento- en JSON. Usa únicamente la librería estándar
 de Python (http.server, json).
 
@@ -13,8 +13,7 @@ Uso: python server.py [puerto]
 Al iniciar muestra un banner y, por cada petición, una línea de registro con
 la ruta, el código de estado, el tiempo y qué función de metodos/ se usó.
 Luego abrir http://127.0.0.1:8000 en el navegador. index.html no funciona
-si se abre directamente con doble clic: necesita este servidor corriendo,
-igual que la interfaz de escritorio necesita "python src/main.py".
+si se abre directamente con doble clic: necesita este servidor corriendo.
 """
 
 import json
@@ -100,8 +99,7 @@ def _formatear_estructura(valor, modo):
 
 
 def _matriz_desde_texto(filas):
-    """Convierte la matriz capturada en el navegador a floats, igual que
-    VistaSistemaLineal.obtener_matriz en src/main.py."""
+    """Convierte la matriz capturada en el navegador a floats."""
 
     matriz = []
 

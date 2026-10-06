@@ -149,7 +149,7 @@ def resolver(matriz, modo="fraccion"):
     """
     Función principal.
 
-    Devuelve un diccionario listo para que CLI o GUI lo utilicen.
+    Devuelve un diccionario listo para que la interfaz lo utilice.
     """
 
     matriz_final, pasos, tipo, pivotes, variables_libres = gauss_jordan(matriz)

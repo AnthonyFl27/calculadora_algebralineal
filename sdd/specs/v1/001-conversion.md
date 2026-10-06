@@ -1,5 +1,7 @@
 Estado: implementado
 
+> **Nota:** la GUI de escritorio (Tkinter, `gui.py` / `src/main.py`) fue eliminada en la spec 009. Las menciones a ella en esta spec son solo contexto histórico; la web es la única interfaz.
+
 # 001 — Conversión de bases numéricas
 
 **Archivo destino:** `metodos/conversion.py`

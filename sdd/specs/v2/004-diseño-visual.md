@@ -1,5 +1,7 @@
 Estado: implementado
 
+> **Nota:** la GUI de escritorio (Tkinter, `gui.py` / `src/main.py`) fue eliminada en la spec 009. Las menciones a ella en esta spec son solo contexto histórico; la web es la única interfaz.
+
 # 004 — Diseño visual (temas y mejoras de interfaz)
 
 **Archivos destino:** `gui.py`, `index.html` y, para la consola, `server.py`

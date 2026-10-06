@@ -112,7 +112,7 @@ def matriz_texto(matriz, modo="fraccion"):
 
 
 def soluciones_texto(matriz, tipo, pivotes, variables_libres, modo="fraccion"):
-    """Construye las soluciones para mostrar en CLI o GUI."""
+    """Construye las soluciones para mostrar en la interfaz."""
 
     variables = len(matriz[0]) - 1
 

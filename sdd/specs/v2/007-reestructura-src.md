@@ -1,5 +1,7 @@
 Estado: implementado
 
+> **Nota:** la GUI de escritorio (Tkinter, `gui.py` / `src/main.py`) fue eliminada en la spec 009. Las menciones a ella en esta spec son solo contexto histórico; la web es la única interfaz.
+
 # 007 — Reestructura: código fuente en `src/`
 
 **Archivos destino:** `server.py` (queda en la raíz), `src/` (nuevo), `AGENTS.md`, `sdd/plan.md`.

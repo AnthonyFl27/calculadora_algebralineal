@@ -133,8 +133,8 @@ def resolver(numero_texto, base_entrada, base_salida):
     Función principal del módulo.
 
     Exactamente una de las dos bases debe ser 10 (decimal); la otra debe
-    ser 2, 8 o 16. Devuelve un diccionario listo para que CLI o GUI lo
-    utilicen:
+    ser 2, 8 o 16. Devuelve un diccionario listo para que la interfaz lo
+    utilice:
 
         tipo: "a_otra_base" | "a_decimal"
         numero_entrada, base_entrada, base_salida
