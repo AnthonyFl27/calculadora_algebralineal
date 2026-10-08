@@ -38,23 +38,23 @@ anterior, salvo que el usuario indique lo contrario explícitamente.
 - `sdd/task.md` — solo lo **en curso o pendiente**: tareas de la spec que se
   está trabajando y pendientes abiertos. Al cerrar una spec, su bloque se
   borra (el detalle vive en la spec y en la tabla de seguimiento de abajo).
-- `sdd/specs/vN/NNN-nombre-del-modulo.md` — una spec por módulo o
-  funcionalidad, agrupada por versión. `v1/` contiene las specs ya
-  implementadas; `v2/` es para las nuevas. La numeración (`001`, `002`,
-  `003`, ...) es global y continúa entre versiones (la primera spec de `v2`
-  sería `004`). Cada spec:
+- `sdd/specs/v1/spec_v1.md` y `sdd/specs/v2/spec_v2.md` — **resúmenes
+  consolidados** de las specs ya implementadas (v1: 001–003; v2: 004–010). Los
+  textos originales se eliminaron y siguen en el historial de git. **Leer
+  `spec_v2.md` > "Reglas permanentes"** antes de agregar cualquier módulo:
+  resume lo obligatorio (exportar PNG/PDF, móvil, temas, ejercicios, consola).
+- `sdd/specs/v3/NNN-nombre-del-modulo.md` — specs **nuevas**, una por módulo o
+  funcionalidad (la primera sería `011`). La numeración es global y continúa.
+  Cada spec:
   - Empieza con un estado: `Estado: pendiente` o `Estado: implementado`.
-  - Describe el propósito y los requisitos funcionales del módulo, sin
-    detalles de código.
-  - Una vez implementado el módulo, la spec **no se borra**: pasa a ser
-    contexto de referencia (para el LLM y para quien retome el proyecto),
-    documentando qué se decidió construir y por qué.
+  - Describe el propósito y los requisitos funcionales, sin detalles de código.
+  - Al implementarse no se borra; cuando `v3/` crezca, se consolida en un
+    `spec_v3.md` igual que v1 y v2, **conservando las reglas y decisiones que
+    sigan vigentes** (no solo la historia).
 
-Las specs ya implementadas no se reescriben ni se les quita contenido; solo
-se actualiza su estado. Si un módulo cambia de comportamiento más adelante,
-se agrega una sección "Cambios posteriores" a su spec en vez de reescribir la
-original. Sirven como contexto histórico confiable de lo que la calculadora
-hace.
+Si un módulo cambia de comportamiento más adelante, se agrega una sección
+"Cambios posteriores" a su spec (o a su apartado del resumen) en vez de
+reescribirlo.
 
 ## Convenciones generales del proyecto
 
@@ -111,6 +111,18 @@ en `sdd/task.md`.
 - [ ] Modo de visualización **fracciones / decimales** disponible y respetado
       en la web.
 
+### 2b. Exportar a PNG / PDF (obligatorio)
+
+- [ ] `src/features/exportar.py` acepta el módulo nuevo (modelo de líneas desde
+      el diccionario estándar; `procedimiento_texto()` en el módulo de
+      `metodos/`; título en `titulo_documento()`; símbolos nuevos en la fuente
+      bitmap / transliteración del PDF).
+- [ ] `server.py`: entrada en `CALCULOS[...]` para `POST /api/exportar`.
+- [ ] La vista muestra el botón de descarga (PNG/PDF, "Incluir pasos"),
+      deshabilitado sin resultado.
+- [ ] Pruebas en `src/features/tests/` (`test_exportar.py`,
+      `test_server_exportar.py`).
+
 ### 3. Consola del servidor
 
 - [ ] Agregar la ruta a `DESTINO` y su caso en `_descripcion_peticion()` de
@@ -126,7 +138,7 @@ en `sdd/task.md`.
 - [ ] Se ve bien en modo claro y oscuro (contraste 4.5:1 en oscuro) y el
       cambio de tema no pierde datos ni resultados.
 - [ ] Vista adaptable a pantallas angostas y con el sidebar replegado.
-- [ ] **Web móvil (spec 008):** se revisa a 320 px y 375 px (vertical) sin
+- [ ] **Web móvil (spec 008, reglas B de `spec_v2.md`):** se revisa a 320 px y 375 px (vertical) sin
       scroll horizontal de la página; las tablas o matrices anchas van en un
       contenedor con scroll interno; controles táctiles ≥ 44 px y campos de
       16 px; los colores siempre por variables CSS. Se corre
@@ -149,16 +161,16 @@ en `sdd/task.md`.
 
 ### 6. Documentación y cierre
 
-- [ ] Spec nueva `sdd/specs/vN/NNN-nombre.md` (`Estado: pendiente`), fila en
+- [ ] Spec nueva `sdd/specs/v3/NNN-nombre.md` (`Estado: pendiente`), fila en
       la tabla de seguimiento y su bloque en `sdd/task.md` **antes** de
       programar.
 - [ ] Al terminar: spec en `implementado` (con "Cambios y decisiones tomadas
       al implementar" si hubo), fila actualizada, bloque borrado de
       `sdd/task.md` (dejando solo lo que siga abierto) y `AGENTS.md`
       actualizado (funcionalidades, archivos, endpoints, pruebas).
-- [ ] Si el cambio es solo visual, se documenta en "Cambios posteriores" de la
-      spec 004 (diseño visual); si cambia el comportamiento de un módulo,
-      en la sección "Cambios posteriores" de la spec de ese módulo.
+- [ ] Si el cambio es solo visual, se documenta en el apartado 004 de
+      `spec_v2.md`; si cambia el comportamiento de un módulo, en el apartado
+      de ese módulo del resumen correspondiente.
 - [ ] Pendiente del usuario: visto bueno visual en su máquina (las pruebas
       automáticas validan comportamiento, no apariencia).
 
@@ -168,17 +180,17 @@ en `sdd/task.md`.
 |---|------|--------|--------|
 | 000 | — | Gauss-Jordan | implementado (previo a SDD) |
 | 000 | — | Pivoteo | implementado (previo a SDD) |
-| 001 | `sdd/specs/v1/001-conversion.md` | Conversión de bases numéricas | implementado |
-| 002 | `sdd/specs/v1/002-vectores-matrices.md` | Operaciones vectoriales y matriciales | implementado |
-| 002 (2.4) | `sdd/specs/v1/002-vectores-matrices.md` | Matriz inversa (cambio posterior) | implementado |
-| 003 | `sdd/specs/v1/003-diseño-visual-html.md` | Diseño visual web (index.html) | implementado |
-| 004 | `sdd/specs/v2/004-diseño-visual.md` | Diseño visual: modo oscuro/claro y mejoras de interfaz | implementado |
-| 005 | `sdd/specs/v2/005-ejercicios-practica.md` | Ejercicios para práctica | implementado |
-| 006 | `sdd/specs/v2/006-funcionalidades.md` | Funcionalidades: exportar respuestas a PNG y PDF | implementado |
-| 007 | `sdd/specs/v2/007-reestructura-src.md` | Reestructura: código fuente en `src/` | implementado |
-| 008 | `sdd/specs/v2/008-adaptable-movil.md` | Web adaptable a móviles | implementado |
-| 009 | `sdd/specs/v2/009-eliminar-gui.md` | Eliminar la GUI de Tkinter | implementado |
-| 010 | `sdd/specs/v2/010-determinante.md` | Determinante (cofactores y LU, con recomendación de eficiencia) | implementado |
+| 001 | `sdd/specs/v1/spec_v1.md` | Conversión de bases numéricas | implementado |
+| 002 | `sdd/specs/v1/spec_v1.md` | Operaciones vectoriales y matriciales | implementado |
+| 002 (2.4) | `sdd/specs/v1/spec_v1.md` | Matriz inversa (cambio posterior) | implementado |
+| 003 | `sdd/specs/v1/spec_v1.md` | Interfaz web (index.html + server.py) | implementado |
+| 004 | `sdd/specs/v2/spec_v2.md` | Diseño visual: modo oscuro/claro y mejoras de interfaz | implementado |
+| 005 | `sdd/specs/v2/spec_v2.md` | Ejercicios para práctica | implementado |
+| 006 | `sdd/specs/v2/spec_v2.md` | Funcionalidades: exportar respuestas a PNG y PDF | implementado |
+| 007 | `sdd/specs/v2/spec_v2.md` | Reestructura: código fuente en `src/` | implementado |
+| 008 | `sdd/specs/v2/spec_v2.md` | Web adaptable a móviles | implementado |
+| 009 | `sdd/specs/v2/spec_v2.md` | Eliminar la GUI de Tkinter | implementado |
+| 010 | `sdd/specs/v2/spec_v2.md` | Determinante (cofactores y LU, con recomendación de eficiencia) | implementado |
 
 Esta tabla es el único seguimiento de módulos: se actualiza cada vez que se
 agrega una spec nueva (estado `pendiente`) o se cierra el ciclo de una

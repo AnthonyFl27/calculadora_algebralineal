@@ -47,7 +47,7 @@ Además de esta restricción, se busca que la calculadora sea **funcional, fáci
   - `general_metodos.py`: **utilidades generales** compartidas (fracciones y decimales, formateo de resultados y verificación de soluciones).
 - **`src/features/`**: funcionalidades generales que **no son métodos matemáticos** (por ahora `exportar.py`: exportar respuestas a PNG/PDF —incluido el determinante—, escrito a mano con la librería estándar, y su fuente bitmap, generada con `src/features/tools/generar_fuente.py`; sus pruebas están en `src/features/tests/`, se corren desde la raíz con `python -m unittest discover -s src/features/tests -t src`; ahí también está `prueba_web_movil.js`, un script opcional de Playwright que revisa la vista móvil de la web, ver su cabecera). `src/metodos/` es exclusivamente para métodos y operaciones matemáticas; lo demás va aquí.
 - **`src/tests/`**: pruebas de `vectores_matrices`, `determinante`, del catálogo de ejercicios, del contraste de colores (4.5:1 en ambos temas). Se corren desde la raíz con `python -m unittest discover -s src/tests -t src`.
-- **`sdd/`**: documentación de Spec-Driven Development. `plan.md` (metodología), `task.md` (tareas y avance) y `specs/`, organizado por versión: `specs/v1/` contiene las specs ya implementadas y `specs/v2/` es para las specs nuevas (la última es la `010`, determinante por cofactores y LU). Las specs `001`–`008` llevan al inicio una nota: la GUI de escritorio (Tkinter, `gui.py` / `src/main.py`) fue eliminada en la spec `009`, así que sus menciones a ella son solo contexto histórico y la web es la única interfaz.
+- **`sdd/`**: documentación de Spec-Driven Development. `plan.md` (metodología y checklist), `task.md` (tareas y avance) y `specs/`: `specs/v1/spec_v1.md` (resumen de las specs 001–003), `specs/v2/spec_v2.md` (resumen de las 004–010, incluye las **"Reglas permanentes"** de exportar PNG/PDF, móvil, temas, ejercicios y consola que todo módulo nuevo debe cumplir) y `specs/v3/` para las specs nuevas (la primera sería la `011`). Los textos originales de las specs 001–010 se consolidaron y siguen en el historial de git. La GUI de escritorio (Tkinter) fue eliminada en la spec 009; la web es la única interfaz.
 
 ## Regla de sincronía lógica ↔ web
 
@@ -59,4 +59,4 @@ Toda lógica nueva va en `src/metodos/`. Toda funcionalidad nueva o modificada s
 
 ## Cómo agregar módulos o métodos nuevos
 
-Se sigue la metodología y el checklist de `sdd/plan.md` (spec, lógica, impresión en la web, consola del servidor, ejercicios de práctica, temas y documentación).
+Se sigue la metodología y el checklist de `sdd/plan.md` (spec, lógica, impresión en la web, **exportar PNG/PDF**, consola del servidor, **vista móvil**, ejercicios de práctica, temas y documentación). Antes de empezar, leer "Reglas permanentes" en `sdd/specs/v2/spec_v2.md`.
