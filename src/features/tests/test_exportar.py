@@ -124,6 +124,9 @@ class DocumentoTest(unittest.TestCase):
                 self.assertIn(marca, con)
                 self.assertIn("det(A) = -2", con)
                 self.assertIn("Comprobación", con)
+                if metodo == "lu":
+                    self.assertIn("P·A = L·U ✓", con)
+                    self.assertIn("L·U =", con)
                 self.assertNotIn(marca, sin)
                 self.assertIn("det(A) = -2", sin)
 

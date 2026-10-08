@@ -112,6 +112,54 @@ class DeterminanteTests(unittest.TestCase):
         self.assertTrue(r["comprobacion"]["correcto"])
 
 
+class ComprobacionLUTests(unittest.TestCase):
+
+    def test_lu_vuelve_a_multiplicar_y_compara(self):
+        for matriz in BATERIA:
+            with self.subTest(matriz=matriz):
+                r = determinante(matriz, "lu")
+                f = r["comprobacion"]["factorizacion"]
+                a = [[Fraction(v) for v in fila] for fila in matriz]
+                self.assertEqual(f["PA"], _multiplicar(r["P"], a))
+                self.assertEqual(f["LU"], _multiplicar(r["L"], r["U"]))
+                self.assertEqual(f["PA"], f["LU"])
+                self.assertTrue(f["igual"])
+                self.assertTrue(f["L_triangular"])
+                self.assertTrue(f["U_triangular"])
+                self.assertTrue(r["comprobacion"]["correcto"])
+
+    def test_cofactores_no_trae_factorizacion(self):
+        r = determinante([[1, 2], [3, 4]], "cofactores")
+        self.assertNotIn("factorizacion", r["comprobacion"])
+
+    def test_lu_n_grande_solo_usa_la_factorizacion(self):
+        n = 7
+        matriz = [[(i + 2 * j) % 5 + (4 if i == j else 0) for j in range(n)]
+                  for i in range(n)]
+        c = determinante(matriz, "lu")["comprobacion"]
+        self.assertEqual(c["metodo"], "P·A = L·U")
+        self.assertIsNone(c["valor"])
+        self.assertTrue(c["factorizacion"]["correcto"])
+
+    def test_verificacion_detecta_factorizacion_incorrecta(self):
+        from metodos.determinante import _verificar_factorizacion
+        a = [[Fraction(2), Fraction(1)], [Fraction(4), Fraction(3)]]
+        i2 = [[Fraction(1), Fraction(0)], [Fraction(0), Fraction(1)]]
+        bien_l = [[Fraction(1), Fraction(0)], [Fraction(2), Fraction(1)]]
+        bien_u = [[Fraction(2), Fraction(1)], [Fraction(0), Fraction(1)]]
+        self.assertTrue(_verificar_factorizacion(a, i2, bien_l, bien_u)["correcto"])
+
+        mal_u = [[Fraction(2), Fraction(1)], [Fraction(0), Fraction(5)]]
+        r = _verificar_factorizacion(a, i2, bien_l, mal_u)
+        self.assertFalse(r["igual"])
+        self.assertFalse(r["correcto"])
+
+        l_sin_unos = [[Fraction(2), Fraction(0)], [Fraction(2), Fraction(1)]]
+        self.assertFalse(_verificar_factorizacion(a, i2, l_sin_unos, bien_u)["L_triangular"])
+        u_llena = [[Fraction(2), Fraction(1)], [Fraction(1), Fraction(1)]]
+        self.assertFalse(_verificar_factorizacion(a, i2, bien_l, u_llena)["U_triangular"])
+
+
 class CofactoresOpcionesTests(unittest.TestCase):
 
     def test_expansion_por_defecto_es_la_de_mas_ceros(self):

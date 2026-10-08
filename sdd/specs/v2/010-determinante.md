@@ -1,9 +1,10 @@
-Estado: pendiente
+Estado: implementado
 
 # 010 — Determinante de una matriz (cofactores y LU)
 
 **Archivos destino:** `src/metodos/determinante.py` (nuevo), `src/tests/test_determinante.py` (nuevo),
-`src/metodos/ejercicios.py`, `server.py`, `src/web/index.html`, `AGENTS.md`, `sdd/plan.md`, `sdd/task.md`.
+`src/metodos/ejercicios.py`, `server.py`, `src/web/index.html`, `src/features/exportar.py`,
+`AGENTS.md`, `sdd/plan.md`, `sdd/task.md`.
 
 ## Propósito
 
@@ -166,3 +167,46 @@ Funciones públicas:
 - Una matriz singular da `det = 0` con ambos métodos y la tarjeta ámbar.
 - Cofactores con `n > 6` muestra un mensaje amigable, no un traceback.
 - Las suites `src/tests` y `src/features/tests` pasan en verde.
+
+## Cambios y decisiones tomadas al implementar
+
+- **LU con matriz singular:** no se detiene en la primera columna sin pivote.
+  Registra un paso `sin_pivote` y continúa con la siguiente columna, para que
+  `P·A = L·U` se siga cumpliendo y pueda comprobarse. `det(A) = 0` igual.
+- **Comprobación de LU (ampliada):** además de recalcular con cofactores
+  (`n ≤ 6`), con LU **siempre** (para cualquier `n`) se vuelve a multiplicar
+  `L·U` y `P·A` y se comparan (`comprobacion.factorizacion`: `PA`, `LU`,
+  `igual`, `L_triangular`, `U_triangular`, `correcto`). Se verifica que `L` sea
+  triangular inferior con unos en la diagonal y `U` triangular superior. Para
+  `n = 7` y `8` es la única comprobación (`metodo: "P·A = L·U"`). `correcto`
+  exige que coincidan ambas cuando las dos aplican. En la web es la tarjeta
+  "L·U coincide con P·A" (muestra `L·U` y `P·A` con sus matrices) y también
+  sale en el PNG/PDF. Con cofactores no hay factorización que comprobar: solo
+  se compara con LU.
+- **Conteo real de multiplicaciones:** incluye las divisiones de los
+  multiplicadores de LU (cuestan lo mismo). Para 3×3 denso cofactores hace 9 y
+  la estimación `n!` dice 6; son estimaciones de orden de magnitud, no el
+  conteo exacto.
+- **`recomendar_metodo(n)`** devuelve además `cofactores_disponible`,
+  `lu_disponible`, `maximo_cofactores` y `maximo_lu`, para que la web
+  deshabilite cofactores (`n > 6`) y rechace `n > 8` sin duplicar los límites.
+- **Límites aplicados:** cofactores `n ≤ 6`, LU `n ≤ 8`. Si el usuario pide un
+  `n` inválido, el modal lo explica y se conservan los campos anteriores.
+- **Expansión de cofactores:** el selector "Expandir por" ofrece Automática
+  (más ceros), Fila *i* y Columna *j*; solo se muestra con cofactores. La
+  expansión elegida solo aplica al nivel superior; los menores se expanden
+  automáticamente.
+- **Ejercicios:** 7 (`det-01` … `det-07`: 2×2, 3×3, singular, 4×4 con ceros,
+  4×4 con intercambio de filas, 4×4 con fracciones y 5×5). Su `datos` incluye
+  `matriz` y `metodo` (el sugerido); "Probar ejercicio" carga ambos sin
+  resolver.
+- **Exportar:** `features/exportar.py` acepta el módulo `determinante`
+  (procedimiento y resultado con pasos, o solo resultado); `procedimiento_texto`
+  vive en `metodos/determinante.py`. Se agregó `↔` a la transliteración del PDF.
+- **Pruebas:** `src/tests/test_determinante.py` (nuevo), ejercicios en
+  `test_ejercicios.py`, exportación en `src/features/tests/test_exportar.py` y
+  `test_server_exportar.py`. `prueba_web_movil.js` incluye "Determinante" en
+  sus listas de módulos.
+- **Verificación:** `src/tests` (67) y `src/features/tests` (23) en verde;
+  `prueba_web_movil.js` sin fallas (283 comprobaciones) y una prueba funcional
+  con Chromium del flujo completo a 1100, 375 y 320 px en claro y oscuro.

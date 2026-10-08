@@ -3543,14 +3543,45 @@
 
     const comp = bloque.comprobacion;
     const ok = comp.correcto;
-    contenedor.appendChild(crearTarjetaVeredicto({
-      tipoClase: ok ? "tipo-unica" : "tipo-incompatible",
-      icono: ok ? "✓" : "✕",
-      titulo: ok ? "Comprobación correcta" : "Comprobación incorrecta",
-      detalle: comp.valor !== null
-        ? `Con ${NOMBRE_METODO_DET[comp.metodo]} se obtiene det(A) = ${comp.valor}.`
-        : "Se verifica que P·A = L·U.",
-    }));
+    const fact = comp.factorizacion;
+
+    if (fact) {
+      const marca = (bien) => (bien ? "✓" : "✕");
+      contenedor.appendChild(crearTarjetaVeredicto({
+        tipoClase: fact.correcto ? "tipo-unica" : "tipo-incompatible",
+        icono: marca(fact.correcto),
+        titulo: fact.correcto ? "L·U coincide con P·A" : "L·U no coincide con P·A",
+        detalle: "Se vuelve a multiplicar L · U y se compara con P · A (A con las filas reordenadas por los intercambios).",
+        cuerpoNodo: el("div", {}, [
+          el("div", { class: "ecuacion-comprobacion" }, [
+            tablaConEtiqueta("L", bloque.L),
+            el("span", { class: "simbolo-ecuacion", texto: "·" }),
+            tablaConEtiqueta("U", bloque.U),
+            el("span", { class: "simbolo-ecuacion", texto: "=" }),
+            tablaConEtiqueta("L · U", fact.LU),
+          ]),
+          el("div", { class: "ecuacion-comprobacion" }, [
+            tablaConEtiqueta("P", bloque.P),
+            el("span", { class: "simbolo-ecuacion", texto: "·" }),
+            tablaConEtiqueta("A", matriz),
+            el("span", { class: "simbolo-ecuacion", texto: "=" }),
+            tablaConEtiqueta("P · A", fact.PA),
+          ]),
+          el("div", { class: "termino-linea", texto: `${marca(fact.igual)} L·U = P·A` }),
+          el("div", { class: "termino-linea", texto: `${marca(fact.L_triangular)} L es triangular inferior con unos en la diagonal` }),
+          el("div", { class: "termino-linea", texto: `${marca(fact.U_triangular)} U es triangular superior` }),
+        ]),
+      }));
+    }
+
+    if (comp.valor !== null) {
+      contenedor.appendChild(crearTarjetaVeredicto({
+        tipoClase: comp.valor === bloque.resultado ? "tipo-unica" : "tipo-incompatible",
+        icono: comp.valor === bloque.resultado ? "✓" : "✕",
+        titulo: ok ? "Comprobación correcta" : "Comprobación incorrecta",
+        detalle: `Con ${NOMBRE_METODO_DET[comp.metodo]} se obtiene det(A) = ${comp.valor}.`,
+      }));
+    }
   }
 
   function vistaDeterminante(ejercicio) {

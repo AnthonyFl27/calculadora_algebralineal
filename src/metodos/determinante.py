@@ -388,8 +388,32 @@ def determinante(matriz, metodo="lu", modo="fraccion",
     return salida
 
 
+def _verificar_factorizacion(matriz, p, l, u):
+    """Vuelve a multiplicar: P·A debe ser igual a L·U; además L debe ser
+    triangular inferior con unos en la diagonal y U triangular superior."""
+
+    n = len(matriz)
+    pa = _multiplicar(p, matriz)
+    lu = _multiplicar(l, u)
+    l_ok = all(
+        l[i][j] == (1 if i == j else 0)
+        for i in range(n) for j in range(i, n)
+    )
+    u_ok = all(u[i][j] == 0 for i in range(n) for j in range(i))
+    igual = pa == lu
+
+    return {
+        "PA": pa, "LU": lu, "igual": igual,
+        "L_triangular": l_ok, "U_triangular": u_ok,
+        "correcto": igual and l_ok and u_ok,
+    }
+
+
 def _comprobar(matriz, metodo, resultado, datos, modo):
-    """Recalcula con el otro método; si no aplica, verifica P·A = L·U."""
+    """
+    Cofactores: recalcula con LU. LU: vuelve a multiplicar L·U y lo compara
+    con P·A y, si cofactores aplica (n ≤ 6), recalcula también con él.
+    """
 
     n = len(matriz)
 
@@ -397,15 +421,22 @@ def _comprobar(matriz, metodo, resultado, datos, modo):
         otro = _por_lu(matriz, modo)["resultado"]
         return {"metodo": "lu", "valor": otro, "correcto": otro == resultado}
 
+    factorizacion = _verificar_factorizacion(
+        matriz, datos["P"], datos["L"], datos["U"])
+
     if n <= N_MAX_COFACTORES:
         otro = _por_cofactores(matriz, modo, None, None)["resultado"]
         return {
-            "metodo": "cofactores", "valor": otro, "correcto": otro == resultado,
+            "metodo": "cofactores", "valor": otro,
+            "correcto": otro == resultado and factorizacion["correcto"],
+            "factorizacion": factorizacion,
         }
 
-    pa = _multiplicar(datos["P"], matriz)
-    lu = _multiplicar(datos["L"], datos["U"])
-    return {"metodo": "P·A = L·U", "valor": None, "correcto": pa == lu}
+    return {
+        "metodo": "P·A = L·U", "valor": None,
+        "correcto": factorizacion["correcto"],
+        "factorizacion": factorizacion,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -482,12 +513,21 @@ def procedimiento_texto(datos, modo="fraccion", incluir_pasos=True):
     lineas.append(f"Multiplicaciones realizadas: {datos['multiplicaciones']}")
 
     c = datos["comprobacion"]
+    marca = lambda ok: "✓" if ok else "✗"
     if c["valor"] is not None:
         lineas.append(
             f"Comprobación con {NOMBRES_METODO[c['metodo']]}: {f(c['valor'])} "
-            + ("✓" if c["correcto"] else "✗")
+            + marca(c["correcto"])
         )
-    else:
-        lineas.append("Comprobación P·A = L·U: " + ("✓" if c["correcto"] else "✗"))
+    fact = c.get("factorizacion")
+    if fact:
+        lineas += [
+            "", "Comprobación P·A = L·U (se vuelve a multiplicar):",
+            "P·A =", matriz_general_texto(fact["PA"], modo),
+            "L·U =", matriz_general_texto(fact["LU"], modo),
+            f"P·A = L·U {marca(fact['igual'])}",
+            f"L triangular inferior con unos en la diagonal {marca(fact['L_triangular'])}",
+            f"U triangular superior {marca(fact['U_triangular'])}",
+        ]
 
     return "\n".join(lineas)
