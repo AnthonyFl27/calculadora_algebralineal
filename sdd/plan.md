@@ -177,6 +177,8 @@ en `sdd/task.md`.
 | 006 | `sdd/specs/v2/006-funcionalidades.md` | Funcionalidades: exportar respuestas a PNG y PDF | implementado |
 | 007 | `sdd/specs/v2/007-reestructura-src.md` | Reestructura: código fuente en `src/` | implementado |
 | 008 | `sdd/specs/v2/008-adaptable-movil.md` | Web adaptable a móviles | implementado |
+| 009 | `sdd/specs/v2/009-eliminar-gui.md` | Eliminar la GUI de Tkinter | implementado |
+| 010 | `sdd/specs/v2/010-determinante.md` | Determinante (cofactores y LU, con recomendación de eficiencia) | pendiente |
 
 Esta tabla es el único seguimiento de módulos: se actualiza cada vez que se
 agrega una spec nueva (estado `pendiente`) o se cierra el ciclo de una

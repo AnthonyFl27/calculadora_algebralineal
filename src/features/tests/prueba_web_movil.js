@@ -15,8 +15,8 @@
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || "playwright-core");
 const BASE = process.env.BASE || "http://127.0.0.1:8124";
 const ANCHOS = [320, 360, 375, 390, 412, 430, 600, 768, 1024];
-const MODULOS = ["Inicio", "Gauss-Jordan", "Pivoteo", "Conversión de bases", "Vectores y matrices", "Ejercicios"];
-const METODOS_EJERCICIOS = ["Gauss-Jordan", "Pivoteo", "Conversión de bases", "Vectores y matrices"];
+const MODULOS = ["Inicio", "Gauss-Jordan", "Pivoteo", "Conversión de bases", "Vectores y matrices", "Determinante", "Ejercicios"];
+const METODOS_EJERCICIOS = ["Gauss-Jordan", "Pivoteo", "Conversión de bases", "Vectores y matrices", "Determinante"];
 
 let fallos = 0;
 const ok = (c, m) => { console.log((c ? "OK   " : "FALLA") + " " + m); if (!c) fallos++; };

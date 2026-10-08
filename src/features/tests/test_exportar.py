@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from features import exportar as ex
 from metodos.conversion import resolver as convertir
+from metodos.determinante import determinante
 from metodos.gauss_jordan import resolver as gauss_jordan
 from metodos.pivote import resolver as pivote
 from metodos.vectores_matrices import (
@@ -108,6 +109,31 @@ class DocumentoTest(unittest.TestCase):
         texto = texto_documento(ex.construir_documento(
             "vectores_matrices", datos, incluir_pasos=False))
         self.assertIn("A⁻¹", texto)
+
+    def test_determinante_con_y_sin_pasos(self):
+        matriz = [[0, 1, 2], [1, 0, 3], [4, -3, 8]]
+        for metodo, marca in (("lu", "Intercambio F1 ↔ F2"),
+                              ("cofactores", "menor M")):
+            r = determinante(matriz, metodo)
+            con = texto_documento(ex.construir_documento(
+                "determinante", r, "fraccion", True))
+            sin = texto_documento(ex.construir_documento(
+                "determinante", r, "fraccion", False))
+            with self.subTest(metodo):
+                self.assertIn(f"Determinante ({'LU' if metodo == 'lu' else 'Cofactores'})", con)
+                self.assertIn(marca, con)
+                self.assertIn("det(A) = -2", con)
+                self.assertIn("Comprobación", con)
+                self.assertNotIn(marca, sin)
+                self.assertIn("det(A) = -2", sin)
+
+    def test_determinante_singular_y_archivos(self):
+        r = determinante([[1, 2], [2, 4]], "lu")
+        texto = texto_documento(ex.construir_documento("determinante", r))
+        self.assertIn("singular", texto)
+        for formato in ("png", "pdf"):
+            datos, _, _ = ex.exportar("determinante", r, formato)
+            self.assertGreater(len(datos), 100)
 
     def test_errores(self):
         with self.assertRaises(ValueError):

@@ -50,6 +50,23 @@ class ExportarEndpointTest(unittest.TestCase):
         except urllib.error.HTTPError as error:
             return error
 
+    def test_determinante_exporta_y_responde(self):
+        datos = {"matriz": [["2", "1"], ["1", "3"]], "metodo": "cofactores"}
+        r = self.enviar({"modulo": "determinante", "formato": "pdf",
+                         "datos": datos})
+        self.assertEqual(r.status, 200)
+        self.assertRegex(r.headers["Content-Disposition"],
+                         r'filename="determinante-cofactores-\d{8}-\d{4}\.pdf"')
+
+        bloque = server._resolver_determinante(datos)
+        self.assertEqual(bloque["resultado"], "5")
+        self.assertEqual(bloque["comprobacion"]["correcto"], True)
+        self.assertEqual(
+            server._resolver_recomendacion_determinante({"n": "5"})["recomendado"],
+            "lu")
+        with self.assertRaises(ValueError):
+            server._resolver_recomendacion_determinante({"n": 0})
+
     def test_pdf_adjunto(self):
         r = self.enviar({"modulo": "sistema", "formato": "pdf",
                          "incluir_pasos": True, "datos": SISTEMA})

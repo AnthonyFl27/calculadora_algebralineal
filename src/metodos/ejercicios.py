@@ -14,6 +14,8 @@ números como texto tal cual se escribirían en los campos.
 Estructura de cada ejercicio:
     id, titulo, dificultad ("básico" | "intermedio" | "avanzado"),
     descripcion, datos, resultado_esperado
+Los de "determinante" llevan en `datos` la `matriz` y el `metodo` ("lu" |
+"cofactores") con el que conviene probarlos.
 Los ejercicios de "vectores-matrices" añaden `categoria`
 ("vectores" | "matrices" | "ecuacion-matricial" | "inversa") y `operacion`
 (el nombre que usa el selector de la vista, cuando aplica).
@@ -29,6 +31,7 @@ METODOS_EJERCICIOS = [
     ("pivoteo", "Pivoteo"),
     ("conversion", "Conversión de bases"),
     ("vectores-matrices", "Vectores y matrices"),
+    ("determinante", "Determinante"),
 ]
 
 
@@ -70,6 +73,18 @@ def _operacion(id, titulo, dificultad, descripcion, categoria, operacion,
         "operacion": operacion,
         "datos": datos,
         "resultado_esperado": esperado,
+    }
+
+
+def _determinante(id, titulo, dificultad, descripcion, matriz, metodo,
+                  resultado, singular=False):
+    return {
+        "id": id,
+        "titulo": titulo,
+        "dificultad": dificultad,
+        "descripcion": descripcion,
+        "datos": {"matriz": matriz, "metodo": metodo},
+        "resultado_esperado": {"resultado": resultado, "singular": singular},
     }
 
 
@@ -299,6 +314,59 @@ EJERCICIOS = {
             {"existe": False},
         ),
     ],
+    "determinante": [
+        _determinante(
+            "det-01", "Determinante 2×2", BASICO,
+            "ad − bc: con cofactores no hay nada más que desarrollar.",
+            [["3", "8"], ["4", "6"]], "cofactores", "-14",
+        ),
+        _determinante(
+            "det-02", "Determinante 3×3", BASICO,
+            "Expande por una fila y compara con LU: ambos dan lo mismo.",
+            [["2", "-1", "3"], ["0", "4", "1"], ["5", "2", "-2"]],
+            "cofactores", "-85",
+        ),
+        _determinante(
+            "det-03", "Matriz singular 3×3", INTERMEDIO,
+            "Las filas están en progresión: el determinante es 0 y no hay "
+            "inversa.",
+            [["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"]],
+            "lu", "0", True,
+        ),
+        _determinante(
+            "det-04", "4×4 con muchos ceros", INTERMEDIO,
+            "Con tantos ceros, cofactores descarta casi todos los términos: "
+            "pruébalo contra LU.",
+            [["1", "0", "2", "0"], ["0", "3", "0", "4"],
+             ["5", "0", "6", "0"], ["0", "7", "0", "8"]],
+            "cofactores", "16",
+        ),
+        _determinante(
+            "det-05", "4×4 que exige intercambio de filas", INTERMEDIO,
+            "El primer pivote es 0: LU debe intercambiar filas y cambiar el "
+            "signo.",
+            [["0", "2", "1", "3"], ["1", "1", "0", "2"],
+             ["3", "0", "1", "1"], ["2", "5", "4", "0"]],
+            "lu", "40",
+        ),
+        _determinante(
+            "det-06", "4×4 con fracciones", AVANZADO,
+            "Los multiplicadores generan fracciones: prueba también el modo "
+            "decimal.",
+            [["1/2", "2", "-1", "3"], ["4", "3/4", "0", "1"],
+             ["2", "2", "2", "1/3"], ["0", "1", "5", "2"]],
+            "lu", "-2903/24",
+        ),
+        _determinante(
+            "det-07", "Determinante 5×5", AVANZADO,
+            "Con n = 5 cofactores necesita unas 120 multiplicaciones y LU "
+            "unas 42: compara el contador real de cada método.",
+            [["2", "0", "1", "3", "1"], ["1", "1", "0", "2", "4"],
+             ["3", "0", "1", "1", "0"], ["2", "5", "4", "0", "1"],
+             ["0", "1", "1", "1", "2"]],
+            "lu", "76",
+        ),
+    ],
 }
 
 
@@ -336,6 +404,14 @@ def vista_previa(clave, ejercicio):
             f"{NOMBRES_BASE[datos['base_salida']]})"
         )
 
+    if clave == "determinante":
+        matriz = datos["matriz"]
+        ancho = max(len(celda) for fila in matriz for celda in fila)
+        return "\n".join(
+            "[ " + "  ".join(celda.rjust(ancho) for celda in fila) + " ]"
+            for fila in matriz
+        )
+
     categoria = ejercicio["categoria"]
     lineas = []
 
@@ -358,7 +434,7 @@ def vista_previa(clave, ejercicio):
         lineas.append("A·X = B")
         lineas.append(f"A = {_matriz_texto(datos['matriz_a'])}")
         lineas.append(f"B = {_matriz_texto(datos['matriz_b'])}")
-    else:
+    elif categoria == "inversa":
         lineas.append("Matriz inversa")
         lineas.append(f"A = {_matriz_texto(datos['matriz'])}")
 

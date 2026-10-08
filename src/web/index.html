@@ -693,6 +693,63 @@
     margin: 4px 0;
   }
 
+  /* ---------- DETERMINANTE: recomendación y selector de método ---------- */
+
+  .recomendacion {
+    background: var(--superficie);
+    border: 1px solid var(--color-borde);
+    border-left: 5px solid var(--color-exito);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 10px 0;
+    font-size: 13px;
+  }
+
+  .recomendacion-titulo { font-weight: bold; color: var(--texto-titulo); margin-bottom: 4px; }
+  .recomendacion-motivo { color: var(--texto-suave-1); margin: 4px 0 10px; }
+
+  .metodo-opciones {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .metodo-opcion {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 2px solid var(--color-borde);
+    border-radius: 8px;
+    background: var(--superficie-2);
+    cursor: pointer;
+  }
+
+  .metodo-opcion.elegido { border-color: var(--color-boton-act); background: var(--exito-fondo-suave); }
+  .metodo-opcion.no-disponible { opacity: 0.6; cursor: not-allowed; }
+  .metodo-opcion-nombre { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-weight: bold; color: var(--texto-titulo); }
+  .metodo-opcion-costo { font-size: 12px; color: var(--texto-suave-1); }
+
+  .etiqueta-recomendado {
+    font-size: 11px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--exito-fondo);
+    color: var(--exito-texto);
+  }
+
+  .termino-detalle { margin: 6px 0; padding-left: 12px; border-left: 2px solid var(--color-borde); font-size: 13px; }
+  .termino-detalle .termino-detalle { margin-left: 4px; }
+  .termino-linea { margin: 4px 0; color: var(--texto); }
+  .termino-linea.omitido { color: var(--texto-suave-1); font-style: italic; }
+  .multiplicadores { font-family: "Courier New", Courier, monospace; font-size: 13px; margin: 6px 0; overflow-wrap: anywhere; }
+
+  @media (max-width: 480px) {
+    .metodo-opciones { grid-template-columns: 1fr; }
+  }
+
   /* ---------- TABLA DE MATRIZ (resultado) ---------- */
 
   .tabla-matriz-envoltorio {
@@ -1722,6 +1779,7 @@
     pivoteo: '<path d="M7 4v16M7 4L4 7M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/>',
     conversion: '<path d="M4 8h14l-3-3M20 16H6l3 3"/>',
     vectores: '<path d="M5 19L19 5M19 5h-7M19 5v7"/>',
+    determinante: '<path d="M8 4H5v16h3M16 4h3v16h-3M10 9l4 6M14 9l-4 6"/>',
     ejercicios: '<path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',
   };
 
@@ -1764,6 +1822,11 @@
       exportar: true, clave: "vectores-matrices", nombre: "Vectores y matrices", icono: "vectores",
       descripcion: "Suma, resta, escalares, combinación lineal, multiplicación, ecuación matricial e inversa.",
       vista: vistaVectoresMatrices,
+    },
+    {
+      exportar: true, clave: "determinante", nombre: "Determinante", icono: "determinante",
+      descripcion: "Calcula el determinante por cofactores o LU, indicando cuál es más eficiente.",
+      vista: vistaDeterminante,
     },
   ];
 
@@ -1980,6 +2043,7 @@
     "/api/matrices": "matrices",
     "/api/ecuacion-matricial": "ecuacion-matricial",
     "/api/inversa": "inversa",
+    "/api/determinante": "determinante",
   };
 
   const TEXTO_SIN_RESULTADO = "Resuelve primero para exportar";
@@ -3339,6 +3403,315 @@
       el("div", { class: "titulo", texto: "Vectores y matrices" }),
       tabs,
       panelTabs,
+      formato,
+      panelResultado,
+    ]);
+  }
+
+  /* ==========================================================
+     VISTA: DETERMINANTE (cofactores / LU)
+     ========================================================== */
+
+  const NOMBRE_METODO_DET = { cofactores: "Cofactores", lu: "LU" };
+
+  /* Detalle recursivo de una expansión por cofactores (ya formateada). */
+  function renderExpansionDetalle(paso) {
+    if (paso.tipo === "base_1x1") {
+      return el("div", { class: "termino-linea", texto: `det = ${paso.valor}` });
+    }
+    if (paso.tipo === "base_2x2") {
+      return el("div", { class: "termino-linea", texto: paso.texto });
+    }
+    return el("div", { class: "termino-detalle" }, [
+      el("div", { class: "termino-linea", texto: paso.expansion.motivo }),
+      ...paso.terminos.map((t) => renderTerminoCofactor(t)),
+    ]);
+  }
+
+  function renderTerminoCofactor(t) {
+    const signo = t.signo > 0 ? "+" : "−";
+    const nombre = `a${t.fila}${t.columna} = ${t.valor}  (signo ${signo})`;
+    if (t.omitido) {
+      return el("div", { class: "termino-linea omitido", texto: `${nombre}: vale 0, se omite.` });
+    }
+    return el("div", { class: "termino-detalle" }, [
+      el("div", { class: "termino-linea", texto: `${nombre} · menor M${t.fila}${t.columna}:` }),
+      crearTablaMatriz(t.menor, {}),
+      renderExpansionDetalle(t.paso_menor),
+      el("div", { class: "termino-linea", texto: `det(M${t.fila}${t.columna}) = ${t.det_menor}  →  aporte = ${t.aporte}` }),
+    ]);
+  }
+
+  function renderPasoCofactores(t, indice, total) {
+    return el("div", { class: "paso-tarjeta" }, [
+      el("div", { class: "paso-encabezado" }, [
+        el("span", { class: "paso-numero", texto: `Término ${indice + 1} de ${total}` }),
+        el("span", { class: "paso-operacion tipo-eliminar", texto: `a${t.fila}${t.columna}` }),
+      ]),
+      renderTerminoCofactor(t),
+    ]);
+  }
+
+  function renderPasoLU(paso, indice, total, n) {
+    const encabezado = el("div", { class: "paso-encabezado" }, [
+      el("span", { class: "paso-numero", texto: `Paso ${indice + 1} de ${total}` }),
+      el("span", { class: "paso-operacion tipo-eliminar", texto: paso.tipo === "producto_diagonal" ? "Determinante" : `Columna ${paso.columna}` }),
+    ]);
+
+    if (paso.tipo === "producto_diagonal") {
+      return el("div", { class: "paso-tarjeta" }, [
+        encabezado,
+        el("div", { class: "paso-descripcion", texto: "Producto de la diagonal de U, con el signo de los intercambios de filas:" }),
+        el("div", { class: "planteamiento", texto: paso.texto }),
+      ]);
+    }
+
+    if (paso.tipo === "sin_pivote") {
+      return el("div", { class: "paso-tarjeta" }, [
+        encabezado,
+        el("div", { class: "paso-descripcion", texto: `No hay pivote en la columna ${paso.columna}: la diagonal de U tendrá un 0 y el determinante es 0.` }),
+        el("div", { class: "ecuacion-comprobacion" }, [tablaConEtiqueta("U", paso.U)]),
+      ]);
+    }
+
+    const partes = [encabezado];
+    partes.push(el("div", { class: "paso-descripcion", texto: `Pivote: ${paso.pivote}` }));
+    if (paso.intercambio) {
+      partes.push(el("div", { class: "termino-linea", texto: `Intercambio de filas F${paso.intercambio[0]} ↔ F${paso.intercambio[1]} (cambia el signo).` }));
+    }
+    if (paso.multiplicadores.length) {
+      partes.push(el("div", { class: "multiplicadores" }, paso.multiplicadores.map((m) =>
+        el("div", { texto: `l${m.fila}${paso.columna} = ${m.valor}   →   F${m.fila} ← F${m.fila} − l${m.fila}${paso.columna}·F${paso.columna}` }))));
+    } else {
+      partes.push(el("div", { class: "termino-linea omitido", texto: "No hay nada que eliminar debajo del pivote." }));
+    }
+    const k = paso.columna - 1;
+    partes.push(el("div", { class: "ecuacion-comprobacion" }, [
+      el("div", { class: "matriz-etiquetada" }, [
+        crearTablaMatriz(paso.U, { pivote: { fila: k, columna: k } }),
+        el("div", { class: "matriz-etiqueta", texto: "U (hasta ahora)" }),
+      ]),
+      tablaConEtiqueta("L (multiplicadores)", paso.L),
+    ]));
+    return el("div", { class: "paso-tarjeta" }, partes);
+  }
+
+  function renderDeterminante(contenedor, bloque) {
+    contenedor.innerHTML = "";
+    const nombre = NOMBRE_METODO_DET[bloque.metodo];
+    const matriz = bloque.entradas.matriz;
+    const n = matriz.length;
+
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: `Determinante (${nombre})` }));
+    contenedor.appendChild(el("div", { class: "ecuacion-comprobacion" }, [tablaConEtiqueta("A", matriz)]));
+
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Procedimiento" }));
+    if (bloque.metodo === "cofactores") {
+      const raiz = bloque.pasos[0];
+      if (raiz.tipo === "expansion") {
+        contenedor.appendChild(el("div", { class: "planteamiento", texto: raiz.expansion.motivo }));
+        contenedor.appendChild(crearStepperGenerico(
+          raiz.terminos, (t, i, total) => renderPasoCofactores(t, i, total)));
+        contenedor.appendChild(el("div", { class: "planteamiento", texto:
+          "det(A) = " + raiz.terminos.map((t) => `(${t.aporte})`).join(" + ") + ` = ${bloque.resultado}` }));
+      } else {
+        contenedor.appendChild(el("div", { class: "planteamiento" }, [renderExpansionDetalle(raiz)]));
+      }
+    } else {
+      contenedor.appendChild(crearStepperGenerico(
+        bloque.pasos, (paso, i, total) => renderPasoLU(paso, i, total, n)));
+      contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Factorización P·A = L·U" }));
+      contenedor.appendChild(el("div", { class: "ecuacion-comprobacion" }, [
+        tablaConEtiqueta("P", bloque.P),
+        el("span", { class: "simbolo-ecuacion", texto: "·A =" }),
+        tablaConEtiqueta("L", bloque.L),
+        el("span", { class: "simbolo-ecuacion", texto: "·" }),
+        tablaConEtiqueta("U", bloque.U),
+      ]));
+    }
+
+    const estimado = bloque.recomendacion[bloque.metodo].texto;
+    contenedor.appendChild(crearTarjetaVeredicto({
+      tipoClase: bloque.singular ? "tipo-infinitas" : "tipo-unica",
+      icono: bloque.singular ? "∞" : "✓",
+      titulo: `det(A) = ${bloque.resultado}`,
+      detalle: bloque.singular
+        ? "A es singular: su determinante es 0 y no tiene inversa."
+        : "A no es singular: tiene inversa.",
+      cuerpoTexto: `Método ${nombre}: ${bloque.multiplicaciones} multiplicaciones realizadas (estimación: ${estimado}).`,
+    }));
+
+    const comp = bloque.comprobacion;
+    const ok = comp.correcto;
+    contenedor.appendChild(crearTarjetaVeredicto({
+      tipoClase: ok ? "tipo-unica" : "tipo-incompatible",
+      icono: ok ? "✓" : "✕",
+      titulo: ok ? "Comprobación correcta" : "Comprobación incorrecta",
+      detalle: comp.valor !== null
+        ? `Con ${NOMBRE_METODO_DET[comp.metodo]} se obtiene det(A) = ${comp.valor}.`
+        : "Se verifica que P·A = L·U.",
+    }));
+  }
+
+  function vistaDeterminante(ejercicio) {
+    let modo = "fraccion";
+    let entradas = [];
+    let recomendacion = null;
+    let metodoElegido = "lu";
+    const panelResultado = el("div", { class: "resultado-panel" });
+    const marcoMatriz = el("div", { class: "grupo-tablas" });
+    const panelRecomendacion = el("div", {});
+
+    const entradaN = el("input", { type: "number", min: "1", value: "3" });
+    entradaN.style.width = "50px";
+    const selectorExpansion = el("select", {}, [el("option", { value: "auto", texto: "Automática (más ceros)" })]);
+    const campoExpansion = el("label", { class: "campo" }, [el("span", { texto: "Expandir por:" }), selectorExpansion]);
+
+    function actualizarExpansion(n) {
+      selectorExpansion.innerHTML = "";
+      selectorExpansion.appendChild(el("option", { value: "auto", texto: "Automática (más ceros)" }));
+      for (let i = 1; i <= n; i++) selectorExpansion.appendChild(el("option", { value: `fila:${i}`, texto: `Fila ${i}` }));
+      for (let j = 1; j <= n; j++) selectorExpansion.appendChild(el("option", { value: `columna:${j}`, texto: `Columna ${j}` }));
+    }
+
+    function mostrarOpcionExpansion() {
+      campoExpansion.style.display = metodoElegido === "cofactores" ? "" : "none";
+    }
+
+    function elegirMetodo(metodo) {
+      metodoElegido = metodo;
+      renderRecomendacion();
+      mostrarOpcionExpansion();
+    }
+
+    function renderRecomendacion() {
+      panelRecomendacion.innerHTML = "";
+      if (!recomendacion) return;
+      const r = recomendacion;
+      const opcion = (clave) => {
+        const disponible = r[`${clave}_disponible`];
+        const radio = el("input", { type: "radio", name: "metodo-det", value: clave });
+        radio.checked = metodoElegido === clave;
+        radio.disabled = !disponible;
+        radio.addEventListener("change", () => elegirMetodo(clave));
+        return el("label", {
+          class: `metodo-opcion${metodoElegido === clave ? " elegido" : ""}${disponible ? "" : " no-disponible"}`,
+        }, [
+          el("span", { class: "metodo-opcion-nombre" }, [
+            radio, document.createTextNode(NOMBRE_METODO_DET[clave]),
+            r.recomendado === clave ? el("span", { class: "etiqueta-recomendado", texto: "Recomendado" }) : null,
+          ]),
+          el("span", { class: "metodo-opcion-costo", texto: disponible
+            ? r[clave].texto
+            : `No disponible para n > ${r[`maximo_${clave}`]}` }),
+        ]);
+      };
+      panelRecomendacion.appendChild(el("div", { class: "recomendacion" }, [
+        el("div", { class: "recomendacion-titulo", texto: `¿Cuál conviene para n = ${r.n}?` }),
+        el("div", { class: "recomendacion-motivo", texto: r.motivo }),
+        el("div", { class: "metodo-opciones" }, [opcion("cofactores"), opcion("lu")]),
+      ]));
+    }
+
+    function crearGrilla(n) {
+      marcoMatriz.innerHTML = "";
+      const marco = el("div", { class: "marco-tabla" });
+      marco.appendChild(el("div", { class: "titulo-tabla", texto: "Matriz A" }));
+      const grid = el("div", { class: "tabla-genérica", style: `grid-template-columns: repeat(${n}, auto);` });
+      entradas = [];
+      for (let i = 0; i < n; i++) {
+        const fila = [];
+        for (let j = 0; j < n; j++) {
+          const entrada = crearCelda();
+          grid.appendChild(entrada);
+          fila.push(entrada);
+        }
+        entradas.push(fila);
+      }
+      marco.appendChild(grid);
+      marcoMatriz.appendChild(marco);
+    }
+
+    /* Pide la recomendación al servidor (la web nunca calcula) y arma los campos. */
+    async function crearCampos() {
+      let n;
+      try {
+        n = enteroPositivo(entradaN.value, "El tamaño n");
+        const r = await llamarApi("/api/determinante/recomendar", { n });
+        if (!r.lu_disponible) {
+          throw new Error(`El tamaño máximo admitido es n = ${r.maximo_lu}.`);
+        }
+        recomendacion = r;
+      } catch (error) {
+        mostrarError(error.message);
+        return false;
+      }
+      metodoElegido = recomendacion.recomendado;
+      crearGrilla(n);
+      actualizarExpansion(n);
+      renderRecomendacion();
+      mostrarOpcionExpansion();
+      panelResultado.innerHTML = "";
+      return true;
+    }
+
+    async function calcular() {
+      if (!entradas.length) {
+        mostrarError("Crea primero los campos de la matriz.");
+        return;
+      }
+      const cuerpo = {
+        matriz: entradas.map((fila) => fila.map((e) => e.value.trim())),
+        metodo: metodoElegido,
+        modo,
+      };
+      if (metodoElegido === "cofactores" && selectorExpansion.value !== "auto") {
+        const [tipo, indice] = selectorExpansion.value.split(":");
+        cuerpo.expansion = { tipo, indice: parseInt(indice, 10) };
+      }
+      try {
+        const resultado = await llamarApi("/api/determinante", cuerpo);
+        renderDeterminante(panelResultado, resultado);
+      } catch (error) {
+        mostrarError(error.message);
+      }
+    }
+
+    const controles = crearControles([
+      el("label", { texto: "Tamaño n (n × n):" }), entradaN,
+      el("button", { class: "btn", texto: "Crear campos", onclick: crearCampos }),
+      campoExpansion,
+      el("button", { class: "btn", texto: "Calcular determinante", onclick: calcular }),
+    ]);
+
+    const radioFraccion = el("input", { type: "radio", name: "modo-det", value: "fraccion", checked: "checked" });
+    const radioDecimal = el("input", { type: "radio", name: "modo-det", value: "decimal" });
+    radioFraccion.addEventListener("change", () => { modo = "fraccion"; });
+    radioDecimal.addEventListener("change", () => { modo = "decimal"; });
+    const formato = el("div", { class: "formato" }, [
+      el("span", { texto: "Mostrar resultados en:" }),
+      el("label", {}, [radioFraccion, document.createTextNode(" Fracciones")]),
+      el("label", {}, [radioDecimal, document.createTextNode(" Decimales")]),
+    ]);
+
+    /* Ejercicio de práctica: carga la matriz y el método sugerido, sin calcular. */
+    async function cargarEjercicio(ej) {
+      entradaN.value = String(ej.datos.matriz.length);
+      if (await crearCampos()) {
+        llenarEntradas(entradas, ej.datos.matriz);
+        if (ej.datos.metodo && recomendacion[`${ej.datos.metodo}_disponible`]) elegirMetodo(ej.datos.metodo);
+      }
+    }
+
+    crearCampos().then(() => {
+      if (ejercicio && ejercicio.datos) cargarEjercicio(ejercicio);
+    });
+
+    return el("div", {}, [
+      el("div", { class: "titulo", texto: "Determinante" }),
+      controles,
+      panelRecomendacion,
+      marcoMatriz,
       formato,
       panelResultado,
     ]);

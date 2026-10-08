@@ -35,6 +35,7 @@ from metodos.general_metodos import formatear
 from metodos.gauss_jordan import resolver as resolver_gauss_jordan
 from metodos.pivote import resolver as resolver_pivote
 from metodos.conversion import NOMBRES_BASE, resolver as resolver_conversion
+from metodos.determinante import determinante, recomendar_metodo
 from metodos.ejercicios import METODOS_EJERCICIOS, catalogo as catalogo_ejercicios
 from metodos.vectores_matrices import (
     combinacion_lineal,
@@ -374,6 +375,58 @@ def _resolver_inversa(datos):
     return _armar_bloque_operacion(resultado, modo)
 
 
+def _armar_bloque_determinante(resultado, modo):
+    """Formatea el resultado de metodos/determinante.determinante()."""
+
+    bloque = {
+        "tipo": "determinante",
+        "metodo": resultado["metodo"],
+        "entradas": _formatear_estructura(resultado["entradas"], modo),
+        "pasos": _formatear_estructura(resultado["pasos"], modo),
+        "resultado": _formatear_estructura(resultado["resultado"], modo),
+        "singular": resultado["singular"],
+        "multiplicaciones": resultado["multiplicaciones"],
+        "recomendacion": resultado["recomendacion"],
+        "comprobacion": _formatear_estructura(resultado["comprobacion"], modo),
+    }
+
+    if resultado["metodo"] == "cofactores":
+        bloque["expansion"] = resultado["expansion"]
+    else:
+        for clave in ("P", "L", "U", "intercambios"):
+            bloque[clave] = _formatear_estructura(resultado[clave], modo)
+
+    return bloque
+
+
+def _calcular_determinante(datos):
+    modo = datos.get("modo", "fraccion")
+    metodo = datos.get("metodo", "lu")
+    expansion = datos.get("expansion") or {}
+    resultado = determinante(
+        datos.get("matriz", []), metodo, modo,
+        tipo_expansion=expansion.get("tipo"),
+        indice_expansion=expansion.get("indice"),
+    )
+
+    return "determinante", resultado, modo, None
+
+
+def _resolver_determinante(datos):
+    _, resultado, modo, _ = _calcular_determinante(datos)
+
+    return _armar_bloque_determinante(resultado, modo)
+
+
+def _resolver_recomendacion_determinante(datos):
+    n = datos.get("n")
+
+    if isinstance(n, str) and n.strip().isdigit():
+        n = int(n)
+
+    return recomendar_metodo(n)
+
+
 RUTAS = {
     "/api/sistema": _resolver_sistema,
     "/api/conversion": _resolver_conversion,
@@ -381,6 +434,8 @@ RUTAS = {
     "/api/matrices": _resolver_matrices,
     "/api/ecuacion-matricial": _resolver_ecuacion_matricial,
     "/api/inversa": _resolver_inversa,
+    "/api/determinante": _resolver_determinante,
+    "/api/determinante/recomendar": _resolver_recomendacion_determinante,
 }
 
 # Cálculo crudo de cada módulo (el mismo que usan las rutas de arriba);
@@ -392,6 +447,7 @@ CALCULOS = {
     "matrices": _calcular_matrices,
     "ecuacion-matricial": _calcular_ecuacion_matricial,
     "inversa": _calcular_inversa,
+    "determinante": _calcular_determinante,
 }
 
 RUTA_EXPORTAR = "/api/exportar"
@@ -440,6 +496,8 @@ DESTINO = {
     "/api/matrices": "metodos.vectores_matrices (matrices)",
     "/api/ecuacion-matricial": "metodos.vectores_matrices.ecuacion_matricial",
     "/api/inversa": "metodos.vectores_matrices.matriz_inversa",
+    "/api/determinante": "metodos.determinante.determinante",
+    "/api/determinante/recomendar": "metodos.determinante.recomendar_metodo",
     RUTA_EXPORTAR: "features.exportar.exportar",
 }
 
@@ -523,6 +581,18 @@ def _descripcion_peticion(ruta, datos, resultado):
         return (DESTINO[ruta], f"método={datos.get('metodo')} · modo={modo}",
                 f"{existe} · {pasos} pasos")
 
+    if ruta == "/api/determinante":
+        matriz = datos.get("matriz", [])
+        resumen = f"{resultado.get('multiplicaciones')} multiplicaciones"
+        return (DESTINO[ruta],
+                f"método={datos.get('metodo')} · {len(matriz)}×{len(matriz)} · "
+                f"modo={modo}",
+                f"det = {resultado.get('resultado')} · {resumen}")
+
+    if ruta == "/api/determinante/recomendar":
+        return (DESTINO[ruta], f"n={datos.get('n')}",
+                f"recomendado: {resultado.get('recomendado')}")
+
     if ruta == RUTA_EXPORTAR:
         return (DESTINO[ruta],
                 f"{datos.get('formato')} · {datos.get('modulo')} · "
@@ -556,7 +626,7 @@ def _registrar(metodo, ruta, codigo, milisegundos, recibidos, enviados, detalle)
     linea = "  ".join([
         _c(f"[{hora}]", "tenue"),
         _c(f"{metodo:<4}", color_metodo, "negrita"),
-        f"{ruta:<24}",
+        f"{ruta:<30}",
         _c(str(codigo), color_estado, "negrita"),
         _c(f"{milisegundos:>6.1f} ms", "tenue"),
         _c(f"↓ {_bytes_legibles(recibidos)}  ↑ {_bytes_legibles(enviados)}", "tenue"),
@@ -749,7 +819,7 @@ def _banner(puerto, host="127.0.0.1"):
                    ("metodos.ejercicios.catalogo", "tenue")])
 
     for ruta, destino in DESTINO.items():  # incluye /api/exportar
-        lineas.append([("POST ", "magenta"), (f"{ruta:<24}", ), (destino, "tenue")])
+        lineas.append([("POST ", "magenta"), (f"{ruta:<30}", ), (destino, "tenue")])
 
     print()
     print(_caja(lineas))

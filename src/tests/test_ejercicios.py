@@ -5,6 +5,7 @@ import unittest
 from fractions import Fraction
 
 from metodos import ejercicios
+from metodos.determinante import determinante
 from metodos.conversion import resolver as resolver_conversion
 from metodos.gauss_jordan import resolver as resolver_gauss_jordan
 from metodos.pivote import resolver as resolver_pivote
@@ -143,6 +144,23 @@ class CatalogoTests(unittest.TestCase):
                     self.assertEqual(a_texto(resultado[clave]), a_texto(esperado)
                                      if not isinstance(esperado, bool) else
                                      str(esperado), clave)
+
+    def test_determinantes_coinciden_con_el_motor(self):
+        lista = ejercicios.EJERCICIOS["determinante"]
+        self.assertGreaterEqual(len(lista), 6)
+        self.assertEqual({e["dificultad"] for e in lista}, DIFICULTADES)
+        self.assertTrue(any(e["resultado_esperado"]["singular"] for e in lista))
+
+        for ejercicio in lista:
+            with self.subTest(ejercicio["id"]):
+                datos = ejercicio["datos"]
+                esperado = ejercicio["resultado_esperado"]
+                for metodo in ("cofactores", "lu"):
+                    resultado = determinante(datos["matriz"], metodo)
+                    self.assertEqual(str(resultado["resultado"]),
+                                     esperado["resultado"], metodo)
+                    self.assertEqual(resultado["singular"], esperado["singular"])
+                self.assertIn(datos["metodo"], ("lu", "cofactores"))
 
     def test_vista_previa_para_todos_los_ejercicios(self):
         for clave, lista in ejercicios.catalogo().items():

@@ -30,6 +30,10 @@ from metodos.general_metodos import (
     texto_comprobacion,
 )
 from metodos.conversion import NOMBRES_BASE, procedimiento_texto as _conv_texto
+from metodos.determinante import (
+    NOMBRES_METODO as _NOMBRES_DET,
+    procedimiento_texto as _det_texto,
+)
 from metodos.vectores_matrices import (
     matriz_general_texto,
     procedimiento_texto as _vm_texto,
@@ -40,7 +44,7 @@ FORMATOS = {
     "png": ("image/png", "png"),
     "pdf": ("application/pdf", "pdf"),
 }
-MODULOS = ("sistema", "conversion", "vectores_matrices")
+MODULOS = ("sistema", "conversion", "vectores_matrices", "determinante")
 
 # Paleta de impresión: único lugar con colores de los archivos exportados
 # (no depende del tema de la interfaz; siempre fondo blanco).
@@ -65,7 +69,7 @@ PDF_ANCHO, PDF_ALTO, PDF_MARGEN = 595, 842, 40
 
 _TRANSLITERACION = {
     "⁻¹": "^-1", "−": "-", "–": "-", "∞": "inf", "≠": "!=", "≈": "~",
-    "←": "<-", "→": "->", "↑": "^", "↓": "v", "↳": "->", "✓": "OK",
+    "←": "<-", "→": "->", "↔": "<->", "↑": "^", "↓": "v", "↳": "->", "✓": "OK",
     "✗": "X", "✕": "X", "⁻": "^-", "⁰": "^0", "⁴": "^4", "⁵": "^5",
     "⁶": "^6", "⁷": "^7", "⁸": "^8", "⁹": "^9", "─": "-", "│": "|",
     "┌": "+", "┐": "+", "└": "+", "┘": "+", "═": "=",
@@ -162,6 +166,25 @@ def _documento_conversion(resultado, incluir_pasos):
     else:
         _seccion(documento, "Resultado")
         _agregar(documento, TEXTO, f"Resultado: {resultado['resultado']}")
+    return documento
+
+
+def _documento_determinante(resultado, modo, incluir_pasos):
+    documento = []
+
+    if incluir_pasos:
+        _seccion(documento, "Procedimiento y resultado")
+        lineas = _lineas(_det_texto(resultado, modo, True))
+        _agregar(documento, TEXTO, "\n".join(lineas[2:]))  # sin el título
+    else:
+        _seccion(documento, "Datos de entrada")
+        _agregar(documento, TEXTO, matriz_general_texto(
+            resultado["entradas"]["matriz"], modo))
+        _seccion(documento, "Resultado")
+        _agregar(documento, TEXTO, "det(A) = " + formatear(
+            resultado["resultado"], modo)
+            + ("\nLa matriz es singular (no tiene inversa)."
+               if resultado["singular"] else ""))
     return documento
 
 
@@ -270,6 +293,8 @@ def titulo_documento(modulo, resultado, titulo=None):
                       else "Gauss-Jordan")
             return f"Matriz inversa ({metodo})"
         return _TITULOS_OPERACION.get(operacion, "Vectores y matrices")
+    if modulo == "determinante":
+        return f"Determinante ({_NOMBRES_DET[resultado['metodo']]})"
     return "Sistema de ecuaciones"
 
 
@@ -292,6 +317,8 @@ def construir_documento(modulo, resultado, modo="fraccion",
         cuerpo = _documento_sistema(resultado, modo, incluir_pasos, titulo)
     elif modulo == "conversion":
         cuerpo = _documento_conversion(resultado, incluir_pasos)
+    elif modulo == "determinante":
+        cuerpo = _documento_determinante(resultado, modo, incluir_pasos)
     else:
         cuerpo = _documento_vectores_matrices(resultado, modo, incluir_pasos)
 
