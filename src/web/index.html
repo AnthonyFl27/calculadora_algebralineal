@@ -20,37 +20,39 @@
 <style>
   :root {
     color-scheme: light;
-    --color-fondo: #f5f5f5;
-    --color-sidebar: #2c3e50;
-    --color-boton: #34495e;
-    --color-boton-act: #0e7a67;
-    --acento-texto: #0e7a67;   /* verde de acento usado como color de texto */
+    --color-fondo: #d5dadd;
+    --color-sidebar: #1d2a37;
+    --color-boton: #095a3e;      /* verde jade oscuro (botones de acción) */
+    --color-boton-act: #0a6e4e;  /* jade: hover, activo y acentos */
+    --color-nav: #2b3e51;        /* botones del sidebar: gris */
+    --color-nav-hover: #374f66;
+    --acento-texto: #085a49;   /* verde de acento usado como color de texto */
     --color-texto-sb: #ffffff;
     --color-exito: #1abc9c;
     --color-alerta: #f39c12;
     --color-error: #e74c3c;
     --color-neutro: #7f8c8d;
-    --color-borde: #d8dde0;
+    --color-borde: #aab3b8;
 
     --texto: #1c1c1c;
     --texto-titulo: #2c3e50;
     --texto-acento: #34495e;
-    --texto-suave-1: #55636b;
-    --texto-suave-2: #55646c;
-    --texto-suave-3: #5d6c74;
-    --texto-tenue: #5d6c74;
+    --texto-suave-1: #3b4850;
+    --texto-suave-2: #3c4951;
+    --texto-suave-3: #3f4c54;
+    --texto-tenue: #3f4c54;
     --texto-sb-suave: #cfd8dc;
 
-    --superficie: #ffffff;
-    --superficie-2: #fafbfb;
-    --superficie-3: #fbfcfc;
-    --input-fondo: #ffffff;
-    --borde-input: #b7b7b7;
+    --superficie: #e2e7e9;
+    --superficie-2: #dce1e4;
+    --superficie-3: #dee3e6;
+    --input-fondo: #e9edef;
+    --borde-input: #8f989e;
     --borde-tab: #c9c9c9;
-    --tab-fondo: #e6e6e6;
-    --linea-tabla: #eef0f1;
-    --linea-fila: #f0f2f3;
-    --chip-fondo: #eef2f3;
+    --tab-fondo: #c8cfd3;
+    --linea-tabla: #c9d0d4;
+    --linea-fila: #ccd3d6;
+    --chip-fondo: #cdd5d8;
     --desact-fondo: #b0b0b0;
     --desact-texto: #9e9e9e;
     --punto: #d3d9db;
@@ -58,16 +60,16 @@
 
     --pivote-fondo: rgba(26, 188, 156, 0.16);
     --pivote-fondo-fuerte: rgba(26, 188, 156, 0.22);
-    --pivote-texto: #0b6b58;
+    --pivote-texto: #064a3c;
     --fila-resaltada: rgba(52, 73, 94, 0.05);
-    --exito-texto: #0f7360;
+    --exito-texto: #084f40;
     --exito-fondo: rgba(26, 188, 156, 0.15);
     --exito-fondo-suave: rgba(26, 188, 156, 0.12);
     --alerta-fondo: rgba(243, 156, 18, 0.15);
-    --alerta-texto: #8a5604;
+    --alerta-texto: #6a4000;
     --error-fondo: rgba(231, 76, 60, 0.15);
     --error-fondo-suave: rgba(231, 76, 60, 0.06);
-    --error-texto: #b03024;
+    --error-texto: #8a2216;
 
     --op-inter-fondo: #fdebd0;
     --op-inter-texto: #935116;
@@ -77,14 +79,23 @@
     --sidebar-separador: rgba(255, 255, 255, 0.18);
     --overlay: rgba(0, 0, 0, 0.35);
     --sombra: rgba(0, 0, 0, 0.3);
+
+    /* Fondo de partículas ASCII (decorativo): componentes RGB para el canvas. */
+    --particula-rgb: 10, 120, 74;
+    --particula-reposo: 0.55;
+    --particula-onda: 0.9;
+    --tarjeta-rgb: 14, 105, 160;    /* letras que salen de las tarjetas (azul, distinto del verde) */
+    --tarjeta-opacidad: 0.4;
   }
 
   html[data-theme="dark"] {
     color-scheme: dark;
     --color-fondo: #1a1f24;
     --color-sidebar: #11161a;
-    --color-boton: #2f3b46;
-    --color-boton-act: #0f7f6b;
+    --color-boton: #084c36;
+    --color-boton-act: #0a6e4e;
+    --color-nav: #2f3b46;
+    --color-nav-hover: #3a4955;
     --acento-texto: #4fd8bd;
     --color-texto-sb: #ffffff;
     --color-exito: #1abc9c;
@@ -138,6 +149,12 @@
     --sidebar-separador: rgba(255, 255, 255, 0.14);
     --overlay: rgba(0, 0, 0, 0.6);
     --sombra: rgba(0, 0, 0, 0.6);
+
+    --particula-rgb: 90, 230, 140;
+    --particula-reposo: 0.13;
+    --particula-onda: 0.7;
+    --tarjeta-rgb: 110, 200, 245;
+    --tarjeta-opacidad: 0.36;
   }
 
   * { box-sizing: border-box; }
@@ -153,9 +170,31 @@
   }
 
   .app {
+    position: relative;
+    z-index: 1;   /* por encima del canvas de partículas */
     display: flex;
     min-height: 100vh;
     min-height: 100dvh;
+  }
+
+  /* Letras que salen de una tarjeta al pasar el ratón: encima de todo, recortadas a la tarjeta. */
+  .efecto-tarjetas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* Fondo de partículas ASCII: detrás de todo, no intercepta clics. */
+  .fondo-particulas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
   }
 
   /* Barra superior y overlay del drawer: solo existen en vista móvil. */
@@ -206,7 +245,7 @@
     transition: background 0.15s ease;
   }
 
-  @media (hover: hover) { .btn-colapsar:hover { background: var(--color-boton); } }
+  @media (hover: hover) { .btn-colapsar:hover { background: var(--color-nav); } }
 
   /* Sidebar replegado: solo queda visible el botón para desplegarlo. */
   .sidebar.colapsado { width: 56px; padding: 16px 0; align-items: center; }
@@ -218,7 +257,7 @@
   .sidebar.colapsado .estado-servidor span { display: none; }
 
   .nav-btn {
-    background: var(--color-boton);
+    background: var(--color-nav);
     color: var(--color-texto-sb);
     border: none;
     border-radius: 12px;
@@ -239,7 +278,7 @@
 
   .nav-icono { display: flex; flex-shrink: 0; }
 
-  @media (hover: hover) { .nav-btn:hover { background: var(--color-boton-act); } }
+  @media (hover: hover) { .nav-btn:hover { background: var(--color-nav-hover); } }
   .nav-btn.active { background: var(--color-boton-act); font-weight: bold; }
 
   .btn-tema {
@@ -1368,7 +1407,7 @@
     }
 
     .btn-menu:active,
-    .btn-cerrar-drawer:active { background: var(--color-boton); }
+    .btn-cerrar-drawer:active { background: var(--color-nav); }
 
     .drawer-overlay {
       display: block;
@@ -1506,6 +1545,9 @@
 </style>
 </head>
 <body>
+
+<canvas class="fondo-particulas" id="fondo-particulas" aria-hidden="true"></canvas>
+<canvas class="efecto-tarjetas" id="efecto-tarjetas" aria-hidden="true"></canvas>
 
 <div class="app">
   <!-- Barra superior: solo visible en vista móvil (≤ 768 px). -->
@@ -3900,6 +3942,485 @@
 
   construirSidebar();
   mostrarVista(INICIO);
+})();
+</script>
+
+<script>
+/* ==========================================================
+   FONDO DE PARTÍCULAS ASCII
+   Los caracteres flotan en una ola lenta y constante. Cada clic (o toque)
+   lanza un frente verde de forma irregular (distinto cada vez). Varios clics seguidos acumulan intensidad: el
+   frente llega más lejos, más rápido y la ola se acelera un momento.
+   Es solo decoración: no calcula nada. Los colores salen de --particula-*.
+   ========================================================== */
+(function () {
+  "use strict";
+
+  const canvas = document.getElementById("fondo-particulas");
+  if (!canvas || !canvas.getContext) return;
+  const ctx = canvas.getContext("2d");
+
+  const CARACTERES = "01abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ23456789+-=<>/\\|*#%&";
+  const JUEGOS = [
+    CARACTERES,
+    "01",
+    "0123456789",
+    "0123456789ABCDEF",
+    "+-=<>/\\|*#%&",
+    "αβγδλμπσφψω∑∫√∞≈±"
+  ];
+  const TAM_CELDA_X = 9;       // ancho de celda (px CSS)
+  const TAM_CELDA_Y = 15;      // alto de celda (px CSS)
+  const NIVELES = 20;          // niveles de opacidad (se dibuja por lotes)
+  const MAX_ONDAS = 8;
+  const MAX_IMPULSO = 2.4;     // tope de intensidad acumulada
+  const SUMA_IMPULSO = 0.55;   // lo que aporta cada clic
+  const CAIDA_IMPULSO = 1.6;   // segundos que tarda en enfriarse la intensidad
+  const VEL_NUBES = 26;        // px por segundo que avanzan las nubes (izquierda → derecha)
+  const MS_CUADRO_REPOSO = 33; // ~30 fps en reposo, 60 fps con actividad
+
+  const reducirMovimiento = window.matchMedia
+    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let ancho = 0, alto = 0, cols = 0, filas = 0;
+  let letras = [];            // carácter actual de cada celda
+  let semilla = null;         // valor fijo 0..1 por celda (quién aparece primero)
+  let energia = null;         // brillo del frente verde por celda (0..1)
+  let posX = null, posY = null; // posición con vaivén de cada celda visible
+  let ondas = [];             // frentes activos
+  let rgb = "90, 230, 140", opReposo = 0.13, opOnda = 0.7;
+  let rafId = 0, ultimoCuadro = 0, ultimoDibujo = 0;
+
+  // Estado de la ola ambiente.
+  let desp = 0;                                 // desplazamiento horizontal acumulado (px, sin saltos)
+  let impulso = 0;                              // intensidad por clics seguidos
+  const faseA = Math.random() * 10, faseB = Math.random() * 10,
+        faseC = Math.random() * 10, faseD = Math.random() * 10;
+
+  function leerColores() {
+    const css = getComputedStyle(document.documentElement);
+    rgb = css.getPropertyValue("--particula-rgb").trim() || rgb;
+    opReposo = parseFloat(css.getPropertyValue("--particula-reposo")) || opReposo;
+    opOnda = parseFloat(css.getPropertyValue("--particula-onda")) || opOnda;
+  }
+
+  function letraAlAzar(juego) {
+    const j = juego || CARACTERES;
+    return j[Math.floor(Math.random() * j.length)];
+  }
+
+  function entre(a, b) { return a + Math.random() * (b - a); }
+
+  function ajustarTamano() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    ancho = window.innerWidth;
+    alto = window.innerHeight;
+    canvas.width = Math.round(ancho * dpr);
+    canvas.height = Math.round(alto * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cols = Math.ceil(ancho / TAM_CELDA_X);
+    filas = Math.ceil(alto / TAM_CELDA_Y);
+    const total = cols * filas;
+    letras = new Array(total);
+    semilla = new Float32Array(total);
+    energia = new Float32Array(total);
+    posX = new Float32Array(total);
+    posY = new Float32Array(total);
+    for (let i = 0; i < total; i++) { letras[i] = letraAlAzar(); semilla[i] = Math.random(); }
+    dibujar();
+  }
+
+  /* Frente irregular: el radio depende del ángulo con armónicos propios de cada clic. */
+  function deformacion(o, ang) {
+    let m = 1 + 0.28 * o.sesgo * Math.cos(ang - o.dirSesgo);
+    for (const h of o.armonicos) m += h.a * Math.sin(h.n * ang + h.f);
+    return Math.max(0.3, m);
+  }
+
+  /* Cada clic sortea su propia forma, tamaño, ritmo, textura y juego de caracteres. */
+  function sortearFrente(x, y, fuerza) {
+    const armonicos = [];
+    const cuantos = 2 + Math.floor(Math.random() * 3);          // 2 a 4
+    let suma = 0;
+    for (let k = 0; k < cuantos; k++) {
+      const a = entre(0.05, 0.3);
+      suma += a;
+      armonicos.push({ n: 2 + Math.floor(Math.random() * 7), a: a, f: entre(0, 6.28) });
+    }
+    const sesgo = entre(-0.5, 1);
+    const alcance = (240 + 560 * fuerza) * entre(0.7, 1.35);
+    const velocidad = (200 + 140 * fuerza) * entre(0.75, 1.3);
+    const grosor = (70 + 55 * fuerza) * entre(1.1, 2.4);
+    const ruidoAmp = entre(0.3, 0.95);
+    return {
+      x: x, y: y, t0: performance.now(),
+      alcance: alcance,
+      grosor: grosor,
+      dur: alcance / velocidad * 1.5 + 0.8,
+      armonicos: armonicos,
+      sesgo: sesgo,
+      dirSesgo: Math.random() < 0.5 ? 0 : entre(0, 6.28),       // a favor de la ola o hacia cualquier lado
+      mMax: 1 + suma + 0.28 * Math.abs(sesgo),
+      ruidoAmp: ruidoAmp,
+      kx: entre(0.008, 0.04), ky: entre(0.008, 0.04),
+      sx: entre(1.3, 2.6),                                       // estirado a lo ancho, no una pelota
+      f3: entre(0, 6.28), f4: entre(0, 6.28),
+      perfil: entre(0.6, 1.6),                                   // borde suave o seco
+      dens: entre(0.5, 1),                                      // frente denso o salpicado
+      cambio: entre(0.25, 0.9),                                 // cuántos caracteres se revuelven
+      juego: JUEGOS[Math.floor(Math.random() * JUEGOS.length)]
+    };
+  }
+
+  function dibujar() {
+    ctx.clearRect(0, 0, ancho, alto);
+    ctx.font = "12px 'Courier New', monospace";
+    ctx.textBaseline = "top";
+
+    // Las cuatro ondas se desplazan solo en horizontal (cada una a un ritmo parecido,
+    // para que las nubes se transformen un poco al pasar), nunca hacia arriba ni abajo.
+    const d1 = desp, d2 = desp * 0.85, d3 = desp * 1.2, d4 = desp * 1.4;
+
+    const lotes = [];
+    for (let n = 0; n <= NIVELES; n++) lotes.push([]);
+
+    for (let f = 0; f < filas; f++) {
+      const y0 = f * TAM_CELDA_Y;
+      for (let c = 0; c < cols; c++) {
+        const i = f * cols + c;
+        const x0 = c * TAM_CELDA_X;
+        // Ondas largas en u y más cortas en v: manchas alargadas que se fusionan, como nubes.
+        const w1 = Math.sin((x0 - d1) * 0.0045 + y0 * 0.004 + faseA);
+        const w2 = Math.sin((x0 - d2) * 0.008 - y0 * 0.011 + faseB);
+        const w3 = Math.sin((x0 - d3) * 0.003 + y0 * 0.016 + faseC);
+        const w4 = Math.sin((x0 - d4) * 0.015 + y0 * 0.006 + faseD);
+        const campo = (w1 + 0.8 * w2 + 0.7 * w3 + 0.3 * w4) / 2.8;
+        const t = Math.min(1, Math.max(0, (campo + 0.05) / 0.55));
+        const nube = t * t * (3 - 2 * t);                      // 0 fuera, 1 en el centro
+        let a = nube > 0 && semilla[i] < 0.3 + 0.7 * nube
+          ? (0.4 + 0.6 * nube) * (0.75 + 0.25 * w4) * opReposo : 0;
+        const e = energia[i];
+        if (e > 0) a = Math.max(a, e * opOnda);
+        if (a < 0.015) continue;
+        const nivel = Math.min(NIVELES, Math.round((a / opOnda) * NIVELES));
+        if (nivel < 1) continue;
+        lotes[nivel].push(i);
+        // Vaivén suave: los caracteres "flotan" con la ola.
+        posX[i] = x0 + 3.5 * w2 * (1 + impulso);
+        posY[i] = y0 + 0.6 * w1 * (1 + impulso);
+      }
+    }
+
+    for (let n = 1; n <= NIVELES; n++) {
+      const lote = lotes[n];
+      if (!lote.length) continue;
+      ctx.fillStyle = "rgba(" + rgb + "," + ((n / NIVELES) * opOnda).toFixed(3) + ")";
+      for (const i of lote) ctx.fillText(letras[i], posX[i], posY[i]);
+    }
+  }
+
+  function actualizarFrentes(ahora, dt) {
+    const caida = Math.pow(0.05, dt);
+    for (let i = 0; i < energia.length; i++) {
+      if (energia[i] > 0) {
+        energia[i] *= caida;
+        if (energia[i] < 0.01) energia[i] = 0;
+      }
+    }
+    ondas = ondas.filter(o => (ahora - o.t0) / 1000 < o.dur);
+    for (const o of ondas) {
+      const tn = (ahora - o.t0) / 1000 / o.dur;            // 0..1
+      const avance = 1 - Math.pow(1 - tn, 2);              // frena al final
+      const radio = o.alcance * avance;
+      const vida = Math.pow(1 - tn, 1.3);
+      const grosor = o.grosor * (0.7 + 0.6 * avance);
+      const rMax = (radio + 14) * o.mMax + grosor + 30;
+      const rMaxX = rMax * o.sx;
+      const c0 = Math.max(0, Math.floor((o.x - rMaxX) / TAM_CELDA_X));
+      const c1 = Math.min(cols - 1, Math.ceil((o.x + rMaxX) / TAM_CELDA_X));
+      const f0 = Math.max(0, Math.floor((o.y - rMax) / TAM_CELDA_Y));
+      const f1 = Math.min(filas - 1, Math.ceil((o.y + rMax) / TAM_CELDA_Y));
+      for (let f = f0; f <= f1; f++) {
+        for (let c = c0; c <= c1; c++) {
+          const x = (c + 0.5) * TAM_CELDA_X, y = (f + 0.5) * TAM_CELDA_Y;
+          const dx = (x - o.x) / o.sx, dy = y - o.y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          const m = deformacion(o, Math.atan2(dy, dx));
+          // Ruido local: el borde se vuelve "rasgado", no un anillo perfecto.
+          const ruido = o.ruidoAmp * grosor * Math.sin(x * o.kx + o.f3) * Math.sin(y * o.ky + o.f4);
+          const dEf = d / m + ruido;
+          if (dEf < radio - grosor || dEf > radio + 10) continue;
+          const i = f * cols + c;
+          if (semilla[i] > o.dens) continue;                // frente salpicado: celdas fijas se saltan
+          const e = Math.pow(Math.min(1, (dEf - (radio - grosor)) / grosor * 1.15), o.perfil) * vida;
+          if (e > energia[i]) {
+            energia[i] = e;
+            if (Math.random() < o.cambio) letras[i] = letraAlAzar(o.juego);
+          }
+        }
+      }
+    }
+  }
+
+  function actualizar(ahora, dt) {
+    impulso *= Math.exp(-dt / CAIDA_IMPULSO);
+    if (impulso < 0.01) impulso = 0;
+
+    desp += dt * VEL_NUBES * (1 + impulso * 1.6);          // las nubes avanzan; más rápido con impulso
+
+    // Algunos caracteres cambian solos, más con impulso.
+    const cambios = Math.floor(letras.length * 0.0015 * (1 + impulso * 3)) + 1;
+    for (let k = 0; k < cambios; k++) letras[Math.floor(Math.random() * letras.length)] = letraAlAzar();
+
+    actualizarFrentes(ahora, dt);
+  }
+
+  function cuadro(ahora) {
+    rafId = requestAnimationFrame(cuadro);
+    const activo = ondas.length > 0 || impulso > 0;
+    if (!activo && ahora - ultimoDibujo < MS_CUADRO_REPOSO) return;
+    const dt = Math.min(0.05, (ahora - ultimoCuadro) / 1000 || 0.016);
+    ultimoCuadro = ahora;
+    ultimoDibujo = ahora;
+    actualizar(ahora, dt);
+    dibujar();
+  }
+
+  function iniciar() {
+    if (rafId || reducirMovimiento || document.hidden) return;
+    ultimoCuadro = performance.now();
+    rafId = requestAnimationFrame(cuadro);
+  }
+
+  function detener() {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = 0;
+  }
+
+  function lanzarOnda(x, y) {
+    if (reducirMovimiento) return;
+    leerColores();
+    impulso = Math.min(MAX_IMPULSO, impulso + SUMA_IMPULSO);
+    const fuerza = impulso;                                  // 0.55 un clic ... 2.4 muchos
+
+    ondas.push(sortearFrente(x, y, fuerza));
+    if (ondas.length > MAX_ONDAS) ondas.shift();
+    iniciar();
+  }
+
+  /* Solo cuenta como "espacio vacío" el fondo: nada interactivo, ni texto, ni
+     ningún elemento con fondo propio (tarjetas, tablas, sidebar, modales...). */
+  const INTERACTIVOS = "button, a, input, select, textarea, label, summary, [role='button'], "
+    + ".sidebar, .topbar, .drawer-overlay, .modal-overlay, .toast";
+
+  function esEspacioVacio(el) {
+    if (!el || el === document.documentElement || el === document.body || el === canvas) return true;
+    if (el.closest(INTERACTIVOS)) return false;
+    for (const nodo of el.childNodes) {
+      if (nodo.nodeType === 3 && nodo.textContent.trim()) return false;   // texto
+    }
+    for (let n = el; n && n !== document.body; n = n.parentElement) {
+      if (n.classList.contains("panel") || n.classList.contains("app")) break;
+      const fondo = getComputedStyle(n).backgroundColor;
+      if (fondo !== "transparent" && fondo !== "rgba(0, 0, 0, 0)") return false;
+    }
+    return true;
+  }
+
+  window.addEventListener("pointerdown", (ev) => {
+    if (ev.button !== undefined && ev.button > 0) return;   // solo clic principal / toque
+    if (!esEspacioVacio(ev.target)) return;
+    lanzarOnda(ev.clientX, ev.clientY);
+  }, { passive: true });
+
+  let esperaRedimension = 0;
+  window.addEventListener("resize", () => {
+    clearTimeout(esperaRedimension);
+    esperaRedimension = setTimeout(ajustarTamano, 150);
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) detener(); else iniciar();
+  });
+
+  // Cambio de tema: se vuelven a leer los colores y se redibuja.
+  new MutationObserver(() => { leerColores(); dibujar(); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  leerColores();
+  ajustarTamano();
+  iniciar();
+})();
+</script>
+<script>
+/* ==========================================================
+   LETRAS QUE SALEN DE LAS TARJETAS
+   Al pasar el ratón por una tarjeta del Inicio, unas letras ASCII (de otro
+   color que el fondo) salen desde el punto por donde entró el cursor y se
+   esparcen por el resto de la tarjeta: entrando por el centro se abren en
+   todas direcciones; entrando por una esquina o un borde se reparten hacia
+   el interior. Solo con ratón (el celular no tiene hover). Es decoración.
+   Colores: --tarjeta-rgb y --tarjeta-opacidad.
+   ========================================================== */
+(function () {
+  "use strict";
+
+  const canvas = document.getElementById("efecto-tarjetas");
+  if (!canvas || !canvas.getContext) return;
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const ctx = canvas.getContext("2d");
+
+  const SELECTOR = ".inicio-tarjeta";
+  const CARACTERES = "01abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ23456789+-=<>/\\|*#%&";
+  const RADIO_TARJETA = 14;     // igual que border-radius de .inicio-tarjeta
+  const FRICCION = 2.2;         // 1/s: las letras frenan suavemente
+  const MAX_PARTICULAS = 400;
+
+  let rgb = "110, 200, 245", opacidad = 0.85;
+  let particulas = [];          // {tarjeta, ox, oy, vx, vy, t, vida, car, tam, cambio}
+  let rafId = 0, ultimo = 0;
+  let dpr = 1;
+
+  function entre(a, b) { return a + Math.random() * (b - a); }
+  function letra() { return CARACTERES[Math.floor(Math.random() * CARACTERES.length)]; }
+
+  function leerColores() {
+    const css = getComputedStyle(document.documentElement);
+    rgb = css.getPropertyValue("--tarjeta-rgb").trim() || rgb;
+    opacidad = parseFloat(css.getPropertyValue("--tarjeta-opacidad")) || opacidad;
+  }
+
+  function ajustarTamano() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(window.innerWidth * dpr);
+    canvas.height = Math.round(window.innerHeight * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  /* Reparte las letras desde (px, py) (relativo a la tarjeta) hacia el resto de la tarjeta. */
+  function lanzar(tarjeta, px, py) {
+    const r = tarjeta.getBoundingClientRect();
+    const w = r.width, h = r.height;
+    const cx = w / 2, cy = h / 2;
+    const mediaDiag = Math.sqrt(cx * cx + cy * cy);
+    const alCentro = Math.sqrt((cx - px) * (cx - px) + (cy - py) * (cy - py));
+    // Esquina más lejana: hasta ahí deben poder llegar las letras.
+    const lejos = Math.max(
+      Math.hypot(px, py), Math.hypot(w - px, py), Math.hypot(px, h - py), Math.hypot(w - px, h - py));
+    // Cerca del centro se abren en todas direcciones; en bordes y esquinas, hacia adentro.
+    const apertura = Math.PI - (Math.PI - 1.15) * Math.min(1, alCentro / (0.6 * mediaDiag));
+    const haciaCentro = Math.atan2(cy - py, cx - px);
+    const cantidad = Math.min(36, Math.max(16, Math.round(w * h / 7500)));
+
+    for (let k = 0; k < cantidad; k++) {
+      const ang = alCentro < 4 ? entre(0, Math.PI * 2) : haciaCentro + entre(-apertura, apertura);
+      const vida = entre(0.8, 1.4);
+      const recorrido = lejos * entre(0.25, 1.0);                       // cuánto se aleja
+      const v0 = recorrido * FRICCION / (1 - Math.exp(-FRICCION * vida));
+      particulas.push({
+        tarjeta: tarjeta,
+        ox: px + entre(-6, 6), oy: py + entre(-6, 6),
+        vx: Math.cos(ang) * v0, vy: Math.sin(ang) * v0,
+        t: 0, vida: vida, car: letra(),
+        tam: Math.random() < 0.15 ? 14 : 12,
+        cambio: entre(0.06, 0.16)
+      });
+    }
+    if (particulas.length > MAX_PARTICULAS) particulas.splice(0, particulas.length - MAX_PARTICULAS);
+    if (!rafId) { ultimo = performance.now(); rafId = requestAnimationFrame(cuadro); }
+  }
+
+  /* Zonas donde las letras no deben pasar: el ícono y cada línea de texto de la tarjeta. */
+  function zonasProtegidas(tarjeta) {
+    const zonas = [];
+    const margen = 3;
+    for (const el of tarjeta.querySelectorAll(".inicio-icono, .inicio-nombre, .inicio-descripcion")) {
+      let rects;
+      if (el.classList.contains("inicio-icono")) {
+        rects = [el.getBoundingClientRect()];
+      } else {
+        const rango = document.createRange();
+        rango.selectNodeContents(el);
+        rects = rango.getClientRects();                       // una por línea de texto
+      }
+      for (const z of rects) {
+        if (z.width < 1 || z.height < 1) continue;
+        zonas.push([z.left - margen, z.top - margen, z.width + 2 * margen, z.height + 2 * margen]);
+      }
+    }
+    return zonas;
+  }
+
+  /* Recorta a la tarjeta, dejando huecos en el ícono y el texto (regla par-impar). */
+  function recortar(r, zonas) {
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(r.left, r.top, r.width, r.height, RADIO_TARJETA);
+    else ctx.rect(r.left, r.top, r.width, r.height);
+    for (const z of zonas) ctx.rect(z[0], z[1], z[2], z[3]);
+    ctx.clip("evenodd");
+  }
+
+  function cuadro(ahora) {
+    rafId = 0;
+    const dt = Math.min(0.05, (ahora - ultimo) / 1000 || 0.016);
+    ultimo = ahora;
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+    // Se agrupan por tarjeta: cada una se dibuja recortada a su propio rectángulo.
+    const porTarjeta = new Map();
+    for (const p of particulas) {
+      p.t += dt;
+      p.ox += p.vx * dt;
+      p.oy += p.vy * dt;
+      const f = Math.exp(-FRICCION * dt);
+      p.vx *= f; p.vy *= f;
+      p.cambio -= dt;
+      if (p.cambio <= 0) { p.car = letra(); p.cambio = entre(0.08, 0.2); }
+      if (p.t < p.vida) {
+        if (!porTarjeta.has(p.tarjeta)) porTarjeta.set(p.tarjeta, []);
+        porTarjeta.get(p.tarjeta).push(p);
+      }
+    }
+    particulas = particulas.filter(p => p.t < p.vida);
+
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    for (const [tarjeta, lista] of porTarjeta) {
+      const r = tarjeta.getBoundingClientRect();
+      ctx.save();
+      recortar(r, zonasProtegidas(tarjeta));
+      for (const p of lista) {
+        const vida = p.t / p.vida;
+        const alfa = opacidad * Math.min(1, p.t / 0.08) * Math.pow(1 - vida, 1.4);
+        ctx.font = p.tam + "px 'Courier New', monospace";
+        ctx.fillStyle = "rgba(" + rgb + "," + alfa.toFixed(3) + ")";
+        ctx.fillText(p.car, r.left + p.ox, r.top + p.oy);
+      }
+      ctx.restore();
+    }
+    if (particulas.length) rafId = requestAnimationFrame(cuadro);
+  }
+
+  // pointerover burbujea; solo cuenta cuando el cursor entra desde fuera de la tarjeta.
+  document.addEventListener("pointerover", (ev) => {
+    if (ev.pointerType === "touch") return;
+    const tarjeta = ev.target.closest && ev.target.closest(SELECTOR);
+    if (!tarjeta || tarjeta.contains(ev.relatedTarget)) return;
+    const r = tarjeta.getBoundingClientRect();
+    lanzar(tarjeta, ev.clientX - r.left, ev.clientY - r.top);
+  }, { passive: true });
+
+  let esperaRedimension = 0;
+  window.addEventListener("resize", () => {
+    clearTimeout(esperaRedimension);
+    esperaRedimension = setTimeout(ajustarTamano, 150);
+  });
+
+  new MutationObserver(leerColores)
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  leerColores();
+  ajustarTamano();
 })();
 </script>
 </body>
