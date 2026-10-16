@@ -18,6 +18,7 @@ si se abre directamente con doble clic: necesita este servidor corriendo.
 
 import json
 import os
+import re
 import sys
 import threading
 import time
@@ -699,6 +700,15 @@ class Manejador(BaseHTTPRequestHandler):
 
         if ruta in ("/", "/index.html"):
             self._enviar_archivo(SRC / "web" / "index.html", "text/html; charset=utf-8")
+        elif ruta.startswith("/media/"):
+            # Sprites de la celebración (.png + .json) de src/web/media/, sin subcarpetas.
+            nombre = ruta[len("/media/"):]
+            tipos = {"png": "image/png", "json": "application/json; charset=utf-8"}
+            if re.fullmatch(r"[A-Za-z0-9_-]+\.(png|json)", nombre):
+                self._enviar_archivo(SRC / "web" / "media" / nombre,
+                                     tipos[nombre.rsplit(".", 1)[1]])
+            else:
+                self.send_error(404, "Archivo no encontrado")
         elif ruta == "/api/estado":
             self._enviar_json({"ok": True})
         elif ruta == "/api/ejercicios":
