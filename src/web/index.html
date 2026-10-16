@@ -282,7 +282,6 @@
   .nav-btn.active { background: var(--color-boton-act); font-weight: bold; }
 
   .btn-tema {
-    position: relative;
     margin-top: auto;
     display: flex;
     align-items: center;
@@ -327,32 +326,6 @@
     padding: 10px 24px 30px;
     overflow-y: auto;
   }
-
-  /* ---------- CELEBRACIÓN AL RESOLVER ----------
-     La mascota sale parada sobre el botón de modo claro/oscuro del sidebar
-     (los pies en el borde de arriba del botón). Con el sidebar replegado o en
-     móvil sale abajo a la derecha de la pantalla y se juega una sola vez.
-     No intercepta clics ni cambia el diseño. */
-  .celebracion {
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    translate: -50% 0;
-    display: block;
-    pointer-events: none;
-    z-index: 2;
-    animation: celebracion-entrar 0.25s ease-out;
-  }
-  .celebracion-suelta {
-    position: fixed;
-    left: auto;
-    right: 12px;
-    bottom: calc(8px + env(safe-area-inset-bottom));
-    translate: none;
-    z-index: 50;
-  }
-  @keyframes celebracion-entrar { from { opacity: 0; transform: translateY(-6px); } }
-  @media (prefers-reduced-motion: reduce) { .celebracion { animation: none; } }
 
   /* ---------- INICIO ---------- */
 
@@ -1688,102 +1661,6 @@
     mostrarModal("Aviso", mensaje, "aviso");
   }
 
-  /* ==========================================================
-     CELEBRACIÓN AL RESOLVER
-     Al resolver algo, la mascota sale parada sobre el botón de modo
-     claro/oscuro con una de dos animaciones (al azar, nunca dos a la vez) y
-     sigue hasta cambiar de vista. Cada animación es una hoja de sprites PNG
-     con transparencia + un JSON con la duración de cada cuadro (los genera
-     src/features/tools/generar_celebraciones.py a partir de los videos).
-     Es solo decoración: no calcula nada.
-     ========================================================== */
-
-  const CELEBRACIONES = ["festejo", "flag_clawd"];
-  const celebracionSprites = {};        // nombre -> promesa de { datos, imagen }
-  let celebracionActual = null;         // { canvas, cuadro }
-
-  function quitarCelebracion() {
-    if (!celebracionActual) return;
-    cancelAnimationFrame(celebracionActual.cuadro);
-    if (celebracionActual.canvas) celebracionActual.canvas.remove();
-    celebracionActual = null;
-  }
-
-  function cargarSprite(nombre) {
-    if (!celebracionSprites[nombre]) {
-      const datos = fetch(`/media/${nombre}.json`).then((respuesta) => {
-        if (!respuesta.ok) throw new Error("sprite no disponible");
-        return respuesta.json();
-      });
-      const imagen = new Promise((listo, falla) => {
-        const img = new Image();
-        img.onload = () => listo(img);
-        img.onerror = falla;
-        img.src = `/media/${nombre}.png`;
-      });
-      celebracionSprites[nombre] = Promise.all([datos, imagen])
-        .then(([d, img]) => ({ datos: d, imagen: img }));
-      celebracionSprites[nombre].catch(() => { delete celebracionSprites[nombre]; });
-    }
-    return celebracionSprites[nombre];
-  }
-
-  async function celebrar() {
-    quitarCelebracion();
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const nombre = CELEBRACIONES[Math.floor(Math.random() * CELEBRACIONES.length)];
-    const actual = { canvas: null, cuadro: 0 };
-    celebracionActual = actual;
-
-    let sprite;
-    try {
-      sprite = await cargarSprite(nombre);
-    } catch (error) {
-      if (celebracionActual === actual) celebracionActual = null;
-      return;                           // sin sprite no pasa nada: es decorativo
-    }
-    if (celebracionActual !== actual) return;   // otra celebración la reemplazó
-
-    const { datos, imagen } = sprite;
-    // Sobre el botón de tema si se ve; si no (replegado o móvil), suelta en la esquina.
-    const botonTema = sidebar.querySelector(".btn-tema");
-    const sobreBoton = botonTema && botonTema.offsetParent !== null
-      && !window.matchMedia("(max-width: 768px)").matches;
-
-    const canvas = el("canvas", {
-      class: sobreBoton ? "celebracion" : "celebracion celebracion-suelta",
-      "aria-hidden": "true",
-    });
-    canvas.width = datos.ancho;
-    canvas.height = datos.alto;
-    canvas.style.width = `${datos.ancho / datos.densidad}px`;
-    canvas.style.height = `${datos.alto / datos.densidad}px`;
-    actual.canvas = canvas;
-    (sobreBoton ? botonTema : document.body).appendChild(canvas);
-
-    const contexto = canvas.getContext("2d");
-    let indice = -1;
-    let vence = 0;
-    const paso = (ahora) => {
-      if (celebracionActual !== actual) return;
-      if (ahora >= vence) {
-        indice += 1;
-        if (indice >= datos.duraciones.length) {
-          if (!sobreBoton) { quitarCelebracion(); return; }   // suelta: una vez
-          indice = 0;
-        }
-        vence = Math.max(vence, ahora - 100) + datos.duraciones[indice];
-        const x = (indice % datos.columnas) * datos.ancho;
-        const y = Math.floor(indice / datos.columnas) * datos.alto;
-        contexto.clearRect(0, 0, datos.ancho, datos.alto);
-        contexto.drawImage(imagen, x, y, datos.ancho, datos.alto, 0, 0, datos.ancho, datos.alto);
-      }
-      actual.cuadro = requestAnimationFrame(paso);
-    };
-    actual.cuadro = requestAnimationFrame(paso);
-  }
-
   async function llamarApi(ruta, cuerpo) {
     let respuesta;
     try {
@@ -1813,7 +1690,6 @@
     // Recuerda el último cálculo correcto para poder exportarlo.
     if (MODULO_EXPORTAR[ruta]) {
       exportable = { modulo: MODULO_EXPORTAR[ruta], datos: cuerpo };
-      celebrar();
     }
 
     return datos;
@@ -2187,7 +2063,6 @@
     }
     exportable = null;
     menuExportar = null;
-    quitarCelebracion();
     panel.innerHTML = "";
     panel.appendChild(metodo.vista(ejercicio));
     // El menú de exportar solo aparece en las vistas con resultado exportable.
