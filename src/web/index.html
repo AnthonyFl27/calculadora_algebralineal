@@ -808,13 +808,100 @@
   }
 
   .biseccion-formulario .campo-ancho { grid-column: 1 / -1; }
+  .biseccion-formulario .campo-vertical > span:first-child { font-weight: bold; color: var(--texto-titulo); }
   .biseccion-formulario input { width: 100%; box-sizing: border-box; }
   .biseccion-formulario .btn { grid-column: 1 / -1; justify-self: center; }
   .campo-ayuda { font-size: 12px; color: var(--texto-suave-1); }
 
-  /* Tabla de iteraciones: los números no se parten; si no caben, scroll interno. */
-  table.tabla-matriz.tabla-iteraciones th,
-  table.tabla-matriz.tabla-iteraciones td { white-space: nowrap; }
+  /* Campo de la función: grande, monoespaciado y con "f(x) =" integrado. */
+  .bloque-funcion { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .bloque-funcion-titulo { font-size: 13px; font-weight: bold; color: var(--texto-titulo); }
+
+  .entrada-funcion {
+    display: flex;
+    align-items: stretch;
+    border: 2px solid var(--borde-input);
+    border-radius: 10px;
+    background: var(--input-fondo);
+    overflow: hidden;
+  }
+
+  .entrada-funcion:focus-within { border-color: var(--color-boton-act); }
+
+  .entrada-funcion .prefijo {
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+    font-style: italic;
+    font-size: 22px;
+    color: var(--acento-texto);
+    background: var(--superficie-2);
+    border-right: 1px solid var(--color-borde);
+    white-space: nowrap;
+  }
+
+  .biseccion-formulario .entrada-funcion input {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    outline: none;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 20px;
+    padding: 12px 14px;
+    text-align: left;
+  }
+
+  /* Cómo se lee la función escrita (potencias como exponentes, ·, −, π, √). */
+  .vista-previa-funcion {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 14px;
+    border-left: 4px solid var(--color-exito);
+    border-radius: 0 8px 8px 0;
+    background: var(--superficie);
+    font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+    font-size: 22px;
+    color: var(--texto);
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .vista-previa-funcion .vp-etiqueta {
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--texto-suave-1);
+  }
+
+  .vista-previa-funcion .vp-vacia { font-family: Arial, sans-serif; font-size: 14px; font-style: italic; color: var(--texto-suave-1); }
+  .vista-previa-funcion sup { font-size: 0.65em; line-height: 0; }
+
+  .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .chips-titulo { font-size: 12px; color: var(--texto-suave-1); margin-right: 4px; }
+
+  .chip {
+    min-height: 36px;
+    min-width: 40px;
+    padding: 4px 10px;
+    border: 1px solid var(--color-borde);
+    border-radius: 8px;
+    background: var(--chip-fondo);
+    color: var(--texto-acento);
+    font-family: "Courier New", Courier, monospace;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .chip:focus-visible { outline: 2px solid var(--color-boton-act); outline-offset: 2px; }
+  @media (hover: hover) { .chip:hover { border-color: var(--color-boton-act); } }
+  @media (max-width: 768px) { .chip { min-height: 44px; min-width: 44px; } }
 
   @media (max-width: 480px) {
     .biseccion-formulario { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -3917,6 +4004,31 @@
     }));
   }
 
+  /* Presentación de la función escrita: potencias como exponente, · − π √.
+     Solo cambia cómo se ve; el texto que se envía al servidor no se toca. */
+  function formatearFuncion(texto) {
+    const adornar = (t) => t.replace(/\*/g, "·").replace(/-/g, "−")
+      .replace(/\bpi\b/gi, "π").replace(/\bsqrt\b/gi, "√");
+    const base = texto.replace(/\*\*/g, "^");
+    const patron = /\^\s*(\([^()]*\)|[+-]?[0-9]+(?:[.,][0-9]+)?|[A-Za-z]+)/g;
+    const fragmento = document.createDocumentFragment();
+    let ultimo = 0, m;
+    while ((m = patron.exec(base)) !== null) {
+      fragmento.appendChild(document.createTextNode(adornar(base.slice(ultimo, m.index))));
+      const exponente = m[1][0] === "(" ? m[1].slice(1, -1) : m[1];
+      fragmento.appendChild(el("sup", { texto: adornar(exponente) }));
+      ultimo = patron.lastIndex;
+    }
+    fragmento.appendChild(document.createTextNode(adornar(base.slice(ultimo))));
+    return fragmento;
+  }
+
+  const SIMBOLOS_FUNCION = [
+    ["x", "x"], ["x²", "^2"], ["xⁿ", "^"], ["( )", "()", 1], ["π", "pi"], ["e", "e"],
+    ["√", "sqrt()", 1], ["sin", "sin()", 1], ["cos", "cos()", 1], ["tan", "tan()", 1],
+    ["eˣ", "exp()", 1], ["ln", "ln()", 1], ["|x|", "abs()", 1],
+  ];
+
   function vistaBiseccion(ejercicio) {
     const panelResultado = el("div", { class: "resultado-panel" });
     const atributos = { type: "text", autocomplete: "off", autocapitalize: "off", autocorrect: "off", spellcheck: "false" };
@@ -3953,15 +4065,62 @@
       entrada.addEventListener("keydown", (ev) => { if (ev.key === "Enter") calcular(); });
     }
 
+    const vistaPrevia = el("div", { class: "vista-previa-funcion", "aria-live": "polite" });
+
+    function actualizarVistaPrevia() {
+      vistaPrevia.innerHTML = "";
+      const texto = entradaFuncion.value.trim();
+      vistaPrevia.appendChild(el("span", { class: "vp-etiqueta", texto: "Se lee" }));
+      if (!texto) {
+        vistaPrevia.appendChild(el("span", { class: "vp-vacia", texto: "Escribe la función para ver cómo se lee." }));
+        return;
+      }
+      vistaPrevia.appendChild(el("span", {}, [document.createTextNode("f(x) = "), formatearFuncion(texto)]));
+    }
+
+    function insertarSimbolo(texto, retroceso) {
+      const valor = entradaFuncion.value;
+      const inicio = entradaFuncion.selectionStart === null ? valor.length : entradaFuncion.selectionStart;
+      const fin = entradaFuncion.selectionEnd === null ? valor.length : entradaFuncion.selectionEnd;
+      entradaFuncion.value = valor.slice(0, inicio) + texto + valor.slice(fin);
+      const posicion = inicio + texto.length - (retroceso || 0);
+      entradaFuncion.focus();
+      entradaFuncion.setSelectionRange(posicion, posicion);
+      actualizarVistaPrevia();
+    }
+
+    entradaFuncion.addEventListener("input", actualizarVistaPrevia);
+
+    const chipsSimbolos = el("div", { class: "chips", role: "group", "aria-label": "Insertar símbolo" }, [
+      el("span", { class: "chips-titulo", texto: "Insertar:" }),
+      ...SIMBOLOS_FUNCION.map(([etiqueta, texto, retroceso]) => el("button", {
+        type: "button", class: "chip", texto: etiqueta,
+        "aria-label": `Insertar ${texto}`,
+        onclick: () => insertarSimbolo(texto, retroceso),
+      })),
+    ]);
+
+    const bloqueFuncion = el("div", { class: "bloque-funcion" }, [
+      el("label", { class: "bloque-funcion-titulo", texto: "Función a resolver: f(x) = 0" }),
+      el("div", { class: "entrada-funcion" }, [
+        el("span", { class: "prefijo", texto: "f(x) =", "aria-hidden": "true" }),
+        entradaFuncion,
+      ]),
+      vistaPrevia,
+      chipsSimbolos,
+    ]);
+    entradaFuncion.setAttribute("aria-label", "Función f(x)");
+
     const formulario = el("div", { class: "biseccion-formulario" }, [
-      campo("f(x) =", entradaFuncion,
-        "Usa x, + − * / ^, paréntesis, pi, e y funciones como sin(x), cos(x), exp(x), ln(x), sqrt(x). Ej.: x^3 - 2x - 5", true),
+      bloqueFuncion,
       campo("Extremo a", entradaA),
       campo("Extremo b", entradaB),
       campo("Tolerancia E", entradaE, "Error relativo en fracción: 0.0001 = 0.01 %"),
       campo("Máx. iteraciones", entradaIter, "De 1 a 200"),
       el("button", { class: "btn", texto: "Calcular raíz", onclick: calcular }),
     ]);
+
+    actualizarVistaPrevia();
 
     /* Ejercicio de práctica: carga los datos sin calcular. */
     if (ejercicio && ejercicio.datos) {
@@ -3971,6 +4130,7 @@
       entradaB.value = d.b;
       entradaE.value = d.tolerancia;
       entradaIter.value = d.max_iter;
+      actualizarVistaPrevia();
     }
 
     return el("div", {}, [

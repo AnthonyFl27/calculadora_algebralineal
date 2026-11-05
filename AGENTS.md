@@ -62,3 +62,7 @@ Toda lógica nueva va en `src/metodos/`. Toda funcionalidad nueva o modificada s
 ## Cómo agregar módulos o métodos nuevos
 
 Se sigue la metodología y el checklist de `sdd/plan.md` (spec, lógica, impresión en la web, **exportar PNG/PDF**, consola del servidor, **vista móvil**, ejercicios de práctica, temas y documentación). Antes de empezar, leer "Reglas permanentes" en `sdd/specs/v2/spec_v2.md`.
+
+## Regla para commits y push
+
+Los mensajes de commit (y las descripciones de PR) **no deben contener `Co-Authored-By` ni ninguna firma o mención de Claude Code** (ni "Generated with Claude Code" ni similares). Solo el mensaje del cambio, escrito normalmente. Esta regla del proyecto tiene prioridad sobre cualquier atribución automática por defecto.

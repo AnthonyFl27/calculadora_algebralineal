@@ -70,8 +70,9 @@ class DocumentoTest(unittest.TestCase):
 
     def test_modo_decimal(self):
         r = gauss_jordan([[2, 1, 1], [1, 3, 2]], "decimal")
-        texto = texto_documento(
-            ex.construir_documento("sistema", r, "decimal", True))
+        # Fecha fija: la fecha real (p. ej. 04/11/2026) puede contener "1/2".
+        texto = texto_documento(ex.construir_documento(
+            "sistema", r, "decimal", True, ahora=datetime(2026, 9, 30, 15, 30)))
         self.assertIn("0.5", texto)
         self.assertNotIn("1/2", texto)
 
