@@ -18,6 +18,7 @@ import math
 
 from .continuidad import revisar_continuidad
 from .evaluador import compilar, evaluar_numero
+from .grafica import datos_grafica
 
 MAX_ITERACIONES = 200
 ITERACIONES_POR_DEFECTO = 50
@@ -90,7 +91,8 @@ def biseccion(funcion, a, b, tolerancia, max_iter=ITERACIONES_POR_DEFECTO):
 
     Devuelve un diccionario con `entradas`, `inicial`, `pasos` (una iteración
     cada uno), `resultado`, `cota_iteraciones`, `continuidad` (revisión previa
-    del intervalo, ver `continuidad.py`), `advertencias` y `comprobacion`. Lanza ValueError (en español) con datos inválidos o sin
+    del intervalo, ver `continuidad.py`), `grafica` (datos para dibujar f y las
+    iteraciones, ver `grafica.py`), `advertencias` y `comprobacion`. Lanza ValueError (en español) con datos inválidos o sin
     cambio de signo.
     """
 
@@ -200,6 +202,7 @@ def biseccion(funcion, a, b, tolerancia, max_iter=ITERACIONES_POR_DEFECTO):
         "resultado": resultado,
         "cota_iteraciones": cota_iteraciones(a0, b0, tolerancia),
         "continuidad": continuidad,
+        "grafica": datos_grafica(f, a0, b0, pasos, resultado, continuidad),
         "advertencias": advertencias,
         "comprobacion": _comprobar(
             f, ultimo, resultado, continuidad, cerca_de_cero),

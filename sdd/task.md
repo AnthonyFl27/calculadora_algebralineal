@@ -25,6 +25,9 @@ ciclo, el bloque se borra y solo se conservan las tareas que sigan abiertas.
 - [ ] Spec 012 (continuidad en la bisección): visto bueno visual en la máquina
       del usuario (tarjeta "Continuidad" en modo claro y oscuro y en móvil).
       Las pruebas automáticas validan comportamiento, no apariencia.
+- [ ] Spec 013 (gráfica de la bisección): visto bueno visual en la máquina del
+      usuario (web en claro/oscuro y móvil, y los PNG/PDF exportados), y
+      confirmar con el profesor que la gráfica cumple lo que pide.
 
 ---
 

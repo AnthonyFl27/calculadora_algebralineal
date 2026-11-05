@@ -17,6 +17,7 @@ Uso típico:
 """
 
 import base64
+import math
 import struct
 import unicodedata
 import zlib
@@ -24,6 +25,7 @@ from datetime import datetime
 from fractions import Fraction
 
 from features import _fuente_exportar as _fuente
+from features import grafica_exportar as _grafica
 from metodos.general_metodos import (
     formatear,
     matriz_texto,
@@ -61,10 +63,22 @@ PALETA_IMPRESION = {
     "gris": (105, 112, 122),
     "seccion_fondo": (226, 240, 238),
     "seccion_texto": (15, 90, 84),
+    # Gráfica (bisección)
+    "grafica_fondo": (244, 247, 248),
+    "grafica_banda": (252, 236, 205),
+    "grafica_rejilla": (221, 227, 230),
+    "grafica_eje": (70, 78, 90),
+    "grafica_marco": (140, 148, 156),
+    "grafica_curva": (15, 118, 110),
+    "grafica_punto": (30, 35, 45),
+    "grafica_raiz": (200, 45, 35),
+    "grafica_discontinuidad": (214, 125, 0),
 }
 
-# Estilos de línea del documento.
+# Estilos de línea del documento. GRAFICA no lleva texto: su "texto" es el
+# diccionario con los datos de la gráfica (ver `grafica_exportar.py`).
 TITULO, SUBTITULO, SECCION, TEXTO = "titulo", "subtitulo", "seccion", "texto"
+GRAFICA = "grafica"
 
 PNG_ANCHO_MINIMO = 800
 PNG_MARGEN = 32
@@ -72,6 +86,10 @@ PNG_ALTO_MAXIMO = 60000
 PNG_ESPACIO = 4  # píxeles extra entre líneas
 
 PDF_ANCHO, PDF_ALTO, PDF_MARGEN = 595, 842, 40
+
+# Tamaño de la gráfica: píxeles en el PNG, puntos en el PDF.
+PNG_GRAFICA_ANCHO, PNG_GRAFICA_ALTO = 720, 400
+PDF_GRAFICA_ALTO, PDF_GRAFICA_FUENTE = 250, 8.0
 
 _TRANSLITERACION = {
     "⁻¹": "^-1", "−": "-", "–": "-", "∞": "inf", "≠": "!=", "≈": "~",
@@ -221,6 +239,16 @@ def _documento_biseccion(resultado, modo, incluir_pasos):
         _seccion(documento, "Continuidad")
         _agregar(documento, TEXTO,
                  "\n".join(_bis_continuidad(resultado["continuidad"])[1:]))
+
+    _seccion(documento, "Gráfica de f(x)")
+    documento.append((GRAFICA, resultado["grafica"]))
+    documento.append((TEXTO, ""))
+    leyenda = ("Curva verde: f(x). Puntos oscuros: punto medio c de cada "
+               f"iteración (se numeran las primeras {_grafica.PUNTOS_NUMERADOS}).\n"
+               f"Círculo rojo: raíz aproximada x = {_real(r['raiz'])}.")
+    if resultado["grafica"]["discontinuidades"]:
+        leyenda += "\nLínea naranja discontinua: posible discontinuidad."
+    _agregar(documento, TEXTO, leyenda)
     return documento
 
 
@@ -366,7 +394,8 @@ def construir_documento(modulo, resultado, modo="fraccion",
 
 
 def _ancho_maximo(documento):
-    return max((len(texto) for _, texto in documento), default=1)
+    return max((len(texto) for estilo, texto in documento if estilo != GRAFICA),
+               default=1)
 
 
 # ======================================================
@@ -386,6 +415,13 @@ def _color_pdf(color):
     return " ".join(f"{canal / 255:.3f}" for canal in color)
 
 
+def _peso_pdf(entrada, alto_linea):
+    """Líneas de texto que ocupa una entrada (la gráfica ocupa varias)."""
+    if entrada[0] == GRAFICA:
+        return math.ceil(PDF_GRAFICA_ALTO / alto_linea)
+    return 1
+
+
 def _paginas_pdf(documento):
     """Reparte las líneas en páginas; devuelve (paginas, tamano_fuente)."""
     util = PDF_ANCHO - 2 * PDF_MARGEN
@@ -394,10 +430,25 @@ def _paginas_pdf(documento):
     alto_linea = tamano * 1.35
     por_pagina = int((PDF_ALTO - 2 * PDF_MARGEN) // alto_linea)
 
-    paginas = []
-    for inicio in range(0, len(documento), por_pagina):
-        paginas.append(documento[inicio:inicio + por_pagina])
-    return paginas or [[]], tamano, alto_linea
+    paginas, actual, usadas = [], [], 0
+    for entrada in documento:
+        peso = _peso_pdf(entrada, alto_linea)
+        if usadas + peso > por_pagina and actual:
+            # El título de sección viaja con su figura (no queda huérfano).
+            cola = []
+            if entrada[0] == GRAFICA:
+                for i in range(len(actual) - 1, max(len(actual) - 4, -1), -1):
+                    if actual[i][0] == SECCION:
+                        cola = actual[i:]
+                        actual = actual[:i]
+                        break
+            paginas.append(actual)
+            actual = cola
+            usadas = sum(_peso_pdf(e, alto_linea) for e in cola)
+        actual.append(entrada)
+        usadas += peso
+    paginas.append(actual)
+    return paginas, tamano, alto_linea
 
 
 def _contenido_pagina(lineas, tamano, alto_linea):
@@ -406,6 +457,16 @@ def _contenido_pagina(lineas, tamano, alto_linea):
     y = PDF_ALTO - PDF_MARGEN - tamano
 
     for estilo, texto in lineas:
+        if estilo == GRAFICA:
+            ancho = PDF_ANCHO - 2 * PDF_MARGEN
+            fuente = PDF_GRAFICA_FUENTE
+            plan = _grafica.plan_grafica(
+                texto, ancho, PDF_GRAFICA_ALTO, 0.6 * fuente, 1.25 * fuente,
+                paleta)
+            partes.append(_grafica.comandos_pdf(
+                plan, PDF_MARGEN, y + tamano, fuente, _texto_pdf))
+            y -= alto_linea * _peso_pdf((GRAFICA, texto), alto_linea)
+            continue
         if estilo == SECCION:
             partes.append(
                 f"{_color_pdf(paleta['seccion_fondo'])} rg "
@@ -544,7 +605,9 @@ def exportar_png(documento):
     ancho = max(PNG_ANCHO_MINIMO,
                 2 * PNG_MARGEN + _ancho_maximo(documento) * ancho_celda)
     alto_linea = alto_celda + PNG_ESPACIO
-    alto = 2 * PNG_MARGEN + len(documento) * alto_linea
+    alto = 2 * PNG_MARGEN + sum(
+        PNG_GRAFICA_ALTO if estilo == GRAFICA else alto_linea
+        for estilo, _ in documento)
 
     if alto > PNG_ALTO_MAXIMO:
         raise ValueError(
@@ -566,6 +629,16 @@ def exportar_png(documento):
     barras = []
 
     for estilo, texto in documento:
+        if estilo == GRAFICA:
+            plan = _grafica.plan_grafica(
+                texto, PNG_GRAFICA_ANCHO, PNG_GRAFICA_ALTO,
+                ancho_celda, alto_celda, paleta)
+            relleno_der = papel * (util - PNG_GRAFICA_ANCHO)
+            for fila in _grafica.rasterizar(
+                    plan, PNG_GRAFICA_ANCHO, PNG_GRAFICA_ALTO, paleta["fondo"],
+                    _glifos, ancho_celda, alto_celda):
+                barras.append(b"\x00" + margen + fila + relleno_der + margen)
+            continue
         color, negrita, fondo = estilos[estilo]
         texto = texto.expandtabs(4)
         glifos = [_filas_glifo(c, negrita, color, fondo) for c in texto]

@@ -43,7 +43,9 @@ def leer_png(datos):
 
 
 def texto_documento(documento):
-    return "\n".join(texto for _, texto in documento)
+    # Las gráficas no llevan texto (su "texto" es un dict de datos).
+    return "\n".join(texto for estilo, texto in documento
+                     if estilo != ex.GRAFICA)
 
 
 class DocumentoTest(unittest.TestCase):
@@ -175,6 +177,60 @@ class DocumentoTest(unittest.TestCase):
                 datos, _, _ = ex.exportar(
                     "biseccion", r, formato, incluir_pasos=pasos)
                 self.assertGreater(len(datos), 100)
+
+    def test_biseccion_incluye_la_grafica(self):
+        r = biseccion("x^2 - 2", 1, 2, "1e-4")
+        for pasos in (True, False):
+            doc = ex.construir_documento("biseccion", r, incluir_pasos=pasos)
+            graficas = [t for e, t in doc if e == ex.GRAFICA]
+            self.assertEqual(len(graficas), 1)
+            self.assertIs(graficas[0], r["grafica"])
+            self.assertIn("Gráfica de f(x)", texto_documento(doc))
+            self.assertIn("Círculo rojo: raíz aproximada x = 1.41",
+                          texto_documento(doc))
+        self.assertNotIn("discontinua", texto_documento(doc))
+        malo = biseccion("tan(x)", 1, 2, "1e-4")
+        self.assertIn("Línea naranja discontinua", texto_documento(
+            ex.construir_documento("biseccion", malo, incluir_pasos=False)))
+
+    def test_png_con_grafica_dibuja_pixeles_de_la_curva(self):
+        r = biseccion("x^2 - 2", 1, 2, "1e-4")
+        ancho, alto, crudo = leer_png(
+            ex.exportar("biseccion", r, "png", incluir_pasos=False)[0])
+        self.assertEqual(len(crudo), alto * (1 + ancho * 3))
+        curva = bytes(ex.PALETA_IMPRESION["grafica_curva"])
+        rojo = bytes(ex.PALETA_IMPRESION["grafica_raiz"])
+        self.assertIn(curva, crudo)     # píxeles de la curva
+        self.assertIn(rojo, crudo)      # marcador de la raíz
+        sin_grafica = alto - ex.PNG_GRAFICA_ALTO
+        self.assertGreater(sin_grafica, 100)
+
+    def test_pdf_con_grafica_trae_trazos_vectoriales(self):
+        r = biseccion("tan(x)", 1, 2, "1e-4")
+        for pasos in (True, False):
+            pdf = ex.exportar("biseccion", r, "pdf", incluir_pasos=pasos)[0]
+            flujos = []
+            resto = pdf
+            while b"stream\n" in resto:
+                _, resto = resto.split(b"stream\n", 1)
+                datos, resto = resto.split(b"\nendstream", 1)
+                flujos.append(zlib.decompress(datos))
+            contenido = b"\n".join(flujos)
+            self.assertIn(b" l S", contenido)     # polilínea de la curva
+            self.assertIn(b" c f", contenido)     # círculos (puntos y raíz)
+            self.assertIn(b"[", contenido)        # línea discontinua del polo
+
+    def test_titulo_de_seccion_viaja_con_la_figura(self):
+        r = biseccion("x^2 - 2", 1, 2, "1e-4")
+        doc = ex.construir_documento("biseccion", r, incluir_pasos=True)
+        paginas, _, alto_linea = ex._paginas_pdf(doc)
+        for pagina in paginas:
+            estilos = [e for e, _ in pagina]
+            if ex.GRAFICA in estilos:
+                i = estilos.index(ex.GRAFICA)
+                self.assertEqual(pagina[i - 2][0], ex.SECCION)
+            self.assertNotEqual(pagina[-1][0], ex.SECCION)
+            self.assertNotEqual(pagina[-2][0], ex.SECCION)
 
     def test_errores(self):
         with self.assertRaises(ValueError):

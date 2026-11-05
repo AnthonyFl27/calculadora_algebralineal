@@ -791,6 +791,110 @@
 
   /* ---------- BISECCIÓN: formulario de la función ---------- */
 
+  /* Gráfica de la bisección (SVG propio; colores solo por variables) */
+  .grafica-marco {
+    background: var(--superficie);
+    border: 1px solid var(--borde-input);
+    border-radius: 10px;
+    box-shadow: 0 4px 14px var(--sombra);
+    padding: 14px;
+    min-width: 0;
+  }
+  .grafica-lienzo {
+    width: 100%; min-width: 0;
+    touch-action: none;        /* el dedo mueve la gráfica, no la página */
+    user-select: none; -webkit-user-select: none;
+    cursor: grab;
+  }
+  .grafica-lienzo.arrastrando { cursor: grabbing; }
+  .grafica-lienzo:focus-visible { outline: 2px solid var(--color-boton-act); outline-offset: 2px; border-radius: 6px; }
+  .grafica-herramientas { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .grafica-zoom { display: inline-flex; }
+  .grafica-boton {
+    min-height: 40px;
+    min-width: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--color-borde);
+    background: var(--chip-fondo);
+    color: var(--texto-acento);
+    font: inherit;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .grafica-zoom .grafica-boton { font-size: 20px; padding: 0; }
+  .grafica-zoom .grafica-boton:first-child { border-radius: 8px 0 0 8px; }
+  .grafica-zoom .grafica-boton:last-child { border-radius: 0 8px 8px 0; margin-left: -1px; }
+  .grafica-boton-texto { border-radius: 8px; }
+  .grafica-boton:focus-visible { outline: 2px solid var(--color-boton-act); outline-offset: 2px; position: relative; z-index: 1; }
+  @media (hover: hover) { .grafica-boton:hover { border-color: var(--color-boton-act); position: relative; z-index: 1; } }
+  @media (max-width: 768px) { .grafica-boton { min-height: 44px; } }
+
+  /* Sección que se despliega o se oculta: tarjeta-botón con acción e ícono. */
+  .seccion-desplegable {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%;
+    min-height: 48px;
+    margin: 18px 0 8px;
+    padding: 8px 12px 8px 14px;
+    background: var(--superficie);
+    color: var(--texto-titulo);
+    border: 1px solid var(--borde-input);
+    border-left: 4px solid var(--color-boton-act);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px var(--sombra);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .seccion-desplegable .sd-titulo {
+    flex: 1 1 auto; min-width: 0;
+    font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .seccion-desplegable .sd-icono {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 auto;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--chip-fondo);
+    border: 1px solid var(--color-borde);
+    color: var(--texto-acento);
+    transition: transform 0.2s ease;
+  }
+  .seccion-desplegable[aria-expanded="true"] .sd-icono { transform: rotate(180deg); }
+  .seccion-desplegable:focus-visible { outline: 2px solid var(--color-boton-act); outline-offset: 2px; }
+  @media (hover: hover) { .seccion-desplegable:hover { border-color: var(--color-boton-act); background: var(--superficie-2); } }
+  .seccion-desplegable + [hidden] { display: none !important; }
+  @media (max-width: 768px) { .seccion-desplegable { min-height: 52px; } }
+  .grafica-cursor { font-size: 12px; color: var(--texto-tenue); min-height: 16px; font-family: "Courier New", Courier, monospace; overflow-wrap: anywhere; }
+  .grafica-lienzo svg { display: block; width: 100%; height: auto; }
+  .g-fondo { fill: var(--input-fondo); }
+  .g-rejilla { stroke: var(--linea-tabla); stroke-width: 1; }
+  .g-marco { fill: none; stroke: var(--borde-input); stroke-width: 1; }
+  .g-eje { stroke: var(--texto-tenue); stroke-width: 1.3; }
+  .g-curva { fill: none; stroke: var(--acento-texto); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+  .g-intervalo { fill: var(--pivote-fondo); }
+  .g-intervalo-borde { stroke: var(--acento-texto); stroke-width: 1.2; stroke-dasharray: 4 3; }
+  .g-punto { fill: var(--texto-titulo); }
+  .g-punto-actual { fill: var(--color-alerta); stroke: var(--texto-titulo); stroke-width: 1.5; }
+  .g-raiz { fill: var(--color-error); stroke: var(--input-fondo); stroke-width: 2; }
+  .g-disc { stroke: var(--color-alerta); stroke-width: 1.8; stroke-dasharray: 6 4; }
+  .g-disc-banda { fill: var(--alerta-fondo); }
+  .g-tick { fill: var(--texto-tenue); font-size: 11px; }
+  .g-etiqueta { fill: var(--texto); font-size: 12px; font-weight: bold; paint-order: stroke; stroke: var(--input-fondo); stroke-width: 3px; }
+  .grafica-control { display: flex; align-items: center; gap: 4px 12px; flex-wrap: wrap; margin-top: 6px; }
+  .grafica-control label { font-size: 13px; font-weight: bold; color: var(--texto-titulo); }
+  .grafica-control input[type="range"] { flex: 1 1 180px; min-width: 0; min-height: 44px; accent-color: var(--color-boton-act); touch-action: manipulation; }
+  .grafica-estado { font-size: 13px; color: var(--texto-tenue); margin: 2px 0 6px; overflow-wrap: anywhere; }
+  .grafica-leyenda { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--texto-tenue); }
+  .grafica-leyenda span { display: inline-flex; align-items: center; gap: 6px; }
+  .grafica-leyenda i { display: inline-block; width: 18px; height: 0; border-top: 3px solid var(--acento-texto); }
+  .grafica-leyenda i.l-punto { width: 9px; height: 9px; border: 0; border-radius: 50%; background: var(--texto-titulo); }
+  .grafica-leyenda i.l-intervalo { height: 10px; border: 1px dashed var(--acento-texto); background: var(--pivote-fondo); }
+  .grafica-leyenda i.l-disc { border-top: 3px dashed var(--color-alerta); }
+  .grafica-leyenda i.l-raiz { width: 10px; height: 10px; border: 0; border-radius: 50%; background: var(--color-error); }
+
   .biseccion-formulario {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3954,6 +4058,349 @@
     return el("div", { class: "paso-tarjeta" }, partes);
   }
 
+  function svgEl(tag, atributos, texto) {
+    const nodo = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const [clave, valor] of Object.entries(atributos || {})) nodo.setAttribute(clave, valor);
+    if (texto !== undefined) nodo.textContent = texto;
+    return nodo;
+  }
+
+  /* Gráfica de f(x): solo dibuja los datos que arma metodos/grafica.py.
+     El deslizador elige hasta qué iteración se muestran los puntos c y el
+     intervalo [a, b] vigente. Es interactiva: arrastrar mueve la vista; la
+     rueda, el pellizco y los botones hacen zoom; doble clic la restablece.
+     La web nunca evalúa f: al mover o hacer zoom pide la curva de la nueva
+     ventana a POST /api/grafica (metodos/grafica.curva_ventana). */
+  let contadorGraficas = 0;
+
+  function crearGraficaBiseccion(bloque) {
+    const g = bloque.grafica, e = bloque.entradas, r = bloque.resultado;
+    const total = g.iteraciones.length;
+    const idRecorte = "g-recorte-" + (++contadorGraficas);
+    let actual = total;
+
+    // Vista actual (ventana de datos) y lo que el servidor dibujó para ella.
+    const vistaInicial = { x0: g.x_min, x1: g.x_max, y0: g.y_min, y1: g.y_max };
+    const vista = { ...vistaInicial };
+    let curva = g.curva, marcasX = g.marcas_x, marcasY = g.marcas_y;
+    let geo = { izq: 50, arr: 10, anchoUtil: 1, altoUtil: 1 };
+
+    const lienzo = el("div", {
+      class: "grafica-lienzo", tabindex: "0", role: "group",
+      title: "Arrastra para mover · rueda o pellizco para zoom · Shift/Alt + rueda: solo x / solo y",
+      "aria-label": "Gráfica interactiva. Flechas para mover, más y menos para el zoom, cero para restablecer.",
+    });
+    const estado = el("div", { class: "grafica-estado", "aria-live": "polite" });
+    const cursor = el("div", { class: "grafica-cursor", "aria-hidden": "true" });
+    const deslizador = el("input", {
+      type: "range", min: 0, max: total, value: total, step: 1, id: "grafica-iteracion",
+      "aria-label": "Iteración que se muestra en la gráfica",
+    });
+    const etiquetaIter = el("label", { for: "grafica-iteracion" });
+    const control = el("div", { class: "grafica-control" }, [etiquetaIter, deslizador]);
+
+    const botonMas = el("button", { type: "button", class: "grafica-boton", "aria-label": "Acercar", title: "Acercar (+)", texto: "+" });
+    const botonMenos = el("button", { type: "button", class: "grafica-boton", "aria-label": "Alejar", title: "Alejar (−)", texto: "−" });
+    const botonReset = el("button", { type: "button", class: "grafica-boton grafica-boton-texto", title: "Volver a la vista inicial (0 o doble clic)", texto: "Restablecer vista" });
+    const herramientas = el("div", { class: "grafica-herramientas" }, [
+      el("div", { class: "grafica-zoom", role: "group", "aria-label": "Zoom" }, [botonMas, botonMenos]),
+      botonReset,
+    ]);
+
+    function textoEstado() {
+      if (actual === 0) return `Intervalo inicial [${e.a}, ${e.b}]`;
+      const p = bloque.pasos[actual - 1];
+      return `Iteración ${actual}: c = ${p.c}, f(c) = ${p.fc} → nuevo intervalo [${p.a_nuevo}, ${p.b_nuevo}]`;
+    }
+
+    const acotar = (v) => Math.max(-1e6, Math.min(1e6, v));
+
+    function dibujar() {
+      const ancho = Math.max(240, Math.round(lienzo.clientWidth || 600));
+      const alto = Math.round(Math.max(220, Math.min(380, ancho * 0.6)));
+      const izq = 50, der = 12, arr = 10, aba = 28;
+      const anchoUtil = ancho - izq - der, altoUtil = alto - arr - aba;
+      geo = { izq, arr, anchoUtil, altoUtil };
+      const sx = (x) => izq + ((x - vista.x0) / (vista.x1 - vista.x0)) * anchoUtil;
+      const sy = (y) => arr + ((vista.y1 - y) / (vista.y1 - vista.y0)) * altoUtil;
+      const xl = (x) => acotar(sx(x));          // coordenadas acotadas
+      const yl = (y) => acotar(sy(y));
+
+      const svg = svgEl("svg", {
+        viewBox: `0 0 ${ancho} ${alto}`, role: "img",
+        "aria-label": `Gráfica de f(x) = ${e.funcion} en [${e.a}, ${e.b}] con ${total} iteraciones de bisección`,
+      });
+      const defs = svgEl("defs");
+      const recorte = svgEl("clipPath", { id: idRecorte });
+      recorte.appendChild(svgEl("rect", { x: izq, y: arr, width: anchoUtil, height: altoUtil }));
+      defs.appendChild(recorte);
+      svg.appendChild(defs);
+      svg.appendChild(svgEl("rect", { class: "g-fondo", x: izq, y: arr, width: anchoUtil, height: altoUtil }));
+
+      // Marcas: las que llegaron del servidor que caen dentro de la vista.
+      for (const [v, texto] of marcasX) {
+        const x = sx(v);
+        if (x < izq - 1 || x > izq + anchoUtil + 1) continue;
+        svg.appendChild(svgEl("line", { class: "g-rejilla", x1: x, x2: x, y1: arr, y2: arr + altoUtil }));
+        svg.appendChild(svgEl("text", { class: "g-tick", x, y: alto - 9, "text-anchor": "middle" }, texto));
+      }
+      for (const [v, texto] of marcasY) {
+        const y = sy(v);
+        if (y < arr - 1 || y > arr + altoUtil + 1) continue;
+        svg.appendChild(svgEl("line", { class: "g-rejilla", x1: izq, x2: izq + anchoUtil, y1: y, y2: y }));
+        svg.appendChild(svgEl("text", { class: "g-tick", x: izq - 6, y: y + 4, "text-anchor": "end" }, texto));
+      }
+
+      // Todo lo que se mueve con la vista va recortado al área de la gráfica.
+      const area = svgEl("g", { "clip-path": `url(#${idRecorte})` });
+      svg.appendChild(area);
+
+      // Intervalo [a, b] vigente (inicial o tras la iteración elegida).
+      const [ia, ib] = actual === 0 ? g.intervalo : [g.iteraciones[actual - 1].a, g.iteraciones[actual - 1].b];
+      const xa = xl(ia), xb = xl(ib);
+      area.appendChild(svgEl("rect", { class: "g-intervalo", x: xa, y: arr, width: Math.max(xb - xa, 1.5), height: altoUtil }));
+      for (const x of [xa, xb]) {
+        area.appendChild(svgEl("line", { class: "g-intervalo-borde", x1: x, x2: x, y1: arr, y2: arr + altoUtil }));
+      }
+
+      // Discontinuidades detectadas (línea si es un punto, banda si es un tramo).
+      for (const d of g.discontinuidades) {
+        const x1 = xl(d.desde), x2 = xl(d.hasta);
+        if (x2 - x1 > 3) area.appendChild(svgEl("rect", { class: "g-disc-banda", x: x1, y: arr, width: x2 - x1, height: altoUtil }));
+        else area.appendChild(svgEl("line", { class: "g-disc", x1: (x1 + x2) / 2, x2: (x1 + x2) / 2, y1: arr, y2: arr + altoUtil }));
+      }
+
+      // Ejes y = 0 y x = 0 (cuando caen dentro de la vista).
+      if (vista.y0 < 0 && vista.y1 > 0) {
+        area.appendChild(svgEl("line", { class: "g-eje", x1: izq, x2: izq + anchoUtil, y1: sy(0), y2: sy(0) }));
+      }
+      if (vista.x0 < 0 && vista.x1 > 0) {
+        area.appendChild(svgEl("line", { class: "g-eje", x1: sx(0), x2: sx(0), y1: arr, y2: arr + altoUtil }));
+      }
+
+      for (const tramo of curva) {
+        area.appendChild(svgEl("path", { class: "g-curva", d: tramo.map((p, k) => `${k ? "L" : "M"}${xl(p[0]).toFixed(1)} ${yl(p[1]).toFixed(1)}`).join("") }));
+      }
+
+      // Un punto cuyo f queda fuera de la vista se pega al borde.
+      const enBorde = (y) => Math.max(arr, Math.min(arr + altoUtil, sy(y)));
+      const dentroX = (x) => { const px = sx(x); return px >= izq - 8 && px <= izq + anchoUtil + 8; };
+
+      // Puntos c de las iteraciones mostradas; el último, resaltado y rotulado.
+      g.iteraciones.slice(0, actual).forEach((p, k) => {
+        if (!dentroX(p.x)) return;
+        const ultimo = k === actual - 1;
+        area.appendChild(svgEl("circle", { class: ultimo ? "g-punto g-punto-actual" : "g-punto", cx: sx(p.x), cy: enBorde(p.valor), r: ultimo ? 6 : 3.5 }));
+      });
+      if (actual > 0 && dentroX(g.iteraciones[actual - 1].x)) {
+        const p = g.iteraciones[actual - 1];
+        const derecha = sx(p.x) < izq + anchoUtil * 0.7;
+        area.appendChild(svgEl("text", {
+          class: "g-etiqueta", x: sx(p.x) + (derecha ? 9 : -9), y: Math.min(Math.max(enBorde(p.valor) - 9, arr + 12), arr + altoUtil - 4),
+          "text-anchor": derecha ? "start" : "end",
+        }, `c${actual}`));
+      }
+
+      // Raíz final (solo cuando se muestran todas las iteraciones).
+      if (actual === total && dentroX(g.raiz.x)) {
+        area.appendChild(svgEl("circle", { class: "g-raiz", cx: sx(g.raiz.x), cy: enBorde(g.raiz.valor), r: 5 }));
+      }
+
+      svg.appendChild(svgEl("rect", { class: "g-marco", x: izq, y: arr, width: anchoUtil, height: altoUtil }));
+
+      lienzo.replaceChildren(svg);
+      etiquetaIter.textContent = `Iteración: ${actual} de ${total}`;
+      estado.textContent = textoEstado() + (actual === total ? ` · raíz ≈ ${r.raiz}` : "");
+    }
+
+    let cuadro = 0;
+    function redibujar() {
+      if (cuadro) return;
+      cuadro = requestAnimationFrame(() => { cuadro = 0; dibujar(); });
+    }
+
+    /* ---- Pedir al servidor la curva de la ventana visible ---- */
+    let temporizador = 0, enviadas = 0, aplicada = 0;
+    function pedirCurva() {
+      if (temporizador) return;
+      temporizador = setTimeout(async () => {
+        temporizador = 0;
+        const numero = ++enviadas;
+        try {
+          const d = await llamarApi("/api/grafica", {
+            funcion: e.funcion, x_min: vista.x0, x_max: vista.x1, y_min: vista.y0, y_max: vista.y1,
+          });
+          if (numero < aplicada) return;      // llegó una respuesta más nueva antes
+          aplicada = numero;
+          curva = d.curva; marcasX = d.marcas_x; marcasY = d.marcas_y;
+          redibujar();
+        } catch (error) { /* se queda con lo dibujado; el siguiente movimiento reintenta */ }
+      }, 70);
+    }
+
+    function vistaValida(v) {
+      const ok = (a, b) => {
+        const escala = Math.max(1, Math.abs(a), Math.abs(b));
+        return Number.isFinite(a) && Number.isFinite(b) && b - a > 1e-10 * escala && b - a < 1e10 && escala < 1e11;
+      };
+      return ok(v.x0, v.x1) && ok(v.y0, v.y1);
+    }
+    function aplicarVista(nueva) {
+      if (!vistaValida(nueva)) return;
+      Object.assign(vista, nueva);
+      redibujar();
+      pedirCurva();
+    }
+
+    // Zoom por un factor (< 1 acerca) alrededor de una posición (0..1) de la vista.
+    function zoom(factor, fx, fy, ejes) {
+      const ex = ejes !== "y", ey = ejes !== "x";
+      const wx = vista.x1 - vista.x0, wy = vista.y1 - vista.y0;
+      const cx = vista.x0 + fx * wx, cy = vista.y1 - fy * wy;
+      aplicarVista({
+        x0: ex ? cx - (cx - vista.x0) * factor : vista.x0,
+        x1: ex ? cx + (vista.x1 - cx) * factor : vista.x1,
+        y0: ey ? cy - (cy - vista.y0) * factor : vista.y0,
+        y1: ey ? cy + (vista.y1 - cy) * factor : vista.y1,
+      });
+    }
+    // Mover la vista una fracción de su tamaño (positivo: hacia la derecha / arriba).
+    function mover(fracX, fracY) {
+      const wx = vista.x1 - vista.x0, wy = vista.y1 - vista.y0;
+      aplicarVista({
+        x0: vista.x0 + fracX * wx, x1: vista.x1 + fracX * wx,
+        y0: vista.y0 + fracY * wy, y1: vista.y1 + fracY * wy,
+      });
+    }
+    function restablecer() {
+      Object.assign(vista, vistaInicial);
+      curva = g.curva; marcasX = g.marcas_x; marcasY = g.marcas_y;
+      aplicada = ++enviadas;                  // descarta respuestas en camino
+      redibujar();
+    }
+
+    /* ---- Gestos ---- */
+    const punteros = new Map();               // id → {x, y} en px del lienzo
+    const posicion = (ev) => {
+      const caja = lienzo.getBoundingClientRect();
+      return { x: ev.clientX - caja.left, y: ev.clientY - caja.top };
+    };
+    const fraccion = (p) => ({
+      fx: Math.max(0, Math.min(1, (p.x - geo.izq) / geo.anchoUtil)),
+      fy: Math.max(0, Math.min(1, (p.y - geo.arr) / geo.altoUtil)),
+    });
+    const dentroDelArea = (p) => p.x >= geo.izq && p.x <= geo.izq + geo.anchoUtil &&
+      p.y >= geo.arr && p.y <= geo.arr + geo.altoUtil;
+
+    lienzo.addEventListener("pointerdown", (ev) => {
+      if (ev.pointerType === "mouse" && ev.button !== 0) return;
+      punteros.set(ev.pointerId, posicion(ev));
+      try { lienzo.setPointerCapture(ev.pointerId); } catch (error) { /* sin captura */ }
+      lienzo.classList.add("arrastrando");
+    });
+    lienzo.addEventListener("pointermove", (ev) => {
+      const p = posicion(ev);
+      if (!punteros.has(ev.pointerId)) {
+        if (dentroDelArea(p)) {
+          const { fx, fy } = fraccion(p);
+          cursor.textContent = `x = ${(vista.x0 + fx * (vista.x1 - vista.x0)).toPrecision(5)}   y = ${(vista.y1 - fy * (vista.y1 - vista.y0)).toPrecision(5)}`;
+        } else cursor.textContent = "";
+        return;
+      }
+      const anterior = punteros.get(ev.pointerId);
+      const otros = [...punteros.entries()].filter(([id]) => id !== ev.pointerId).map(([, q]) => q);
+      punteros.set(ev.pointerId, p);
+      const wx = vista.x1 - vista.x0, wy = vista.y1 - vista.y0;
+      if (otros.length === 0) {              // un dedo / el ratón: mover
+        const dx = p.x - anterior.x, dy = p.y - anterior.y;
+        aplicarVista({
+          x0: vista.x0 - (dx / geo.anchoUtil) * wx, x1: vista.x1 - (dx / geo.anchoUtil) * wx,
+          y0: vista.y0 + (dy / geo.altoUtil) * wy, y1: vista.y1 + (dy / geo.altoUtil) * wy,
+        });
+      } else {                               // dos dedos: pellizco (zoom + mover)
+        const otro = otros[0];
+        const antes = Math.hypot(anterior.x - otro.x, anterior.y - otro.y);
+        const ahora = Math.hypot(p.x - otro.x, p.y - otro.y);
+        if (antes > 8 && ahora > 8) {
+          const centro = { x: (p.x + otro.x) / 2, y: (p.y + otro.y) / 2 };
+          const { fx, fy } = fraccion(centro);
+          zoom(antes / ahora, fx, fy);
+        }
+      }
+    });
+    const soltar = (ev) => {
+      punteros.delete(ev.pointerId);
+      if (punteros.size === 0) lienzo.classList.remove("arrastrando");
+    };
+    lienzo.addEventListener("pointerup", soltar);
+    lienzo.addEventListener("pointercancel", soltar);
+    lienzo.addEventListener("pointerleave", (ev) => { if (!punteros.has(ev.pointerId)) cursor.textContent = ""; });
+    lienzo.addEventListener("dblclick", restablecer);
+
+    lienzo.addEventListener("wheel", (ev) => {
+      ev.preventDefault();
+      const delta = (ev.deltaY || ev.deltaX) * (ev.deltaMode === 1 ? 16 : 1);
+      const { fx, fy } = fraccion(posicion(ev));
+      zoom(Math.exp(Math.max(-200, Math.min(200, delta)) * 0.0015), fx, fy,
+        ev.shiftKey ? "x" : ev.altKey ? "y" : undefined);
+    }, { passive: false });
+
+    lienzo.addEventListener("keydown", (ev) => {
+      const teclas = {
+        ArrowLeft: () => mover(-0.1, 0), ArrowRight: () => mover(0.1, 0),
+        ArrowUp: () => mover(0, 0.1), ArrowDown: () => mover(0, -0.1),
+        "+": () => zoom(0.8, 0.5, 0.5), "=": () => zoom(0.8, 0.5, 0.5),
+        "-": () => zoom(1.25, 0.5, 0.5), "_": () => zoom(1.25, 0.5, 0.5),
+        "0": restablecer,
+      };
+      if (teclas[ev.key]) { ev.preventDefault(); teclas[ev.key](); }
+    });
+
+    botonMas.addEventListener("click", () => zoom(0.7, 0.5, 0.5));
+    botonMenos.addEventListener("click", () => zoom(1 / 0.7, 0.5, 0.5));
+    botonReset.addEventListener("click", restablecer);
+    deslizador.addEventListener("input", () => { actual = Number(deslizador.value); dibujar(); });
+
+    const leyenda = el("div", { class: "grafica-leyenda" }, [
+      el("span", {}, [el("i"), document.createTextNode("f(x)")]),
+      el("span", {}, [el("i", { class: "l-punto" }), document.createTextNode("punto medio c de cada iteración")]),
+      el("span", {}, [el("i", { class: "l-intervalo" }), document.createTextNode("intervalo [a, b] vigente")]),
+      el("span", {}, [el("i", { class: "l-raiz" }), document.createTextNode("raíz aproximada")]),
+      g.discontinuidades.length ? el("span", {}, [el("i", { class: "l-disc" }), document.createTextNode("posible discontinuidad")]) : null,
+    ]);
+
+    const marco = el("div", { class: "grafica-marco" }, [herramientas, lienzo, cursor, control, estado, leyenda]);
+    let anchoPrevio = 0;
+    if (typeof ResizeObserver === "function") {
+      new ResizeObserver(() => {
+        const w = Math.round(lienzo.clientWidth);
+        if (w > 0 && w !== anchoPrevio) { anchoPrevio = w; dibujar(); }
+      }).observe(lienzo);
+    }
+    requestAnimationFrame(dibujar);
+    return marco;
+  }
+
+  /* Sección que muestra u oculta `cuerpo` (el elemento que le sigue): un botón
+     con el título y una flecha. `oculto`
+     dice cómo empieza; el usuario decide cuándo cambiarlo. */
+  function crearSeccionDesplegable(texto, cuerpo, oculto) {
+    const flecha = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" ' +
+      'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+    const boton = el("button", { type: "button", class: "seccion-desplegable" }, [
+      el("span", { class: "sd-titulo", texto }),
+      el("span", { class: "sd-icono", "aria-hidden": "true", html: flecha }),
+    ]);
+    function aplicar() {
+      cuerpo.hidden = oculto;
+      boton.setAttribute("aria-expanded", String(!oculto));
+      boton.setAttribute("title", `${oculto ? "Mostrar" : "Ocultar"}: ${texto}`);
+    }
+    boton.addEventListener("click", () => { oculto = !oculto; aplicar(); });
+    aplicar();
+    return boton;
+  }
+
   function renderBiseccion(contenedor, bloque) {
     contenedor.innerHTML = "";
     const e = bloque.entradas, r = bloque.resultado, c = bloque.comprobacion;
@@ -3980,11 +4427,15 @@
       ]),
     }));
 
-    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Tabla de iteraciones" }));
+    const graficaMarco = crearGraficaBiseccion(bloque);
+    contenedor.appendChild(crearSeccionDesplegable("Gráfica de f(x)", graficaMarco, true));
+    contenedor.appendChild(graficaMarco);
+
     const tablaIteraciones = crearTablaMatriz(
       bloque.pasos.map((p) => [String(p.i), p.a, p.b, p.c, p.fc, p.error]),
       { encabezados: ["i", "a", "b", "c", "f(c)", "εa (%)"], filasResaltadas: new Set([ultima]) });
     tablaIteraciones.querySelector("table").classList.add("tabla-iteraciones");
+    contenedor.appendChild(crearSeccionDesplegable("Tabla de iteraciones", tablaIteraciones, false));
     contenedor.appendChild(tablaIteraciones);
 
     contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Procedimiento" }));

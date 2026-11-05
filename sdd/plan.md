@@ -193,6 +193,7 @@ en `sdd/task.md`.
 | 010 | `sdd/specs/v2/spec_v2.md` | Determinante (cofactores y LU, con recomendación de eficiencia) | implementado |
 | 011 | `sdd/specs/v3/011-biseccion.md` | Método de Bisección (búsqueda de raíces) | implementado |
 | 012 | `sdd/specs/v3/012-continuidad.md` | Revisión de continuidad en la bisección | implementado |
+| 013 | `sdd/specs/v3/013-grafica-biseccion.md` | Gráfica de la bisección (web, PNG y PDF) | implementado |
 
 Esta tabla es el único seguimiento de módulos: se actualiza cada vez que se
 agrega una spec nueva (estado `pendiente`) o se cierra el ciclo de una

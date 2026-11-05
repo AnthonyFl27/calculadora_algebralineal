@@ -77,6 +77,10 @@ class ExportarEndpointTest(unittest.TestCase):
         self.assertTrue(bloque["comprobacion"]["correcto"])
         self.assertTrue(bloque["continuidad"]["sin_senales"])
         self.assertEqual(bloque["continuidad"]["muestras"], 401)
+        g = bloque["grafica"]
+        self.assertEqual(len(g["iteraciones"]), 13)
+        self.assertEqual(len(g["curva"]), 1)
+        self.assertTrue(g["marcas_x"] and g["marcas_y"])
         json.dumps(bloque)  # serializable
         for formato, mime in (("png", "image/png"), ("pdf", "application/pdf")):
             r = self.enviar({"modulo": "biseccion", "formato": formato,

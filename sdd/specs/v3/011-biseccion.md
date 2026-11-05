@@ -81,7 +81,7 @@ se usan como referencia.
 ## Fuera de alcance
 
 Regla Falsa, Newton-Raphson, Secante y Lin-Bairstow (solo se mencionan en la
-guía como referencia); gráfica de f(x).
+guía como referencia); gráfica de f(x) (agregada después en la spec 013).
 
 ## Cambios y decisiones tomadas al implementar
 
@@ -109,3 +109,5 @@ guía como referencia); gráfica de f(x).
 - Spec `012` (`012-continuidad.md`): la discontinuidad ahora también se revisa
   **antes** de iterar (muestreo del intervalo) y se muestra en una tarjeta
   "Continuidad"; el criterio posterior de esta spec sigue vigente.
+- Spec `013` (`013-grafica-biseccion.md`): gráfica de f(x) con los puntos de
+  cada iteración, en la web y en los archivos exportados.

@@ -41,6 +41,8 @@ from metodos.biseccion import (
     formatear_real,
 )
 from metodos.determinante import determinante, recomendar_metodo
+from metodos.evaluador import compilar as compilar_funcion
+from metodos.grafica import curva_ventana
 from metodos.ejercicios import METODOS_EJERCICIOS, catalogo as catalogo_ejercicios
 from metodos.vectores_matrices import (
     combinacion_lineal,
@@ -476,6 +478,7 @@ def _armar_bloque_biseccion(resultado):
                 for q in cont["sospechas"]
             ],
         },
+        "grafica": resultado["grafica"],
         "advertencias": resultado["advertencias"],
         "comprobacion": {
             "raiz": f(c["raiz"]), "fraiz": f(c["fraiz"]),
@@ -506,6 +509,17 @@ def _resolver_biseccion(datos):
     return _armar_bloque_biseccion(resultado)
 
 
+def _resolver_grafica(datos):
+    """Curva de f(x) para la ventana que la web está mostrando (zoom/arrastre)."""
+
+    f = compilar_funcion(datos.get("funcion", ""))
+    if not f.usa_x:
+        raise ValueError("La función debe depender de x (por ejemplo x^2 - 2).")
+
+    return curva_ventana(f, datos.get("x_min"), datos.get("x_max"),
+                         datos.get("y_min"), datos.get("y_max"))
+
+
 RUTAS = {
     "/api/sistema": _resolver_sistema,
     "/api/conversion": _resolver_conversion,
@@ -516,6 +530,7 @@ RUTAS = {
     "/api/determinante": _resolver_determinante,
     "/api/determinante/recomendar": _resolver_recomendacion_determinante,
     "/api/biseccion": _resolver_biseccion,
+    "/api/grafica": _resolver_grafica,
 }
 
 # Cálculo crudo de cada módulo (el mismo que usan las rutas de arriba);
@@ -580,6 +595,7 @@ DESTINO = {
     "/api/determinante": "metodos.determinante.determinante",
     "/api/determinante/recomendar": "metodos.determinante.recomendar_metodo",
     "/api/biseccion": "metodos.biseccion.biseccion (+ continuidad)",
+    "/api/grafica": "metodos.grafica.curva_ventana",
     RUTA_EXPORTAR: "features.exportar.exportar",
 }
 
@@ -685,6 +701,12 @@ def _descripcion_peticion(ruta, datos, resultado):
                 "continuidad: " + (
                     "sin señales" if cont.get("sin_senales")
                     else f"{cont.get('total')} sospecha(s)"))
+
+    if ruta == "/api/grafica":
+        return (DESTINO[ruta],
+                f"f(x)={datos.get('funcion')} · x∈[{datos.get('x_min'):.6g}, "
+                f"{datos.get('x_max'):.6g}]",
+                f"{len(resultado.get('curva', []))} tramo(s)")
 
     if ruta == RUTA_EXPORTAR:
         return (DESTINO[ruta],
