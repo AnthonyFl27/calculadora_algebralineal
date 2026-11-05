@@ -112,7 +112,7 @@ guía como referencia); gráfica de f(x) (agregada después en la spec 013).
 - Spec `013` (`013-grafica-biseccion.md`): gráfica de f(x) con los puntos de
   cada iteración, en la web y en los archivos exportados.
 - Campo de la función: los botones de símbolos pasaron a un **teclado en
-  pantalla plegable** (cerrado al inicio) con números 0-9 y punto, operaciones
+  pantalla plegable** llamado «Constructor de funciones» (cerrado al inicio) con números 0-9 y punto, operaciones
   (+ − × ÷ ^ x² paréntesis), x, π, e, funciones (√, sin, cos, tan, eˣ, ln, log,
   |x|) y edición (← → Borrar Limpiar), para escribir f(x) aunque el equipo no
   tenga esos símbolos. La línea "Se lee" solo aparece cuando hay una función

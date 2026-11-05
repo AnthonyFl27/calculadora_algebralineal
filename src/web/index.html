@@ -865,6 +865,11 @@
     cursor: pointer;
     transition: border-color 0.15s ease, background 0.15s ease;
   }
+  .seccion-desplegable .sd-pictograma {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 auto;
+    color: var(--acento-texto);
+  }
   .seccion-desplegable .sd-titulo {
     flex: 1 1 auto; min-width: 0;
     font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.04em;
@@ -1033,29 +1038,48 @@
 
   .vista-previa-funcion[hidden] { display: none; }
 
-  /* Teclado en pantalla de la función (plegable, cerrado al inicio) */
+  /* Teclado en pantalla de la función (plegable, cerrado al inicio).
+     Todas las teclas miden lo mismo; las de edición son más anchas. */
   .teclado-funcion {
-    display: flex; flex-wrap: wrap; gap: 14px 24px;
-    padding: 12px 14px;
+    --tecla-ancho: 54px;
+    --tecla-alto: 48px;
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 22px 36px;
+    padding: 18px 20px 20px;
     background: var(--superficie);
     border: 1px solid var(--color-borde);
-    border-radius: 10px;
+    border-radius: 12px;
   }
-  .teclado-grupo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .teclado-columna { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .teclado-columna:last-child { flex: 1 1 100%; align-items: center; padding-top: 18px; border-top: 1px solid var(--linea-tabla); }
+  .teclado-grupo { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
   .teclado-grupo-titulo {
     font-size: 11px; font-weight: bold; text-transform: uppercase;
-    letter-spacing: 0.04em; color: var(--texto-suave-1);
+    letter-spacing: 0.06em; color: var(--texto-suave-1);
   }
-  .teclado-teclas { display: grid; gap: 6px; grid-template-columns: repeat(var(--columnas, 3), minmax(44px, 1fr)); }
-  .teclado-teclas.teclado-auto { grid-template-columns: repeat(4, minmax(48px, 1fr)); }
-  .teclado-teclas .chip { min-width: 0; padding: 4px 8px; font-size: 15px; }
+  .teclado-teclas {
+    display: grid; gap: 8px;
+    grid-template-columns: repeat(var(--columnas, 3), var(--tecla-ancho));
+  }
+  .teclado-teclas-anchas { grid-template-columns: repeat(var(--columnas, 2), calc(var(--tecla-ancho) * 1.6)); }
+  .teclado-teclas .chip {
+    min-width: 0; min-height: var(--tecla-alto);
+    padding: 4px 6px; border-radius: 10px;
+    font-size: 16px;
+  }
+  .teclado-teclas .chip:active { transform: translateY(1px); }
   .teclado-teclas .teclado-ancha { grid-column: span 2; }
-  .seccion-desplegable.sd-compacta { margin: 2px 0 0; min-height: 42px; }
+  .teclado-teclas-anchas .chip { font-size: 14px; }
+  .seccion-desplegable.sd-compacta { margin: 2px 0 10px; min-height: 42px; }
   @media (max-width: 480px) {
-    .teclado-funcion { gap: 14px 16px; padding: 10px; }
-    .teclado-grupo { flex: 1 1 100%; }
-    .teclado-teclas { grid-template-columns: repeat(var(--columnas, 4), minmax(0, 1fr)); }
-    .teclado-teclas.teclado-auto { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .teclado-funcion { padding: 14px 12px 16px; gap: 18px; }
+    .teclado-columna { flex: 1 1 100%; }
+    .teclado-columna:last-child { padding-top: 16px; }
+    .teclado-grupo { width: 100%; }
+    .teclado-teclas,
+    .teclado-funciones .teclado-teclas,
+    .teclado-teclas-anchas { grid-template-columns: repeat(var(--columnas, 4), minmax(0, 1fr)); }
+    .teclado-funciones .teclado-teclas { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
 
   .chip {
@@ -4470,10 +4494,11 @@
   /* Sección que muestra u oculta `cuerpo` (el elemento que le sigue): un botón
      con el título y una flecha. `oculto`
      dice cómo empieza; el usuario decide cuándo cambiarlo. */
-  function crearSeccionDesplegable(texto, cuerpo, oculto) {
+  function crearSeccionDesplegable(texto, cuerpo, oculto, icono) {
     const flecha = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" ' +
       'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
     const boton = el("button", { type: "button", class: "seccion-desplegable" }, [
+      icono ? el("span", { class: "sd-pictograma", "aria-hidden": "true", html: icono }) : null,
       el("span", { class: "sd-titulo", texto }),
       el("span", { class: "sd-icono", "aria-hidden": "true", html: flecha }),
     ]);
@@ -5071,28 +5096,30 @@
      cursor, nombre accesible, ancho en columnas]. Se inserta texto ASCII
      (+ - * / ^) aunque la etiqueta use × o ÷. */
   const TECLADO_FUNCION = [
-    { titulo: "Números", columnas: 3, teclas: [
+    [{ titulo: "Números", columnas: 3, teclas: [
       ["7", "7"], ["8", "8"], ["9", "9"],
       ["4", "4"], ["5", "5"], ["6", "6"],
       ["1", "1"], ["2", "2"], ["3", "3"],
       ["0", "0", 0, "cero", 2], [".", ".", 0, "punto decimal"],
-    ] },
-    { titulo: "Operaciones", columnas: 4, teclas: [
+    ] }],
+    [{ titulo: "Operaciones", columnas: 4, teclas: [
       ["+", "+", 0, "más"], ["−", "-", 0, "menos"], ["×", "*", 0, "por"], ["÷", "/", 0, "entre"],
       ["^", "^", 0, "potencia"], ["x²", "^2", 0, "al cuadrado"], ["(", "(", 0, "abrir paréntesis"], [")", ")", 0, "cerrar paréntesis"],
-    ] },
-    { titulo: "Variable y constantes", columnas: 3, teclas: [
-      ["x", "x", 0, "equis"], ["π", "pi", 0, "pi"], ["e", "e", 0, "número e"],
-    ] },
-    { titulo: "Funciones", columnas: 0, teclas: [
+    ] }],
+    [
+      { titulo: "Variable y constantes", columnas: 3, teclas: [
+        ["x", "x", 0, "equis"], ["π", "pi", 0, "pi"], ["e", "e", 0, "número e"],
+      ] },
+      { titulo: "Editar", columnas: 2, ancha: true, teclas: [
+        ["←", "izquierda", 0, "mover el cursor a la izquierda"], ["→", "derecha", 0, "mover el cursor a la derecha"],
+        ["Borrar", "borrar", 0, "borrar un carácter"], ["Limpiar", "limpiar", 0, "borrar toda la función"],
+      ] },
+    ],
+    [{ titulo: "Funciones", columnas: 8, clase: "teclado-funciones", teclas: [
       ["√", "sqrt()", 1, "raíz cuadrada"], ["sin", "sin()", 1, "seno"], ["cos", "cos()", 1, "coseno"],
       ["tan", "tan()", 1, "tangente"], ["eˣ", "exp()", 1, "exponencial"], ["ln", "ln()", 1, "logaritmo natural"],
       ["log", "log()", 1, "logaritmo base 10"], ["|x|", "abs()", 1, "valor absoluto"],
-    ] },
-    { titulo: "Editar", columnas: 2, teclas: [
-      ["←", "izquierda", 0, "mover el cursor a la izquierda"], ["→", "derecha", 0, "mover el cursor a la derecha"],
-      ["Borrar", "borrar", 0, "borrar un carácter"], ["Limpiar", "limpiar", 0, "borrar toda la función"],
-    ] },
+    ] }],
   ];
 
   function vistaBiseccion(ejercicio) {
@@ -5179,11 +5206,13 @@
 
     const ACCIONES_EDICION = new Set(["izquierda", "derecha", "borrar", "limpiar"]);
     const cuerpoTeclado = el("div", { class: "teclado-funcion", role: "group", "aria-label": "Teclado para escribir la función" },
-      TECLADO_FUNCION.map((grupo) => el("div", { class: "teclado-grupo" }, [
+      TECLADO_FUNCION.map((columna) => el("div", { class: "teclado-columna" }, columna.map((grupo) => el("div", {
+        class: "teclado-grupo" + (grupo.clase ? " " + grupo.clase : ""),
+      }, [
         el("div", { class: "teclado-grupo-titulo", texto: grupo.titulo }),
         el("div", {
-          class: "teclado-teclas" + (grupo.columnas ? "" : " teclado-auto"),
-          style: grupo.columnas ? `--columnas: ${grupo.columnas}` : null,
+          class: "teclado-teclas" + (grupo.ancha ? " teclado-teclas-anchas" : ""),
+          style: `--columnas: ${grupo.columnas}`,
         }, grupo.teclas.map(([etiqueta, texto, retroceso, nombre, ancho]) => el("button", {
           type: "button",
           class: "chip" + (ancho === 2 ? " teclado-ancha" : ""),
@@ -5191,8 +5220,15 @@
           "aria-label": ACCIONES_EDICION.has(texto) ? nombre : `Insertar ${nombre}`,
           onclick: () => (ACCIONES_EDICION.has(texto) ? editarFuncion(texto) : insertarSimbolo(texto, retroceso)),
         }))),
-      ])));
-    const botonTeclado = crearSeccionDesplegable("Teclado para escribir la función", cuerpoTeclado, true);
+      ])))));
+    const ICONO_CONSTRUCTOR =
+      '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2.5"/>' +
+      '<line x1="8" y1="6.5" x2="16" y2="6.5"/>' +
+      '<line x1="8" y1="11" x2="8.01" y2="11"/><line x1="12" y1="11" x2="12.01" y2="11"/><line x1="16" y1="11" x2="16.01" y2="11"/>' +
+      '<line x1="8" y1="15" x2="8.01" y2="15"/><line x1="12" y1="15" x2="12.01" y2="15"/><line x1="16" y1="15" x2="16.01" y2="15"/>' +
+      '<line x1="8" y1="19" x2="8.01" y2="19"/><line x1="12" y1="19" x2="16" y2="19"/></svg>';
+    const botonTeclado = crearSeccionDesplegable("Constructor de funciones", cuerpoTeclado, true, ICONO_CONSTRUCTOR);
     botonTeclado.classList.add("sd-compacta");
 
     const bloqueFuncion = el("div", { class: "bloque-funcion" }, [
