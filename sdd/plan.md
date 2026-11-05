@@ -194,6 +194,7 @@ en `sdd/task.md`.
 | 011 | `sdd/specs/v3/011-biseccion.md` | Método de Bisección (búsqueda de raíces) | implementado |
 | 012 | `sdd/specs/v3/012-continuidad.md` | Revisión de continuidad en la bisección | implementado |
 | 013 | `sdd/specs/v3/013-grafica-biseccion.md` | Gráfica de la bisección (web, PNG y PDF) | implementado |
+| 014 | `sdd/specs/v3/014-graficas-geometricas.md` | Gráficas geométricas 2D y 3D (sistemas, vectores, determinante, inversa, ecuación matricial, A × B) | implementado |
 
 Esta tabla es el único seguimiento de módulos: se actualiza cada vez que se
 agrega una spec nueva (estado `pendiente`) o se cierra el ciclo de una

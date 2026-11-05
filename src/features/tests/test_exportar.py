@@ -3,6 +3,7 @@ import sys
 import unittest
 import zlib
 from datetime import datetime
+from fractions import Fraction
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
@@ -11,6 +12,13 @@ from features import exportar as ex
 from metodos.biseccion import biseccion
 from metodos.conversion import resolver as convertir
 from metodos.determinante import determinante
+from metodos.escenas import (
+    escena_determinante,
+    escena_inversa,
+    escena_producto,
+    escena_sistema,
+    escena_vectores,
+)
 from metodos.gauss_jordan import resolver as gauss_jordan
 from metodos.pivote import resolver as pivote
 from metodos.vectores_matrices import (
@@ -320,6 +328,301 @@ class NombreTest(unittest.TestCase):
         self.assertEqual(
             ex.nombre_archivo("Vectores: Combinación lineal", "png", ahora),
             "vectores-combinacion-lineal-20260930-1530.png")
+
+
+def sistema_con_escena(filas):
+    r = gauss_jordan([[Fraction(x) for x in f] for f in filas])
+    r["escena"] = escena_sistema(r)
+    return r
+
+
+def hay_color_cercano(crudo, ancho, color, tolerancia=40):
+    """¿Hay un píxel casi de `color`? (las rectas inclinadas llevan suavizado)."""
+    paso = 1 + ancho * 3
+    for fila in range(len(crudo) // paso):
+        pixeles = crudo[fila * paso + 1:(fila + 1) * paso]
+        for i in range(0, len(pixeles), 3):
+            if all(abs(pixeles[i + k] - color[k]) <= tolerancia for k in range(3)):
+                return True
+    return False
+
+
+def flujos_pdf(pdf):
+    flujos, resto = [], pdf
+    while b"stream\n" in resto:
+        _, resto = resto.split(b"stream\n", 1)
+        datos, resto = resto.split(b"\nendstream", 1)
+        flujos.append(zlib.decompress(datos))
+    return b"\n".join(flujos)
+
+
+class EscenaExportarTest(unittest.TestCase):
+    """Gráficas geométricas (spec 014) en los archivos exportados."""
+
+    def test_sistema_incluye_la_grafica_y_su_leyenda(self):
+        r = sistema_con_escena([[1, 1, 3], [1, -1, 1]])
+        for pasos in (True, False):
+            doc = ex.construir_documento("sistema", r, incluir_pasos=pasos)
+            graficas = [t for e, t in doc if e == ex.GRAFICA]
+            self.assertEqual(len(graficas), 1)
+            self.assertIs(graficas[0], r["escena"])
+            texto = texto_documento(doc)
+            self.assertIn("Gráfica del sistema", texto)
+            self.assertIn("Verde azulado: (1) x1 + x2 = 3", texto)
+            self.assertIn("Rojo: Solución (2, 1)", texto)
+
+    def test_el_aviso_va_en_la_leyenda(self):
+        r = sistema_con_escena([[1, 1, 3], [2, 2, 5]])
+        texto = texto_documento(ex.construir_documento("sistema", r))
+        self.assertIn("paralelas", texto)
+
+    def test_sin_escena_o_no_disponible_no_hay_seccion(self):
+        for escena in (None, {"disponible": False, "motivo": "x"}):
+            r = gauss_jordan([[Fraction(x) for x in f] for f in SISTEMA])
+            r["escena"] = escena
+            doc = ex.construir_documento("sistema", r)
+            self.assertFalse([1 for e, _ in doc if e == ex.GRAFICA])
+            self.assertNotIn("Gráfica del sistema", texto_documento(doc))
+
+    def test_png_dibuja_las_rectas_y_la_solucion(self):
+        r = sistema_con_escena([[1, 1, 3], [1, -1, 1]])
+        ancho, alto, crudo = leer_png(ex.exportar("sistema", r, "png", incluir_pasos=False)[0])
+        self.assertEqual(len(crudo), alto * (1 + ancho * 3))
+        serie = ex.PALETA_IMPRESION["escena_serie"]
+        for color in (serie[0], serie[1], ex.PALETA_IMPRESION["escena_solucion"]):
+            self.assertTrue(hay_color_cercano(crudo, ancho, color), color)
+
+    def test_pdf_trae_las_rectas(self):
+        r = sistema_con_escena([[1, 1, 3], [1, -1, 1]])
+        for pasos in (True, False):
+            contenido = flujos_pdf(ex.exportar("sistema", r, "pdf", incluir_pasos=pasos)[0])
+            self.assertIn(b" l S", contenido)      # rectas
+            self.assertIn(b" c f", contenido)      # punto solución
+
+    def test_poligono_se_rellena_en_png_y_pdf(self):
+        from features import grafica_exportar as g
+        plan = [("poligono", [(10, 10), (60, 10), (60, 40), (10, 40)], (200, 220, 240), (0, 0, 200), 1)]
+        filas = g.rasterizar(plan, 80, 60, (255, 255, 255), {}, 8, 16)
+        self.assertEqual(filas[25][35 * 3:35 * 3 + 3], bytes((200, 220, 240)))   # relleno
+        self.assertEqual(filas[55][5 * 3:5 * 3 + 3], bytes((255, 255, 255)))     # afuera
+        pdf = g.comandos_pdf(plan, 0, 100, 8, lambda t: t.encode())
+        self.assertIn(" f", pdf)
+        self.assertIn(" h", pdf)
+
+    def test_recorte_de_poligono(self):
+        from features.escena_exportar import recortar_poligono
+        pts = recortar_poligono([(-10, -10), (20, -10), (20, 20), (-10, 20)], 0, 0, 10, 10)
+        self.assertEqual(sorted(pts), [(0, 0), (0, 10), (10, 0), (10, 10)])
+        self.assertEqual(recortar_poligono([(20, 20), (30, 20), (30, 30)], 0, 0, 10, 10), [])
+
+
+class Escena3DExportarTest(unittest.TestCase):
+
+    def resultado(self, filas):
+        return sistema_con_escena(filas)
+
+    def test_proyeccion_ortogonal(self):
+        from features.escena_exportar import proyectar_3d
+        cam = {"azimut": 0, "elevacion": 0}
+        self.assertEqual(proyectar_3d([1, 2, 3], [0, 0, 0], cam), (1, 3, 2))   # y es la profundidad
+        a, arriba, prof = proyectar_3d([0, 1, 0], [0, 0, 0], {"azimut": 90, "elevacion": 0})
+        self.assertAlmostEqual(a, -1)
+        self.assertAlmostEqual(prof, 0)
+        # Con la cámara elevada, lo más lejano se ve más arriba.
+        _, arriba, _ = proyectar_3d([0, 1, 0], [0, 0, 0], {"azimut": 0, "elevacion": 90})
+        self.assertAlmostEqual(arriba, 1)
+
+    def test_sistema_3x3_se_exporta_con_planos_rellenos(self):
+        r = self.resultado([[1, 1, 1, 6], [0, 1, 1, 5], [1, 0, 1, 4]])
+        for pasos in (True, False):
+            doc = ex.construir_documento("sistema", r, incluir_pasos=pasos)
+            self.assertEqual(len([1 for e, _ in doc if e == ex.GRAFICA]), 1)
+            texto = texto_documento(doc)
+            self.assertIn("Azul: (3) x1 + x3 = 4", texto)
+            self.assertIn("Rojo: Solución (1, 2, 3)", texto)
+        pdf = flujos_pdf(ex.exportar("sistema", r, "pdf", incluir_pasos=False)[0])
+        self.assertGreaterEqual(pdf.count(b" h f"), 3)           # tres planos rellenos
+        ancho, alto, crudo = leer_png(ex.exportar("sistema", r, "png", incluir_pasos=False)[0])
+        self.assertEqual(len(crudo), alto * (1 + ancho * 3))
+        for color in ex.PALETA_IMPRESION["escena_serie"][:3]:
+            self.assertTrue(hay_color_cercano(crudo, ancho, color), color)
+
+    def test_los_ejes_quedan_encima_de_los_planos(self):
+        from features.escena_exportar import plan_escena
+        r = self.resultado([[1, 1, 1, 6], [0, 1, 1, 5], [1, 0, 1, 4]])
+        plan = plan_escena(r["escena"], 720, 400, 8, 16, ex.PALETA_IMPRESION)
+        ultimo_poligono = max(i for i, p in enumerate(plan) if p[0] == "poligono")
+        eje = ex.PALETA_IMPRESION["grafica_eje"]
+        indices = [i for i, p in enumerate(plan) if p[0] == "linea" and p[5] == eje and p[6] == 1.5]
+        self.assertTrue(indices and min(indices) > ultimo_poligono)
+
+    def test_sistemas_sin_solucion_se_exportan(self):
+        for filas in ([[1, 0, 0, 1], [0, 1, 0, 1], [1, 1, 0, 5]],
+                      [[1, 1, 1, 6], [1, 1, 1, 7]],
+                      [[1, 1, 1, 6], [2, 2, 2, 12], [3, 3, 3, 18]]):
+            r = self.resultado(filas)
+            for formato in ("png", "pdf"):
+                self.assertGreater(len(ex.exportar("sistema", r, formato, incluir_pasos=False)[0]), 500)
+
+
+class VectoresExportarTest(unittest.TestCase):
+
+    def test_las_operaciones_de_vectores_traen_su_grafica(self):
+        V = lambda *a: [Fraction(x) for x in a]
+        casos = ((suma_vectores([V(1, 2), V(3, 4)]), "Gráfica de la suma", "Rojo: Suma = (4, 6)"),
+                 (suma_vectores([V(1, 2, 3), V(3, 4, 5)]), "Gráfica de la suma", "Verde azulado: v1 = (1, 2, 3)"),
+                 (combinacion_lineal([V(1, 0), V(0, 1)], V(3, 2)), "Gráfica de la combinación lineal",
+                  "Rojo: b = (3, 2)"))
+        for r, titulo, leyenda in casos:
+            r["escena"] = escena_vectores(r)
+            for formato in ("png", "pdf"):
+                for pasos in (True, False):
+                    self.assertGreater(len(ex.exportar("vectores_matrices", r, formato,
+                                                       incluir_pasos=pasos)[0]), 500)
+            texto = texto_documento(ex.construir_documento("vectores_matrices", r, incluir_pasos=False))
+            self.assertIn(titulo, texto)
+            self.assertIn(leyenda, texto)
+
+    def test_flechas_dibujan_puntas_rellenas(self):
+        V = lambda *a: [Fraction(x) for x in a]
+        r = suma_vectores([V(1, 2), V(3, 4)])
+        r["escena"] = escena_vectores(r)
+        contenido = flujos_pdf(ex.exportar("vectores_matrices", r, "pdf", incluir_pasos=False)[0])
+        self.assertGreaterEqual(contenido.count(b" h f"), 4)     # paralelogramo y puntas
+
+    def test_sin_escena_no_hay_seccion(self):
+        V = lambda *a: [Fraction(x) for x in a]
+        r = suma_vectores([V(1, 2), V(3, 4)])
+        doc = ex.construir_documento("vectores_matrices", r)
+        self.assertFalse([1 for e, _ in doc if e == ex.GRAFICA])
+
+    def test_mas_de_3_componentes_no_agrega_grafica(self):
+        V = lambda *a: [Fraction(x) for x in a]
+        r = suma_vectores([V(1, 2, 3, 4), V(1, 1, 1, 1)])
+        r["escena"] = escena_vectores(r)
+        doc = ex.construir_documento("vectores_matrices", r)
+        self.assertFalse([1 for e, _ in doc if e == ex.GRAFICA])
+
+
+class DeterminanteExportarTest(unittest.TestCase):
+
+    def resultado(self, filas):
+        r = determinante([[Fraction(x) for x in f] for f in filas], "lu")
+        r["escena"] = escena_determinante(r)
+        return r
+
+    def test_incluye_la_grafica_con_y_sin_pasos(self):
+        for filas, leyenda in (([[1, 3], [2, 4]], "Área = |det A| = 2"),
+                               ([[1, 0, 0], [0, 2, 0], [0, 0, 3]], "Volumen = |det A| = 6")):
+            r = self.resultado(filas)
+            for pasos in (True, False):
+                doc = ex.construir_documento("determinante", r, incluir_pasos=pasos)
+                self.assertEqual(len([1 for e, _ in doc if e == ex.GRAFICA]), 1)
+                texto = texto_documento(doc)
+                self.assertIn("Gráfica del determinante", texto)
+                self.assertIn(leyenda, texto)
+            for formato in ("png", "pdf"):
+                self.assertGreater(len(ex.exportar("determinante", r, formato, incluir_pasos=False)[0]), 500)
+
+    def test_paralelepipedo_con_seis_caras_en_el_pdf(self):
+        r = self.resultado([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
+        contenido = flujos_pdf(ex.exportar("determinante", r, "pdf", incluir_pasos=False)[0])
+        self.assertGreaterEqual(contenido.count(b" h f"), 6 + 3)     # caras y puntas
+
+    def test_4x4_no_agrega_grafica(self):
+        r = self.resultado([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+        doc = ex.construir_documento("determinante", r)
+        self.assertFalse([1 for e, _ in doc if e == ex.GRAFICA])
+
+
+class InversaExportarTest(unittest.TestCase):
+
+    def resultado(self, filas):
+        r = matriz_inversa([[Fraction(x) for x in f] for f in filas])
+        r["escena"] = escena_inversa(r)
+        return r
+
+    def test_incluye_la_grafica(self):
+        for filas, leyenda in (([[1, 2], [3, 4]], "Imagen por A^-1: área 1/|det A| = 1/2"),
+                               ([[2, 0, 0], [0, 1, 0], [0, 0, 4]], "Imagen por A^-1: volumen")):
+            r = self.resultado(filas)
+            for pasos in (True, False):
+                doc = ex.construir_documento("vectores_matrices", r, incluir_pasos=pasos)
+                self.assertEqual(len([1 for e, _ in doc if e == ex.GRAFICA]), 1)
+                texto = texto_documento(doc)
+                self.assertIn("Gráfica de la matriz inversa", texto)
+                self.assertIn("Cuadrado unitario" if len(filas) == 2 else "Cubo unitario", texto)
+            for formato in ("png", "pdf"):
+                self.assertGreater(len(ex.exportar("vectores_matrices", r, formato, incluir_pasos=False)[0]), 500)
+
+    def test_singular_tambien_se_exporta(self):
+        r = self.resultado([[1, 2], [2, 4]])
+        texto = texto_documento(ex.construir_documento("vectores_matrices", r, incluir_pasos=False))
+        self.assertIn("no es invertible", texto)
+
+    def test_4x4_no_agrega_grafica(self):
+        r = self.resultado([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+        self.assertFalse([1 for e, _ in ex.construir_documento("vectores_matrices", r) if e == ex.GRAFICA])
+
+
+class EcuacionMatricialExportarTest(unittest.TestCase):
+
+    def resultado(self, a, b):
+        r = ecuacion_matricial([[Fraction(x) for x in f] for f in a],
+                               [[Fraction(x) for x in f] for f in b])
+        r["escenas"] = [escena_sistema(x) for x in r["resoluciones"]]
+        return r
+
+    def test_una_gráfica_por_columna_de_b(self):
+        r = self.resultado([[1, 1], [1, -1]], [[3, 5], [1, 1]])
+        for pasos in (True, False):
+            doc = ex.construir_documento("vectores_matrices", r, incluir_pasos=pasos)
+            self.assertEqual(len([1 for e, _ in doc if e == ex.GRAFICA]), 2)
+            texto = texto_documento(doc)
+            self.assertIn("Gráfica de la columna 1 de B", texto)
+            self.assertIn("Gráfica de la columna 2 de B", texto)
+            self.assertIn("Rojo: Solución (3, 2)", texto)
+        for formato in ("png", "pdf"):
+            self.assertGreater(len(ex.exportar("vectores_matrices", r, formato, incluir_pasos=False)[0]), 500)
+
+    def test_una_sola_columna_no_numera(self):
+        r = self.resultado([[1, 1], [1, -1]], [[3], [1]])
+        texto = texto_documento(ex.construir_documento("vectores_matrices", r, incluir_pasos=False))
+        self.assertIn("Gráfica del sistema", texto)
+        self.assertNotIn("columna 1 de B", texto)
+
+    def test_limite_de_columnas_graficadas(self):
+        columnas = ex.MAX_ESCENAS_EXPORTADAS + 2
+        r = self.resultado([[1, 0], [0, 1]], [[k + 1 for k in range(columnas)], [1] * columnas])
+        doc = ex.construir_documento("vectores_matrices", r, incluir_pasos=False)
+        self.assertEqual(len([1 for e, _ in doc if e == ex.GRAFICA]), ex.MAX_ESCENAS_EXPORTADAS)
+        self.assertIn("Se grafican las primeras", texto_documento(doc))
+
+
+class ProductoExportarTest(unittest.TestCase):
+
+    def resultado(self, a, b):
+        r = multiplicar_matrices([[Fraction(x) for x in f] for f in a],
+                                 [[Fraction(x) for x in f] for f in b])
+        r["escena"] = escena_producto(r)
+        return r
+
+    def test_incluye_la_grafica(self):
+        for a, b in (([[1, 2], [3, 4]], [[0, 1], [1, 0]]),
+                     ([[2, 0, 0], [0, 1, 0], [0, 0, 1]], [[1, 0, 0], [0, 3, 0], [0, 0, 1]])):
+            r = self.resultado(a, b)
+            for pasos in (True, False):
+                doc = ex.construir_documento("vectores_matrices", r, incluir_pasos=pasos)
+                self.assertEqual(len([1 for e, _ in doc if e == ex.GRAFICA]), 1)
+                texto = texto_documento(doc)
+                self.assertIn("Gráfica del producto A × B", texto)
+                self.assertIn("Imagen por A·B", texto)
+            for formato in ("png", "pdf"):
+                self.assertGreater(len(ex.exportar("vectores_matrices", r, formato, incluir_pasos=False)[0]), 500)
+
+    def test_no_cuadradas_no_agregan_grafica(self):
+        r = self.resultado([[1, 2, 3], [3, 4, 5]], [[0, 1], [1, 0], [1, 1]])
+        self.assertFalse([1 for e, _ in ex.construir_documento("vectores_matrices", r) if e == ex.GRAFICA])
 
 
 if __name__ == "__main__":

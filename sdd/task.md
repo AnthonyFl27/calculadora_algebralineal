@@ -28,6 +28,8 @@ ciclo, el bloque se borra y solo se conservan las tareas que sigan abiertas.
 - [ ] Spec 013 (gráfica de la bisección): visto bueno visual en la máquina del
       usuario (web en claro/oscuro y móvil, y los PNG/PDF exportados), y
       confirmar con el profesor que la gráfica cumple lo que pide.
+- [ ] Spec 014 (gráficas geométricas): visto bueno visual en la máquina del
+      usuario al terminar cada paso (claro/oscuro, móvil y PNG/PDF).
 
 ---
 

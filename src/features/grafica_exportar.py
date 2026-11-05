@@ -18,11 +18,14 @@ Primitivas del plan (tuplas):
     ("rect", x0, y0, x1, y1, color)
     ("linea", x0, y0, x1, y1, color, grosor, guion)      guion = None | (on, off)
     ("poli", [(x, y), ...], color, grosor)
+    ("poligono", [(x, y), ...], relleno | None, borde, grosor)
     ("circulo", x, y, radio, relleno, borde)
     ("texto", x, y, texto, ancla, color, negrita)        y = centro vertical
 """
 
 import math
+
+from features.escena_exportar import plan_escena
 
 PUNTOS_NUMERADOS = 5     # cuántas iteraciones se rotulan (c1, c2, ...)
 
@@ -31,7 +34,13 @@ def plan_grafica(g, ancho, alto, cw, ch, paleta):
     """Primitivas de la gráfica `g` en un lienzo ancho × alto.
 
     `cw` y `ch` son el ancho y alto de un carácter de texto en esas unidades
-    (píxeles en el PNG, puntos en el PDF)."""
+    (píxeles en el PNG, puntos en el PDF).
+
+    Si `g` es una escena geométrica (spec 014, trae `dim`) la dibuja
+    `escena_exportar.py`; si no, es la gráfica de la bisección."""
+
+    if "dim" in g:
+        return plan_escena(g, ancho, alto, cw, ch, paleta)
 
     etiquetas_y = [texto for _, texto in g["marcas_y"]] or ["0"]
     izq = max(len(t) for t in etiquetas_y) * cw + 0.9 * cw
@@ -121,6 +130,28 @@ def _mezclar(lienzo, ancho, alto, x, y, color, a):
         i = (y * ancho + x) * 3
         for k in range(3):
             lienzo[i + k] = int(color[k] * a + lienzo[i + k] * (1 - a) + 0.5)
+
+
+def _rellenar(lienzo, ancho, alto, puntos, color):
+    """Relleno de un polígono (regla par-impar, línea de barrido)."""
+
+    if len(puntos) < 3:
+        return
+    y_min = max(0, int(math.floor(min(p[1] for p in puntos))))
+    y_max = min(alto - 1, int(math.ceil(max(p[1] for p in puntos))))
+    fila_color = bytes(color)
+    aristas = list(zip(puntos, puntos[1:] + puntos[:1]))
+    for y in range(y_min, y_max + 1):
+        yc = y + 0.5
+        cortes = sorted(
+            x0 + (yc - y0) * (x1 - x0) / (y1 - y0)
+            for (x0, y0), (x1, y1) in aristas
+            if y0 != y1 and (y0 <= yc < y1 or y1 <= yc < y0))
+        for i in range(0, len(cortes) - 1, 2):
+            xa = max(0, int(round(cortes[i])))
+            xb = min(ancho, int(round(cortes[i + 1])))
+            if xb > xa:
+                lienzo[(y * ancho + xa) * 3:(y * ancho + xb) * 3] = fila_color * (xb - xa)
 
 
 def _linea_wu(lienzo, ancho, alto, x0, y0, x1, y1, color):
@@ -226,6 +257,12 @@ def rasterizar(plan, ancho, alto, fondo, glifos, cw, ch):
             _, puntos, color, grosor = primitiva
             for (x0, y0), (x1, y1) in zip(puntos, puntos[1:]):
                 _trazo(lienzo, ancho, alto, x0, y0, x1, y1, color, grosor)
+        elif tipo == "poligono":
+            _, puntos, relleno, borde, grosor = primitiva
+            if relleno is not None:
+                _rellenar(lienzo, ancho, alto, puntos, relleno)
+            for (x0, y0), (x1, y1) in zip(puntos, puntos[1:] + puntos[:1]):
+                _trazo(lienzo, ancho, alto, x0, y0, x1, y1, borde, grosor)
         elif tipo == "circulo":
             _, x, y, radio, relleno, borde = primitiva
             _circulo(lienzo, ancho, alto, x, y, radio + 1.5, borde)
@@ -274,6 +311,13 @@ def comandos_pdf(plan, x_pdf, y_arriba, tamano, texto_pdf):
             trazo = " ".join(f"{X(x)} {Y(y)} {'m' if i == 0 else 'l'}"
                              for i, (x, y) in enumerate(puntos))
             salida.append(f"{_rg(color)} RG {grosor * 0.6:.2f} w 1 j 1 J {trazo} S")
+        elif tipo == "poligono":
+            _, puntos, relleno, borde, grosor = primitiva
+            ruta = " ".join(f"{X(x)} {Y(y)} {'m' if i == 0 else 'l'}"
+                            for i, (x, y) in enumerate(puntos)) + " h"
+            if relleno is not None:
+                salida.append(f"{_rg(relleno)} rg {ruta} f")
+            salida.append(f"{_rg(borde)} RG {grosor * 0.6:.2f} w 1 j {ruta} S")
         elif tipo == "circulo":
             _, x, y, radio, relleno, borde = primitiva
             for r, color in ((radio + 1.0, borde), (radio, relleno)):

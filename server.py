@@ -41,6 +41,13 @@ from metodos.biseccion import (
     formatear_real,
 )
 from metodos.determinante import determinante, recomendar_metodo
+from metodos.escenas import (
+    escena_determinante,
+    escena_inversa,
+    escena_producto,
+    escena_sistema,
+    escena_vectores,
+)
 from metodos.evaluador import compilar as compilar_funcion
 from metodos.grafica import curva_ventana
 from metodos.ejercicios import METODOS_EJERCICIOS, catalogo as catalogo_ejercicios
@@ -193,6 +200,7 @@ def _armar_bloque_sistema(resultado, modo):
         "pivotes": resultado["pivotes"],
         "pasos": pasos,
         "comprobacion": comprobacion,
+        "escena": resultado.get("escena"),
     }
 
 
@@ -207,7 +215,10 @@ def _calcular_sistema(datos):
     matriz = _matriz_desde_texto(datos.get("matriz", []))
     titulo = "Gauss-Jordan" if metodo == "gauss-jordan" else "Pivoteo"
 
-    return "sistema", funcion(matriz, modo), modo, titulo
+    resultado = funcion(matriz, modo)
+    resultado["escena"] = escena_sistema(resultado, modo)   # gráfica (spec 014)
+
+    return "sistema", resultado, modo, titulo
 
 
 def _resolver_sistema(datos):
@@ -256,6 +267,7 @@ def _armar_bloque_operacion(resultado, modo):
         "entradas": _formatear_estructura(resultado["entradas"], modo),
         "pasos": _formatear_estructura(resultado["pasos"], modo),
         "resultado": _formatear_estructura(resultado["resultado"], modo),
+        "escena": resultado.get("escena"),
     }
 
     if tipo == "combinacion_lineal":
@@ -276,6 +288,7 @@ def _armar_bloque_operacion(resultado, modo):
             _armar_bloque_sistema(resolucion, modo)
             for resolucion in resultado["resoluciones"]
         ]
+        bloque["escenas"] = resultado.get("escenas")
 
     if tipo == "matriz_inversa":
         bloque["metodo"] = resultado["metodo"]
@@ -316,6 +329,8 @@ def _calcular_vectores(datos):
     else:
         raise ValueError(f"Operación de vectores no soportada: {operacion}")
 
+    resultado["escena"] = escena_vectores(resultado, modo)   # gráfica (spec 014)
+
     return "vectores_matrices", resultado, modo, None
 
 
@@ -344,6 +359,9 @@ def _calcular_matrices(datos):
         else:
             raise ValueError(f"Operación de matrices no soportada: {operacion}")
 
+    if operacion == "Multiplicación A × B":
+        resultado["escena"] = escena_producto(resultado, modo)   # gráfica (spec 014)
+
     return "vectores_matrices", resultado, modo, None
 
 
@@ -358,6 +376,11 @@ def _calcular_ecuacion_matricial(datos):
     resultado = ecuacion_matricial(
         datos.get("matriz_a", []), datos.get("matriz_b", []), modo
     )
+    # Una gráfica por columna de B (cada columna es un sistema; spec 014).
+    resultado["escenas"] = [
+        escena_sistema(resolucion, modo)
+        for resolucion in resultado["resoluciones"]
+    ]
 
     return "vectores_matrices", resultado, modo, None
 
@@ -372,6 +395,7 @@ def _calcular_inversa(datos):
     modo = datos.get("modo", "fraccion")
     metodo = datos.get("metodo", "gauss_jordan")
     resultado = matriz_inversa(datos.get("matriz", []), metodo, modo)
+    resultado["escena"] = escena_inversa(resultado, modo)   # gráfica (spec 014)
 
     return "vectores_matrices", resultado, modo, None
 
@@ -395,6 +419,7 @@ def _armar_bloque_determinante(resultado, modo):
         "multiplicaciones": resultado["multiplicaciones"],
         "recomendacion": resultado["recomendacion"],
         "comprobacion": _formatear_estructura(resultado["comprobacion"], modo),
+        "escena": resultado.get("escena"),
     }
 
     if resultado["metodo"] == "cofactores":
@@ -415,6 +440,7 @@ def _calcular_determinante(datos):
         tipo_expansion=expansion.get("tipo"),
         indice_expansion=expansion.get("indice"),
     )
+    resultado["escena"] = escena_determinante(resultado, modo)   # gráfica (spec 014)
 
     return "determinante", resultado, modo, None
 

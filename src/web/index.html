@@ -80,6 +80,15 @@
     --overlay: rgba(0, 0, 0, 0.35);
     --sombra: rgba(0, 0, 0, 0.3);
 
+    /* Gráficas geométricas (spec 014): series y solución */
+    --g-serie-1: #0e7c70;
+    --g-serie-2: #c2410c;
+    --g-serie-3: #1d4ed8;
+    --g-serie-4: #a21caf;
+    --g-serie-5: #a16207;
+    --g-serie-6: #475569;
+    --g-solucion: #c0392b;
+
     /* Fondo de partículas ASCII (decorativo): componentes RGB para el canvas. */
     --particula-rgb: 10, 120, 74;
     --particula-reposo: 0.55;
@@ -149,6 +158,14 @@
     --sidebar-separador: rgba(255, 255, 255, 0.14);
     --overlay: rgba(0, 0, 0, 0.6);
     --sombra: rgba(0, 0, 0, 0.6);
+
+    --g-serie-1: #4de0c8;
+    --g-serie-2: #fb923c;
+    --g-serie-3: #60a5fa;
+    --g-serie-4: #e879f9;
+    --g-serie-5: #facc15;
+    --g-serie-6: #94a3b8;
+    --g-solucion: #ff6b5e;
 
     --particula-rgb: 90, 230, 140;
     --particula-reposo: 0.13;
@@ -893,6 +910,33 @@
   .grafica-leyenda i.l-punto { width: 9px; height: 9px; border: 0; border-radius: 50%; background: var(--texto-titulo); }
   .grafica-leyenda i.l-intervalo { height: 10px; border: 1px dashed var(--acento-texto); background: var(--pivote-fondo); }
   .grafica-leyenda i.l-disc { border-top: 3px dashed var(--color-alerta); }
+  /* Escenas geométricas (spec 014): cada elemento toma su color de la serie */
+  .e-s1 { --c: var(--g-serie-1); } .e-s2 { --c: var(--g-serie-2); } .e-s3 { --c: var(--g-serie-3); }
+  .e-s4 { --c: var(--g-serie-4); } .e-s5 { --c: var(--g-serie-5); } .e-s6 { --c: var(--g-serie-6); }
+  .e-sol { --c: var(--g-solucion); }
+  .e-trazo { fill: none; stroke: var(--c); stroke-width: 2.4; stroke-linecap: round; }
+  .e-trazo.e-fuerte { stroke-width: 4.5; }
+  .e-guion { stroke-dasharray: 7 5; }
+  .e-relleno { fill: var(--c); fill-opacity: 0.2; stroke: var(--c); stroke-width: 1.6; stroke-linejoin: round; }
+  .e-punta { fill: var(--c); }
+  .e-punto { fill: var(--c); stroke: var(--input-fondo); stroke-width: 2; }
+  .escena-avisos {
+    margin-top: 8px; padding: 8px 12px;
+    font-size: 13px; color: var(--texto);
+    background: var(--alerta-fondo);
+    border-left: 3px solid var(--color-alerta);
+    border-radius: 6px;
+    overflow-wrap: anywhere;
+  }
+  .g-caja { stroke: var(--linea-tabla); stroke-width: 1; }
+  .g-eje3d { stroke: var(--texto-tenue); stroke-width: 1.4; }
+  .g-marca3d { fill: var(--texto-tenue); }
+  .g-tick-3d { fill: var(--texto-tenue); font-size: 10px; paint-order: stroke; stroke: var(--input-fondo); stroke-width: 3px; }
+  .escena-selector { margin: 0 2px 10px; }
+  .escena-no-disponible { font-size: 14px; color: var(--texto-tenue); }
+  .grafica-leyenda i.l-escena-linea { border-top: 3px solid var(--c); }
+  .grafica-leyenda i.l-escena-punto { width: 10px; height: 10px; border: 0; border-radius: 50%; background: var(--c); }
+  .grafica-leyenda i.l-escena-poligono { height: 10px; border: 1px solid var(--c); background: var(--c); background-clip: padding-box; opacity: 0.8; }
   .grafica-leyenda i.l-raiz { width: 10px; height: 10px; border: 0; border-radius: 50%; background: var(--color-error); }
 
   .biseccion-formulario {
@@ -987,8 +1031,32 @@
   .vista-previa-funcion .vp-vacia { font-family: Arial, sans-serif; font-size: 14px; font-style: italic; color: var(--texto-suave-1); }
   .vista-previa-funcion sup { font-size: 0.65em; line-height: 0; }
 
-  .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-  .chips-titulo { font-size: 12px; color: var(--texto-suave-1); margin-right: 4px; }
+  .vista-previa-funcion[hidden] { display: none; }
+
+  /* Teclado en pantalla de la función (plegable, cerrado al inicio) */
+  .teclado-funcion {
+    display: flex; flex-wrap: wrap; gap: 14px 24px;
+    padding: 12px 14px;
+    background: var(--superficie);
+    border: 1px solid var(--color-borde);
+    border-radius: 10px;
+  }
+  .teclado-grupo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .teclado-grupo-titulo {
+    font-size: 11px; font-weight: bold; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--texto-suave-1);
+  }
+  .teclado-teclas { display: grid; gap: 6px; grid-template-columns: repeat(var(--columnas, 3), minmax(44px, 1fr)); }
+  .teclado-teclas.teclado-auto { grid-template-columns: repeat(4, minmax(48px, 1fr)); }
+  .teclado-teclas .chip { min-width: 0; padding: 4px 8px; font-size: 15px; }
+  .teclado-teclas .teclado-ancha { grid-column: span 2; }
+  .seccion-desplegable.sd-compacta { margin: 2px 0 0; min-height: 42px; }
+  @media (max-width: 480px) {
+    .teclado-funcion { gap: 14px 16px; padding: 10px; }
+    .teclado-grupo { flex: 1 1 100%; }
+    .teclado-teclas { grid-template-columns: repeat(var(--columnas, 4), minmax(0, 1fr)); }
+    .teclado-teclas.teclado-auto { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
 
   .chip {
     min-height: 36px;
@@ -2776,6 +2844,7 @@
 
       panelResultado.innerHTML = "";
       panelResultado.appendChild(tarjetaResultadoSistema(resultado.tipo, resultado.soluciones));
+      agregarGraficaEscena(panelResultado, resultado.escena, "Gráfica del sistema");
     }
 
     async function mostrarPasos() {
@@ -2788,6 +2857,7 @@
       panelResultado.innerHTML = "";
       renderProcedimientoSistema(panelResultado, resultado, encabezadosDe(resultado), `Procedimiento (${titulo})`);
       panelResultado.appendChild(tarjetaResultadoSistema(resultado.tipo, resultado.soluciones));
+      agregarGraficaEscena(panelResultado, resultado.escena, "Gráfica del sistema");
     }
 
     function comprobarResultado() {
@@ -3205,7 +3275,21 @@
     else if (bloque.tipo === "combinacion_lineal") renderCombinacionLineal(contenedor, bloque);
     else if (bloque.tipo === "ecuacion_matricial") renderEcuacionMatricial(contenedor, bloque);
     else renderOperacionSimple(contenedor, bloque);
+    if (bloque.escena) agregarGraficaEscena(contenedor, bloque.escena, TITULOS_GRAFICA[bloque.tipo]);
+    if (bloque.escenas && bloque.escenas.length) {
+      agregarGraficasEscenas(contenedor, bloque.escenas, TITULOS_GRAFICA[bloque.tipo]);
+    }
   }
+
+  const TITULOS_GRAFICA = {
+    suma_vectores: "Gráfica de la suma",
+    resta_vectores: "Gráfica de la resta",
+    escalar_vector: "Gráfica del vector por escalar",
+    combinacion_lineal: "Gráfica de la combinación lineal",
+    matriz_inversa: "Gráfica de la matriz inversa",
+    ecuacion_matricial: "Gráfica de la ecuación matricial",
+    multiplicacion_matrices: "Gráfica del producto A × B",
+  };
 
   function vistaVectoresMatrices(ejercicio) {
     let modo = "fraccion";
@@ -3854,6 +3938,8 @@
         detalle: `Con ${NOMBRE_METODO_DET[comp.metodo]} se obtiene det(A) = ${comp.valor}.`,
       }));
     }
+
+    if (bloque.escena) agregarGraficaEscena(contenedor, bloque.escena, "Gráfica del determinante");
   }
 
   function vistaDeterminante(ejercicio) {
@@ -4401,6 +4487,497 @@
     return boton;
   }
 
+  /* ---------- Escenas geométricas (spec 014) ----------
+     Python (metodos/escena.py y escenas.py) decide qué se dibuja; aquí solo
+     se pinta. Lo único que se calcula en la web es presentación: las marcas
+     de los ejes y el movimiento de la vista (mover, zoom). */
+
+  /* Marcas "bonitas" (pasos 1-2-5) de un eje; solo para rotular. */
+  function marcasEje(minimo, maximo, aprox) {
+    const ancho = maximo - minimo;
+    if (!(ancho > 0)) return [];
+    const bruto = ancho / aprox;
+    const potencia = Math.pow(10, Math.floor(Math.log10(bruto)));
+    let paso = potencia;
+    for (const f of [1, 2, 5, 10]) { paso = f * potencia; if (paso >= bruto) break; }
+    const escala = Math.max(Math.abs(minimo), Math.abs(maximo));
+    const lista = [];
+    for (let k = Math.ceil(minimo / paso - 1e-9); k * paso <= maximo + 1e-9 * paso; k++) {
+      const v = Math.abs(k * paso) <= 1e-9 * escala ? 0 : Number((k * paso).toPrecision(12));
+      lista.push([v, String(Number(v.toPrecision(4)))]);
+    }
+    return lista;
+  }
+
+  /* Mover (un puntero), pellizcar (dos), rueda, doble clic y teclado sobre
+     `lienzo`. `acc`: { arrastrar(dx, dy), zoom(factor, px, py, ev), pellizco(factor, px, py),
+     restablecer(), tecla(ev), cursor(px, py) | cursor(null) }; px, py en píxeles del lienzo. */
+  function instalarGestosEscena(lienzo, acc) {
+    const punteros = new Map();
+    const posicion = (ev) => {
+      const caja = lienzo.getBoundingClientRect();
+      return { x: ev.clientX - caja.left, y: ev.clientY - caja.top };
+    };
+    lienzo.addEventListener("pointerdown", (ev) => {
+      if (ev.pointerType === "mouse" && ev.button !== 0) return;
+      punteros.set(ev.pointerId, posicion(ev));
+      try { lienzo.setPointerCapture(ev.pointerId); } catch (error) { /* sin captura */ }
+      lienzo.classList.add("arrastrando");
+    });
+    lienzo.addEventListener("pointermove", (ev) => {
+      const p = posicion(ev);
+      if (!punteros.has(ev.pointerId)) { acc.cursor(p.x, p.y); return; }
+      const anterior = punteros.get(ev.pointerId);
+      const otros = [...punteros.entries()].filter(([id]) => id !== ev.pointerId).map(([, q]) => q);
+      punteros.set(ev.pointerId, p);
+      if (otros.length === 0) {
+        acc.arrastrar(p.x - anterior.x, p.y - anterior.y);
+      } else {
+        const otro = otros[0];
+        const antes = Math.hypot(anterior.x - otro.x, anterior.y - otro.y);
+        const ahora = Math.hypot(p.x - otro.x, p.y - otro.y);
+        if (antes > 8 && ahora > 8) acc.pellizco(antes / ahora, (p.x + otro.x) / 2, (p.y + otro.y) / 2);
+      }
+    });
+    const soltar = (ev) => {
+      punteros.delete(ev.pointerId);
+      if (punteros.size === 0) lienzo.classList.remove("arrastrando");
+    };
+    lienzo.addEventListener("pointerup", soltar);
+    lienzo.addEventListener("pointercancel", soltar);
+    lienzo.addEventListener("pointerleave", (ev) => { if (!punteros.has(ev.pointerId)) acc.cursor(null); });
+    lienzo.addEventListener("dblclick", () => acc.restablecer());
+    lienzo.addEventListener("wheel", (ev) => {
+      ev.preventDefault();
+      const delta = (ev.deltaY || ev.deltaX) * (ev.deltaMode === 1 ? 16 : 1);
+      const p = posicion(ev);
+      acc.zoom(Math.exp(Math.max(-200, Math.min(200, delta)) * 0.0015), p.x, p.y, ev);
+    }, { passive: false });
+    lienzo.addEventListener("keydown", (ev) => {
+      if (acc.tecla(ev)) ev.preventDefault();
+    });
+  }
+
+  function crearAvisoEscena(texto) {
+    return el("div", { class: "grafica-marco escena-no-disponible", texto });
+  }
+
+  let contadorEscenas = 0;
+
+  /* Barra de zoom (+ / −) y "Restablecer vista" de una escena. */
+  function crearHerramientasEscena() {
+    const mas = el("button", { type: "button", class: "grafica-boton", "aria-label": "Acercar", title: "Acercar (+)", texto: "+" });
+    const menos = el("button", { type: "button", class: "grafica-boton", "aria-label": "Alejar", title: "Alejar (−)", texto: "−" });
+    const reset = el("button", { type: "button", class: "grafica-boton grafica-boton-texto", title: "Volver a la vista inicial (0 o doble clic)", texto: "Restablecer vista" });
+    const nodo = el("div", { class: "grafica-herramientas" }, [
+      el("div", { class: "grafica-zoom", role: "group", "aria-label": "Zoom" }, [mas, menos]),
+      reset,
+    ]);
+    return { nodo, mas, menos, reset };
+  }
+
+  /* Leyenda de colores y avisos de una escena (debajo de la gráfica). */
+  function crearPieEscena(escena) {
+    const clase = (serie) => serie === "solucion" ? "e-sol" : "e-s" + ((serie % 6) + 1);
+    const leyenda = el("div", { class: "grafica-leyenda" }, escena.leyenda.map((l) => el("span", {}, [
+      el("i", { class: `l-escena-${l.tipo === "punto" ? "punto" : l.tipo === "poligono" ? "poligono" : "linea"} ${clase(l.serie)}` }),
+      document.createTextNode(l.texto),
+    ])));
+    const avisos = escena.avisos.length
+      ? el("div", { class: "escena-avisos", role: "note" }, escena.avisos.map((t) => el("div", { texto: t })))
+      : null;
+    return [leyenda, avisos];
+  }
+
+  /* Redibuja cuando el contenedor cambia de ancho (o aparece al desplegarlo). */
+  function observarAnchoEscena(lienzo, dibujar) {
+    let anchoPrevio = 0;
+    if (typeof ResizeObserver === "function") {
+      new ResizeObserver(() => {
+        const w = Math.round(lienzo.clientWidth);
+        if (w > 0 && w !== anchoPrevio) { anchoPrevio = w; dibujar(); }
+      }).observe(lienzo);
+    }
+    requestAnimationFrame(dibujar);
+  }
+
+  /* Escena 3D: proyección ortogonal con cámara orbital (azimut y elevación
+     en grados; z hacia arriba). Arrastrar rota, la rueda o el pellizco hacen
+     zoom. Los elementos se pintan por capas (polígonos, trazos, puntos) y,
+     dentro de cada capa, de lejos a cerca. La misma proyección la usa
+     features/escena_exportar.py para el PNG y el PDF. */
+  function crearEscena3D(escena) {
+    const idRecorte = "e-recorte-" + (++contadorEscenas);
+    const ejes = escena.ejes, caja3 = escena.caja;
+    const rangos = [caja3.x, caja3.y, caja3.z];
+    const centro = rangos.map((r) => (r[0] + r[1]) / 2);
+    const radio = (rangos[0][1] - rangos[0][0]) / 2 * Math.sqrt(3);
+    const inicial = { az: escena.camara.azimut, el: escena.camara.elevacion, zoom: 1 };
+    const cam = { ...inicial };
+    const caja = { izq: 12, der: 12, arr: 10, aba: 10, ancho: 0, alto: 0 };
+
+    const { nodo: herramientas, mas: botonMas, menos: botonMenos, reset: botonReset } = crearHerramientasEscena();
+    const lienzo = el("div", {
+      class: "grafica-lienzo", tabindex: "0", role: "group",
+      title: "Arrastra para rotar · rueda o pellizco para zoom",
+      "aria-label": "Gráfica 3D interactiva. Flechas para rotar, más y menos para el zoom, cero para restablecer.",
+    });
+
+    const rad = (g) => g * Math.PI / 180;
+    function dibujar() {
+      caja.ancho = Math.max(240, Math.round(lienzo.clientWidth || 600));
+      caja.alto = Math.round(Math.max(280, Math.min(460, caja.ancho * 0.8)));
+      const anchoUtil = caja.ancho - caja.izq - caja.der, altoUtil = caja.alto - caja.arr - caja.aba;
+      const medioX = caja.izq + anchoUtil / 2, medioY = caja.arr + altoUtil / 2;
+      const escala = Math.min(anchoUtil, altoUtil) / (2 * radio) * 0.95 * cam.zoom;
+      const ca = Math.cos(rad(cam.az)), sa = Math.sin(rad(cam.az));
+      const ce = Math.cos(rad(cam.el)), se = Math.sin(rad(cam.el));
+      // D mayor = más lejos de la cámara.
+      const proy = (p) => {
+        const x = p[0] - centro[0], y = p[1] - centro[1], z = p[2] - centro[2];
+        const a = x * ca - y * sa, b = x * sa + y * ca;
+        return [medioX + a * escala, medioY - (z * ce + b * se) * escala, b * ce - z * se];
+      };
+      const acotar = (v) => Math.max(-1e6, Math.min(1e6, v));
+      const pts = (lista) => lista.map((p) => proy(p).map(acotar));
+
+      const svg = svgEl("svg", { viewBox: `0 0 ${caja.ancho} ${caja.alto}`, role: "img", "aria-label": escena.resumen });
+      const defs = svgEl("defs");
+      const recorte = svgEl("clipPath", { id: idRecorte });
+      recorte.appendChild(svgEl("rect", { x: caja.izq, y: caja.arr, width: anchoUtil, height: altoUtil }));
+      defs.appendChild(recorte);
+      svg.appendChild(defs);
+      svg.appendChild(svgEl("rect", { class: "g-fondo", x: caja.izq, y: caja.arr, width: anchoUtil, height: altoUtil }));
+      const area = svgEl("g", { "clip-path": `url(#${idRecorte})` });
+      svg.appendChild(area);
+
+      const linea = (cls, a, b, extra) => svgEl("line", Object.assign({ class: cls, x1: a[0], y1: a[1], x2: b[0], y2: b[1] }, extra || {}));
+      const [rx, ry, rz] = rangos;
+
+      // Suelo (z mínimo) con rejilla y aristas de la caja.
+      for (const [v] of marcasEje(rx[0], rx[1], 5)) {
+        area.appendChild(linea("g-rejilla", proy([v, ry[0], rz[0]]), proy([v, ry[1], rz[0]])));
+      }
+      for (const [v] of marcasEje(ry[0], ry[1], 5)) {
+        area.appendChild(linea("g-rejilla", proy([rx[0], v, rz[0]]), proy([rx[1], v, rz[0]])));
+      }
+      for (const i of [0, 1]) for (const j of [0, 1]) {
+        area.appendChild(linea("g-caja", proy([rx[i], ry[j], rz[0]]), proy([rx[i], ry[j], rz[1]])));
+        area.appendChild(linea("g-caja", proy([rx[0], ry[i], rz[j]]), proy([rx[1], ry[i], rz[j]])));
+        area.appendChild(linea("g-caja", proy([rx[i], ry[0], rz[j]]), proy([rx[i], ry[1], rz[j]])));
+      }
+
+      // Ejes por el origen, con su nombre y marcas.
+      const rotulos = [];
+      const origen = [0, 0, 0];
+      rangos.forEach((r, k) => {
+        const fin = origen.slice(), ini = origen.slice();
+        ini[k] = r[0]; fin[k] = r[1];
+        area.appendChild(linea("g-eje3d", proy(ini), proy(fin)));
+        const punta = proy(fin);
+        rotulos.push([punta[0] + 6, punta[1] - 6, ejes[k], "g-etiqueta"]);
+        for (const [v, texto] of marcasEje(r[0], r[1], 4)) {
+          if (v === 0) continue;
+          const q = origen.slice(); q[k] = v;
+          const s = proy(q);
+          area.appendChild(svgEl("circle", { class: "g-marca3d", cx: s[0], cy: s[1], r: 2 }));
+          rotulos.push([s[0] + 4, s[1] + 12, texto, "g-tick-3d"]);
+        }
+      });
+
+      const clase = (serie) => serie === "solucion" ? "e-sol" : "e-s" + ((serie % 6) + 1);
+      const claseTrazo = (e) => `e-trazo ${clase(e.serie)}${e.guion ? " e-guion" : ""}${e.grosor === "fuerte" ? " e-fuerte" : ""}`;
+      const lejania = (lista) => lista.reduce((s, p) => s + p[2], 0) / lista.length;
+      const porLejania = (a, b) => b.d - a.d;
+
+      const poligonos = escena.elementos.filter((e) => e.tipo === "poligono").map((e) => {
+        const p = pts(e.puntos);
+        return { e, p, d: lejania(p) };
+      }).sort(porLejania);
+      for (const { e, p } of poligonos) {
+        area.appendChild(svgEl("path", {
+          class: `e-relleno ${clase(e.serie)}${e.guion ? " e-guion" : ""}`,
+          d: p.map((q, k) => `${k ? "L" : "M"}${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join("") + "Z",
+        }));
+      }
+
+      const trazos = escena.elementos.filter((e) => e.tipo === "segmento" || e.tipo === "flecha").map((e) => {
+        const p = pts([e.a, e.b]);
+        return { e, p, d: lejania(p) };
+      }).sort(porLejania);
+      for (const { e, p } of trazos) {
+        area.appendChild(linea(claseTrazo(e), p[0], p[1]));
+        if (e.tipo === "flecha") {
+          const largo = Math.hypot(p[1][0] - p[0][0], p[1][1] - p[0][1]);
+          if (largo > 1) {
+            const ux = (p[1][0] - p[0][0]) / largo, uy = (p[1][1] - p[0][1]) / largo, h = Math.min(11, largo * 0.6);
+            area.appendChild(svgEl("path", {
+              class: `e-punta ${clase(e.serie)}`,
+              d: `M${p[1][0]} ${p[1][1]}L${p[1][0] - ux * h - uy * h * 0.45} ${p[1][1] - uy * h + ux * h * 0.45}` +
+                 `L${p[1][0] - ux * h + uy * h * 0.45} ${p[1][1] - uy * h - ux * h * 0.45}Z`,
+            }));
+          }
+          if (e.etiqueta) rotulos.push([p[1][0] + 8, p[1][1] - 8, e.etiqueta, "g-etiqueta"]);
+        }
+      }
+
+      for (const e of escena.elementos.filter((x) => x.tipo === "punto").map((x) => ({ e: x, p: proy(x.p) })).sort((a, b) => b.p[2] - a.p[2])) {
+        area.appendChild(svgEl("circle", {
+          class: `e-punto ${clase(e.e.serie)}`, cx: acotar(e.p[0]), cy: acotar(e.p[1]), r: e.e.grosor === "fuerte" ? 6.5 : 4.5,
+        }));
+        if (e.e.etiqueta) rotulos.push([e.p[0] + 10, e.p[1] - 10, e.e.etiqueta, "g-etiqueta"]);
+      }
+      for (const [x, y, texto, cls] of rotulos) {
+        area.appendChild(svgEl("text", { class: cls, x: acotar(x), y: acotar(y), "text-anchor": "start" }, texto));
+      }
+
+      svg.appendChild(svgEl("rect", { class: "g-marco", x: caja.izq, y: caja.arr, width: anchoUtil, height: altoUtil }));
+      lienzo.replaceChildren(svg);
+    }
+
+    let cuadro = 0;
+    function redibujar() {
+      if (cuadro) return;
+      cuadro = requestAnimationFrame(() => { cuadro = 0; dibujar(); });
+    }
+    const girar = (daz, del) => { cam.az += daz; cam.el = Math.max(-89, Math.min(89, cam.el + del)); redibujar(); };
+    const zoom = (factor) => { cam.zoom = Math.max(0.25, Math.min(20, cam.zoom / factor)); redibujar(); };
+    const restablecer = () => { Object.assign(cam, inicial); redibujar(); };
+
+    instalarGestosEscena(lienzo, {
+      arrastrar: (dx, dy) => girar(dx * 0.5, dy * 0.5),
+      zoom: (factor) => zoom(factor),
+      pellizco: (factor) => zoom(factor),
+      restablecer,
+      tecla(ev) {
+        const acciones = {
+          ArrowLeft: () => girar(-5, 0), ArrowRight: () => girar(5, 0),
+          ArrowUp: () => girar(0, -5), ArrowDown: () => girar(0, 5),
+          "+": () => zoom(1 / 1.25), "=": () => zoom(1 / 1.25),
+          "-": () => zoom(1.25), "_": () => zoom(1.25), "0": restablecer,
+        };
+        if (!acciones[ev.key]) return false;
+        acciones[ev.key]();
+        return true;
+      },
+      cursor() {},
+    });
+    botonMas.addEventListener("click", () => zoom(1 / 1.4));
+    botonMenos.addEventListener("click", () => zoom(1.4));
+    botonReset.addEventListener("click", restablecer);
+
+    const marco = el("div", { class: "grafica-marco" }, [herramientas, lienzo, ...crearPieEscena(escena)]);
+    observarAnchoEscena(lienzo, dibujar);
+    return marco;
+  }
+
+  /* Marco con la gráfica de una escena (2D o 3D). Devuelve el elemento. */
+  function crearEscenaGeometrica(escena) {
+    if (!escena || !escena.disponible) {
+      return crearAvisoEscena(escena && escena.motivo ? escena.motivo
+        : "No hay gráfica para este caso.");
+    }
+    if (escena.dim === 3) return crearEscena3D(escena);
+    const idRecorte = "e-recorte-" + (++contadorEscenas);
+    const ejes = escena.ejes;
+    const caja = { izq: 50, der: 12, arr: 10, aba: 28, ancho: 0, alto: 0, anchoUtil: 1, altoUtil: 1 };
+    const vista = { cx: 0, cy: 0, esc: 1 };
+    let tocada = false;        // si el usuario movió la vista, ya no se reajusta sola
+
+    const lienzo = el("div", {
+      class: "grafica-lienzo", tabindex: "0", role: "group",
+      title: "Arrastra para mover · rueda o pellizco para zoom",
+      "aria-label": "Gráfica interactiva. Flechas para mover, más y menos para el zoom, cero para restablecer.",
+    });
+    const cursor = el("div", { class: "grafica-cursor", "aria-hidden": "true" });
+
+    const { nodo: herramientas, mas: botonMas, menos: botonMenos, reset: botonReset } = crearHerramientasEscena();
+
+    function ajustarVista() {
+      const v = escena.ventana;
+      vista.cx = (v.x[0] + v.x[1]) / 2;
+      vista.cy = (v.y[0] + v.y[1]) / 2;
+      vista.esc = Math.min(caja.anchoUtil / (v.x[1] - v.x[0]), caja.altoUtil / (v.y[1] - v.y[0]));
+    }
+
+    const clase = (serie) => serie === "solucion" ? "e-sol" : "e-s" + ((serie % 6) + 1);
+    const acotar = (v) => Math.max(-1e6, Math.min(1e6, v));
+
+    function dibujar() {
+      caja.ancho = Math.max(240, Math.round(lienzo.clientWidth || 600));
+      caja.alto = Math.round(Math.max(240, Math.min(420, caja.ancho * 0.7)));
+      caja.anchoUtil = caja.ancho - caja.izq - caja.der;
+      caja.altoUtil = caja.alto - caja.arr - caja.aba;
+      if (!tocada) ajustarVista();
+
+      const { izq, arr, anchoUtil, altoUtil } = caja;
+      const medioX = izq + anchoUtil / 2, medioY = arr + altoUtil / 2;
+      const sx = (x) => acotar(medioX + (x - vista.cx) * vista.esc);
+      const sy = (y) => acotar(medioY - (y - vista.cy) * vista.esc);
+      const xMin = vista.cx - anchoUtil / 2 / vista.esc, xMax = vista.cx + anchoUtil / 2 / vista.esc;
+      const yMin = vista.cy - altoUtil / 2 / vista.esc, yMax = vista.cy + altoUtil / 2 / vista.esc;
+
+      const svg = svgEl("svg", { viewBox: `0 0 ${caja.ancho} ${caja.alto}`, role: "img", "aria-label": escena.resumen });
+      const defs = svgEl("defs");
+      const recorte = svgEl("clipPath", { id: idRecorte });
+      recorte.appendChild(svgEl("rect", { x: izq, y: arr, width: anchoUtil, height: altoUtil }));
+      defs.appendChild(recorte);
+      svg.appendChild(defs);
+      svg.appendChild(svgEl("rect", { class: "g-fondo", x: izq, y: arr, width: anchoUtil, height: altoUtil }));
+
+      for (const [v, texto] of marcasEje(xMin, xMax, Math.max(4, Math.round(anchoUtil / 70)))) {
+        const x = sx(v);
+        svg.appendChild(svgEl("line", { class: "g-rejilla", x1: x, x2: x, y1: arr, y2: arr + altoUtil }));
+        svg.appendChild(svgEl("text", { class: "g-tick", x, y: caja.alto - 9, "text-anchor": "middle" }, texto));
+      }
+      for (const [v, texto] of marcasEje(yMin, yMax, Math.max(4, Math.round(altoUtil / 45)))) {
+        const y = sy(v);
+        svg.appendChild(svgEl("line", { class: "g-rejilla", x1: izq, x2: izq + anchoUtil, y1: y, y2: y }));
+        svg.appendChild(svgEl("text", { class: "g-tick", x: izq - 6, y: y + 4, "text-anchor": "end" }, texto));
+      }
+
+      const area = svgEl("g", { "clip-path": `url(#${idRecorte})` });
+      svg.appendChild(area);
+      if (yMin < 0 && yMax > 0) area.appendChild(svgEl("line", { class: "g-eje", x1: izq, x2: izq + anchoUtil, y1: sy(0), y2: sy(0) }));
+      if (xMin < 0 && xMax > 0) area.appendChild(svgEl("line", { class: "g-eje", x1: sx(0), x2: sx(0), y1: arr, y2: arr + altoUtil }));
+
+      const trazo = (cls, el1, el2, extra) => svgEl("line", Object.assign({
+        class: cls, x1: sx(el1[0]), y1: sy(el1[1]), x2: sx(el2[0]), y2: sy(el2[1]),
+      }, extra || {}));
+      const claseTrazo = (e) => `e-trazo ${clase(e.serie)}${e.guion ? " e-guion" : ""}${e.grosor === "fuerte" ? " e-fuerte" : ""}`;
+      const rotulos = [];
+
+      const orden = { poligono: 0, recta: 1, segmento: 1, flecha: 2, punto: 3 };
+      const elementos = escena.elementos.slice().sort((a, b) => orden[a.tipo] - orden[b.tipo]);
+      for (const e of elementos) {
+        if (e.tipo === "poligono") {
+          area.appendChild(svgEl("path", {
+            class: `e-relleno ${clase(e.serie)}${e.guion ? " e-guion" : ""}`,
+            d: e.puntos.map((p, k) => `${k ? "L" : "M"}${sx(p[0]).toFixed(1)} ${sy(p[1]).toFixed(1)}`).join("") + "Z",
+          }));
+        } else if (e.tipo === "recta") {
+          const L = (caja.ancho + caja.alto) / vista.esc * 2 + Math.hypot(e.p[0] - vista.cx, e.p[1] - vista.cy);
+          area.appendChild(trazo(claseTrazo(e),
+            [e.p[0] - e.d[0] * L, e.p[1] - e.d[1] * L], [e.p[0] + e.d[0] * L, e.p[1] + e.d[1] * L]));
+        } else if (e.tipo === "segmento") {
+          area.appendChild(trazo(claseTrazo(e), e.a, e.b));
+        } else if (e.tipo === "flecha") {
+          area.appendChild(trazo(claseTrazo(e), e.a, e.b));
+          const ax = sx(e.a[0]), ay = sy(e.a[1]), bx = sx(e.b[0]), by = sy(e.b[1]);
+          const largo = Math.hypot(bx - ax, by - ay);
+          if (largo > 1) {
+            const ux = (bx - ax) / largo, uy = (by - ay) / largo, h = Math.min(11, largo * 0.6);
+            area.appendChild(svgEl("path", {
+              class: `e-punta ${clase(e.serie)}`,
+              d: `M${bx} ${by}L${bx - ux * h - uy * h * 0.45} ${by - uy * h + ux * h * 0.45}` +
+                 `L${bx - ux * h + uy * h * 0.45} ${by - uy * h - ux * h * 0.45}Z`,
+            }));
+          }
+          if (e.etiqueta) rotulos.push([bx + 8, by - 8, e.etiqueta, "start"]);
+        } else if (e.tipo === "punto") {
+          area.appendChild(svgEl("circle", {
+            class: `e-punto ${clase(e.serie)}`, cx: sx(e.p[0]), cy: sy(e.p[1]), r: e.grosor === "fuerte" ? 6.5 : 4.5,
+          }));
+          if (e.etiqueta) rotulos.push([sx(e.p[0]) + 10, sy(e.p[1]) - 10, e.etiqueta, "start"]);
+        }
+      }
+      for (const [x, y, texto, ancla] of rotulos) {
+        area.appendChild(svgEl("text", { class: "g-etiqueta", x, y, "text-anchor": ancla }, texto));
+      }
+
+      svg.appendChild(svgEl("rect", { class: "g-marco", x: izq, y: arr, width: anchoUtil, height: altoUtil }));
+      lienzo.replaceChildren(svg);
+    }
+
+    let cuadro = 0;
+    function redibujar() {
+      if (cuadro) return;
+      cuadro = requestAnimationFrame(() => { cuadro = 0; dibujar(); });
+    }
+    const fijar = () => { tocada = true; };
+
+    function zoom(factor, px, py) {
+      fijar();
+      const medioX = caja.izq + caja.anchoUtil / 2, medioY = caja.arr + caja.altoUtil / 2;
+      const px0 = px === undefined ? medioX : px, py0 = py === undefined ? medioY : py;
+      const wx = vista.cx + (px0 - medioX) / vista.esc, wy = vista.cy - (py0 - medioY) / vista.esc;
+      const nueva = Math.max(1e-6, Math.min(1e9, vista.esc / factor));
+      vista.esc = nueva;
+      vista.cx = wx - (px0 - medioX) / nueva;
+      vista.cy = wy + (py0 - medioY) / nueva;
+      redibujar();
+    }
+    function mover(fx, fy) {          // fracción del tamaño visible
+      fijar();
+      vista.cx += fx * caja.anchoUtil / vista.esc;
+      vista.cy += fy * caja.altoUtil / vista.esc;
+      redibujar();
+    }
+    function restablecer() { tocada = false; redibujar(); }
+
+    instalarGestosEscena(lienzo, {
+      arrastrar(dx, dy) { fijar(); vista.cx -= dx / vista.esc; vista.cy += dy / vista.esc; redibujar(); },
+      zoom: (factor, px, py) => zoom(factor, px, py),
+      pellizco: (factor, px, py) => zoom(factor, px, py),
+      restablecer,
+      tecla(ev) {
+        const acciones = {
+          ArrowLeft: () => mover(-0.1, 0), ArrowRight: () => mover(0.1, 0),
+          ArrowUp: () => mover(0, 0.1), ArrowDown: () => mover(0, -0.1),
+          "+": () => zoom(1 / 1.25), "=": () => zoom(1 / 1.25),
+          "-": () => zoom(1.25), "_": () => zoom(1.25), "0": restablecer,
+        };
+        if (!acciones[ev.key]) return false;
+        acciones[ev.key]();
+        return true;
+      },
+      cursor(px, py) {
+        if (px === null || px < caja.izq || px > caja.izq + caja.anchoUtil || py < caja.arr || py > caja.arr + caja.altoUtil) {
+          cursor.textContent = "";
+          return;
+        }
+        const x = vista.cx + (px - caja.izq - caja.anchoUtil / 2) / vista.esc;
+        const y = vista.cy - (py - caja.arr - caja.altoUtil / 2) / vista.esc;
+        cursor.textContent = `${ejes[0]} = ${x.toPrecision(5)}   ${ejes[1]} = ${y.toPrecision(5)}`;
+      },
+    });
+    botonMas.addEventListener("click", () => zoom(1 / 1.4));
+    botonMenos.addEventListener("click", () => zoom(1.4));
+    botonReset.addEventListener("click", restablecer);
+
+    const marco = el("div", { class: "grafica-marco" }, [herramientas, lienzo, cursor, ...crearPieEscena(escena)]);
+    observarAnchoEscena(lienzo, dibujar);
+    return marco;
+  }
+
+  /* Varias escenas (p. ej. una por columna de B): un selector elige cuál se ve. */
+  let contadorSelectoresEscena = 0;
+  function agregarGraficasEscenas(contenedor, escenas, titulo) {
+    if (escenas.length === 1) {
+      agregarGraficaEscena(contenedor, escenas[0], titulo);
+      return;
+    }
+    const id = "escena-columna-" + (++contadorSelectoresEscena);
+    const selector = el("select", { id }, escenas.map((_, k) => el("option", { value: String(k), texto: `Columna ${k + 1} de B` })));
+    const zona = el("div");
+    const mostrar = () => zona.replaceChildren(crearEscenaGeometrica(escenas[Number(selector.value)]));
+    selector.addEventListener("change", mostrar);
+    mostrar();
+    const cuerpo = el("div", {}, [
+      el("div", { class: "grafica-control escena-selector" }, [el("label", { for: id, texto: "Gráfica de:" }), selector]),
+      zona,
+    ]);
+    contenedor.appendChild(crearSeccionDesplegable(titulo || "Gráfica", cuerpo, true));
+    contenedor.appendChild(cuerpo);
+  }
+
+  /* Sección desplegable (oculta al inicio) con la gráfica de una escena. */
+  function agregarGraficaEscena(contenedor, escena, titulo) {
+    const marco = crearEscenaGeometrica(escena);
+    contenedor.appendChild(crearSeccionDesplegable(titulo || "Gráfica", marco, true));
+    contenedor.appendChild(marco);
+  }
+
   function renderBiseccion(contenedor, bloque) {
     contenedor.innerHTML = "";
     const e = bloque.entradas, r = bloque.resultado, c = bloque.comprobacion;
@@ -4489,10 +5066,33 @@
     return fragmento;
   }
 
-  const SIMBOLOS_FUNCION = [
-    ["x", "x"], ["x²", "^2"], ["xⁿ", "^"], ["( )", "()", 1], ["π", "pi"], ["e", "e"],
-    ["√", "sqrt()", 1], ["sin", "sin()", 1], ["cos", "cos()", 1], ["tan", "tan()", 1],
-    ["eˣ", "exp()", 1], ["ln", "ln()", 1], ["|x|", "abs()", 1],
+  /* Teclado en pantalla para escribir f(x) sin depender del teclado del equipo.
+     Cada tecla: [etiqueta, texto que se inserta, caracteres a retroceder el
+     cursor, nombre accesible, ancho en columnas]. Se inserta texto ASCII
+     (+ - * / ^) aunque la etiqueta use × o ÷. */
+  const TECLADO_FUNCION = [
+    { titulo: "Números", columnas: 3, teclas: [
+      ["7", "7"], ["8", "8"], ["9", "9"],
+      ["4", "4"], ["5", "5"], ["6", "6"],
+      ["1", "1"], ["2", "2"], ["3", "3"],
+      ["0", "0", 0, "cero", 2], [".", ".", 0, "punto decimal"],
+    ] },
+    { titulo: "Operaciones", columnas: 4, teclas: [
+      ["+", "+", 0, "más"], ["−", "-", 0, "menos"], ["×", "*", 0, "por"], ["÷", "/", 0, "entre"],
+      ["^", "^", 0, "potencia"], ["x²", "^2", 0, "al cuadrado"], ["(", "(", 0, "abrir paréntesis"], [")", ")", 0, "cerrar paréntesis"],
+    ] },
+    { titulo: "Variable y constantes", columnas: 3, teclas: [
+      ["x", "x", 0, "equis"], ["π", "pi", 0, "pi"], ["e", "e", 0, "número e"],
+    ] },
+    { titulo: "Funciones", columnas: 0, teclas: [
+      ["√", "sqrt()", 1, "raíz cuadrada"], ["sin", "sin()", 1, "seno"], ["cos", "cos()", 1, "coseno"],
+      ["tan", "tan()", 1, "tangente"], ["eˣ", "exp()", 1, "exponencial"], ["ln", "ln()", 1, "logaritmo natural"],
+      ["log", "log()", 1, "logaritmo base 10"], ["|x|", "abs()", 1, "valor absoluto"],
+    ] },
+    { titulo: "Editar", columnas: 2, teclas: [
+      ["←", "izquierda", 0, "mover el cursor a la izquierda"], ["→", "derecha", 0, "mover el cursor a la derecha"],
+      ["Borrar", "borrar", 0, "borrar un carácter"], ["Limpiar", "limpiar", 0, "borrar toda la función"],
+    ] },
   ];
 
   function vistaBiseccion(ejercicio) {
@@ -4536,11 +5136,9 @@
     function actualizarVistaPrevia() {
       vistaPrevia.innerHTML = "";
       const texto = entradaFuncion.value.trim();
+      vistaPrevia.hidden = !texto;      // sin texto no hay nada que mostrar
+      if (!texto) return;
       vistaPrevia.appendChild(el("span", { class: "vp-etiqueta", texto: "Se lee" }));
-      if (!texto) {
-        vistaPrevia.appendChild(el("span", { class: "vp-vacia", texto: "Escribe la función para ver cómo se lee." }));
-        return;
-      }
       vistaPrevia.appendChild(el("span", {}, [document.createTextNode("f(x) = "), formatearFuncion(texto)]));
     }
 
@@ -4557,14 +5155,45 @@
 
     entradaFuncion.addEventListener("input", actualizarVistaPrevia);
 
-    const chipsSimbolos = el("div", { class: "chips", role: "group", "aria-label": "Insertar símbolo" }, [
-      el("span", { class: "chips-titulo", texto: "Insertar:" }),
-      ...SIMBOLOS_FUNCION.map(([etiqueta, texto, retroceso]) => el("button", {
-        type: "button", class: "chip", texto: etiqueta,
-        "aria-label": `Insertar ${texto}`,
-        onclick: () => insertarSimbolo(texto, retroceso),
-      })),
-    ]);
+    /* Edición con los botones: mover el cursor, borrar un carácter o todo. */
+    function editarFuncion(accion) {
+      const valor = entradaFuncion.value;
+      const inicio = entradaFuncion.selectionStart === null ? valor.length : entradaFuncion.selectionStart;
+      const fin = entradaFuncion.selectionEnd === null ? valor.length : entradaFuncion.selectionEnd;
+      let posicion = inicio;
+      if (accion === "izquierda") posicion = inicio !== fin ? inicio : Math.max(0, inicio - 1);
+      else if (accion === "derecha") posicion = inicio !== fin ? fin : Math.min(valor.length, fin + 1);
+      else if (accion === "limpiar") { entradaFuncion.value = ""; posicion = 0; }
+      else if (accion === "borrar") {
+        if (inicio !== fin) {
+          entradaFuncion.value = valor.slice(0, inicio) + valor.slice(fin);
+        } else if (inicio > 0) {
+          entradaFuncion.value = valor.slice(0, inicio - 1) + valor.slice(fin);
+          posicion = inicio - 1;
+        }
+      }
+      entradaFuncion.focus();
+      entradaFuncion.setSelectionRange(posicion, posicion);
+      actualizarVistaPrevia();
+    }
+
+    const ACCIONES_EDICION = new Set(["izquierda", "derecha", "borrar", "limpiar"]);
+    const cuerpoTeclado = el("div", { class: "teclado-funcion", role: "group", "aria-label": "Teclado para escribir la función" },
+      TECLADO_FUNCION.map((grupo) => el("div", { class: "teclado-grupo" }, [
+        el("div", { class: "teclado-grupo-titulo", texto: grupo.titulo }),
+        el("div", {
+          class: "teclado-teclas" + (grupo.columnas ? "" : " teclado-auto"),
+          style: grupo.columnas ? `--columnas: ${grupo.columnas}` : null,
+        }, grupo.teclas.map(([etiqueta, texto, retroceso, nombre, ancho]) => el("button", {
+          type: "button",
+          class: "chip" + (ancho === 2 ? " teclado-ancha" : ""),
+          texto: etiqueta,
+          "aria-label": ACCIONES_EDICION.has(texto) ? nombre : `Insertar ${nombre}`,
+          onclick: () => (ACCIONES_EDICION.has(texto) ? editarFuncion(texto) : insertarSimbolo(texto, retroceso)),
+        }))),
+      ])));
+    const botonTeclado = crearSeccionDesplegable("Teclado para escribir la función", cuerpoTeclado, true);
+    botonTeclado.classList.add("sd-compacta");
 
     const bloqueFuncion = el("div", { class: "bloque-funcion" }, [
       el("label", { class: "bloque-funcion-titulo", texto: "Función a resolver: f(x) = 0" }),
@@ -4573,7 +5202,8 @@
         entradaFuncion,
       ]),
       vistaPrevia,
-      chipsSimbolos,
+      botonTeclado,
+      cuerpoTeclado,
     ]);
     entradaFuncion.setAttribute("aria-label", "Función f(x)");
 

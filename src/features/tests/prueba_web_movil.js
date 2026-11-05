@@ -46,6 +46,9 @@ function medir(p) {
     const W = document.documentElement.clientWidth;
     const cortados = [];
     for (const e of document.querySelectorAll("#panel *")) {
+      // El contenido de un <svg> queda recortado por el propio svg (p. ej. las
+      // rectas infinitas de las gráficas): basta medir el svg.
+      if (e.closest("svg") && e.tagName.toLowerCase() !== "svg") continue;
       const r = e.getBoundingClientRect();
       if (r.width === 0 || (r.right <= W + 1 && r.left >= -1)) continue;
       let pa = e.parentElement, dentro = false;
@@ -89,6 +92,15 @@ async function calcular(p, etiquetas) {
   return false;
 }
 
+/* Despliega las secciones de gráfica (empiezan ocultas, spec 013/014). */
+async function abrirGraficas(p) {
+  const botones = await p.$$(".seccion-desplegable");
+  for (const b of botones) {
+    if ((await b.getAttribute("aria-expanded")) === "false") { await b.click(); await esperar(250); }
+  }
+  return botones.length;
+}
+
 async function barrido(browser, ancho, tema) {
   const p = await abrir(browser, ancho);
   if (tema === "dark") await p.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
@@ -107,6 +119,8 @@ async function barrido(browser, ancho, tema) {
       await rellenar(p);
       await calcular(p, ["Mostrar pasos"]);
       await verificar(mod + " con pasos");
+      ok((await abrirGraficas(p)) >= 1, `${ancho}px ${tema} · ${mod} tiene sección de gráfica`);
+      await verificar(mod + " con gráfica abierta");
       await calcular(p, ["Comprobar resultado"]);
       await verificar(mod + " con comprobación");
     } else if (mod === "Bisección") {
@@ -115,6 +129,14 @@ async function barrido(browser, ancho, tema) {
       await p.fill('#panel input[placeholder="2"]', "2");
       await calcular(p, ["Calcular raíz"]);
       await verificar(mod + " con resultado");
+      await abrirGraficas(p);
+      await verificar(mod + " con gráfica abierta");
+    } else if (mod === "Determinante") {
+      await rellenar(p);
+      await calcular(p, ["Calcular determinante"]);
+      await verificar(mod + " con resultado");
+      ok((await abrirGraficas(p)) >= 1, `${ancho}px ${tema} · ${mod} tiene sección de gráfica`);
+      await verificar(mod + " con gráfica abierta");
     } else if (mod === "Conversión de bases") {
       await rellenar(p);
       await calcular(p, ["Convertir"]);
@@ -126,6 +148,7 @@ async function barrido(browser, ancho, tema) {
         await rellenar(p);
         await calcular(p, ["Calcular", "Resolver", "Calcular inversa"]);
         await verificar(`${mod} / ${t}`);
+        if (await abrirGraficas(p)) await verificar(`${mod} / ${t} con gráfica abierta`);
       }
     } else if (mod === "Ejercicios") {
       for (const metodo of METODOS_EJERCICIOS) {

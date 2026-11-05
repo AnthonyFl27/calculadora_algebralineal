@@ -31,6 +31,7 @@ from metodos.general_metodos import (
     matriz_texto,
     texto_comprobacion,
 )
+from metodos.escena import leyenda_texto as _escena_leyenda_texto
 from metodos.biseccion import (
     continuidad_texto as _bis_continuidad,
     formatear_real as _real,
@@ -73,6 +74,10 @@ PALETA_IMPRESION = {
     "grafica_punto": (30, 35, 45),
     "grafica_raiz": (200, 45, 35),
     "grafica_discontinuidad": (214, 125, 0),
+    # Gráficas geométricas (spec 014): series (mismo orden que en la web) y solución
+    "escena_serie": ((15, 118, 110), (194, 65, 12), (29, 78, 216),
+                     (162, 28, 175), (161, 98, 7), (71, 85, 105)),
+    "escena_solucion": (192, 57, 43),
 }
 
 # Estilos de línea del documento. GRAFICA no lleva texto: su "texto" es el
@@ -169,7 +174,20 @@ def _documento_sistema(resultado, modo, incluir_pasos, titulo):
         documento, TEXTO,
         texto_comprobacion(resultado["comprobacion"], modo),
     )
+    _agregar_escena(documento, "Gráfica del sistema", resultado.get("escena"))
     return documento
+
+
+def _agregar_escena(documento, titulo, escena):
+    """Sección con la gráfica de una escena geométrica (spec 014) y la
+    leyenda en texto. Si no hay gráfica, no agrega nada."""
+
+    if not escena or not escena["disponible"]:
+        return
+    _seccion(documento, titulo)
+    documento.append((GRAFICA, escena))
+    documento.append((TEXTO, ""))
+    _agregar(documento, TEXTO, "\n".join(_escena_leyenda_texto(escena)))
 
 
 def _documento_conversion(resultado, incluir_pasos):
@@ -209,6 +227,7 @@ def _documento_determinante(resultado, modo, incluir_pasos):
             resultado["resultado"], modo)
             + ("\nLa matriz es singular (no tiene inversa)."
                if resultado["singular"] else ""))
+    _agregar_escena(documento, "Gráfica del determinante", resultado.get("escena"))
     return documento
 
 
@@ -328,7 +347,32 @@ def _documento_vectores_matrices(datos, modo, incluir_pasos):
     else:
         _seccion(documento, "Resultado")
         _agregar(documento, TEXTO, _resultado_vm(datos, modo))
+    _agregar_escena(documento, _TITULOS_GRAFICA.get(datos["operacion"], "Gráfica"),
+                    datos.get("escena"))
+    escenas = datos.get("escenas") or []
+    for k, escena in enumerate(escenas[:MAX_ESCENAS_EXPORTADAS], start=1):
+        _agregar_escena(
+            documento,
+            "Gráfica del sistema" if len(escenas) == 1
+            else f"Gráfica de la columna {k} de B", escena)
+    if len(escenas) > MAX_ESCENAS_EXPORTADAS:
+        documento.append((TEXTO, ""))
+        _agregar(documento, TEXTO, f"(Se grafican las primeras "
+                 f"{MAX_ESCENAS_EXPORTADAS} columnas de B; la web permite elegir "
+                 "cualquiera.)")
     return documento
+
+
+MAX_ESCENAS_EXPORTADAS = 4   # columnas de B que se grafican en el archivo
+
+_TITULOS_GRAFICA = {
+    "suma_vectores": "Gráfica de la suma",
+    "resta_vectores": "Gráfica de la resta",
+    "escalar_vector": "Gráfica del vector por escalar",
+    "combinacion_lineal": "Gráfica de la combinación lineal",
+    "matriz_inversa": "Gráfica de la matriz inversa",
+    "multiplicacion_matrices": "Gráfica del producto A × B",
+}
 
 
 _TITULOS_OPERACION = {
