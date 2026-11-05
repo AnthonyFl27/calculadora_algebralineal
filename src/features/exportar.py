@@ -234,40 +234,47 @@ def _documento_determinante(resultado, modo, incluir_pasos):
 def _documento_biseccion(resultado, modo, incluir_pasos):
     documento = []
     r = resultado["resultado"]
+    e = resultado["entradas"]
+    bloqueada = resultado["bloqueada"]
+
+    # Paso 1: la gráfica va primero (con y sin pasos).
+    _seccion(documento, "Paso 1. Gráfica de f(x)")
+    documento.append((GRAFICA, resultado["grafica"]))
+    documento.append((TEXTO, ""))
+    leyenda = (f"f(x) = {e['funcion']}   en [a, b] = "
+               f"[{_real(e['a'])}, {_real(e['b'])}]\nCurva verde: f(x).")
+    if not bloqueada:
+        leyenda += (" Puntos oscuros: punto medio c de cada iteración (se "
+                    f"numeran las primeras {_grafica.PUNTOS_NUMERADOS}).\n"
+                    f"Círculo rojo: raíz aproximada x = {_real(r['raiz'])}.")
+    if resultado["grafica"]["discontinuidades"]:
+        leyenda += "\nLínea o banda naranja: posible discontinuidad."
+    _agregar(documento, TEXTO, leyenda)
+
+    # Paso 2: continuidad. Si f no es continua, el método no se aplica.
+    _seccion(documento, "Paso 2. Continuidad")
+    _agregar(documento, TEXTO,
+             "\n".join(_bis_continuidad(resultado["continuidad"])[1:]))
+    if bloqueada:
+        _seccion(documento, "Método no aplicado")
+        _agregar(documento, TEXTO, resultado["motivo_bloqueo"])
+        return documento
 
     if incluir_pasos:
-        _seccion(documento, "Procedimiento y resultado")
+        _seccion(documento, "Paso 3. Procedimiento y resultado")
         lineas = _lineas(_bis_texto(resultado, modo, True))
         _agregar(documento, TEXTO, "\n".join(lineas[2:]))  # sin el título
     else:
-        e = resultado["entradas"]
-        _seccion(documento, "Datos de entrada")
+        _seccion(documento, "Paso 3. Resultado")
         _agregar(documento, TEXTO, (
-            f"f(x) = {e['funcion']}\n"
-            f"Intervalo [a, b] = [{_real(e['a'])}, {_real(e['b'])}]\n"
             f"Tolerancia E = {_real(e['tolerancia'])}\n"
-            f"Máximo de iteraciones: {e['max_iter']}"))
-        _seccion(documento, "Resultado")
-        _agregar(documento, TEXTO, (
+            f"Máximo de iteraciones: {e['max_iter']}\n"
             f"Raíz aproximada: x = {_real(r['raiz'])}\n"
             f"Iteraciones: {r['iteraciones']}\n"
             f"f(raíz) = {_real(r['fraiz'])}\n"
             f"Error relativo final Ea = {_real(r['error'], 6)} %"))
         for aviso in resultado["advertencias"]:
             _agregar(documento, TEXTO, f"Aviso: {aviso}")
-        _seccion(documento, "Continuidad")
-        _agregar(documento, TEXTO,
-                 "\n".join(_bis_continuidad(resultado["continuidad"])[1:]))
-
-    _seccion(documento, "Gráfica de f(x)")
-    documento.append((GRAFICA, resultado["grafica"]))
-    documento.append((TEXTO, ""))
-    leyenda = ("Curva verde: f(x). Puntos oscuros: punto medio c de cada "
-               f"iteración (se numeran las primeras {_grafica.PUNTOS_NUMERADOS}).\n"
-               f"Círculo rojo: raíz aproximada x = {_real(r['raiz'])}.")
-    if resultado["grafica"]["discontinuidades"]:
-        leyenda += "\nLínea naranja discontinua: posible discontinuidad."
-    _agregar(documento, TEXTO, leyenda)
     return documento
 
 

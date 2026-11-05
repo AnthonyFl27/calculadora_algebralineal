@@ -4,7 +4,7 @@ import json
 import unittest
 
 from metodos.biseccion import biseccion
-from metodos.grafica import PUNTOS, marcas
+from metodos.grafica import PUNTOS, agregar_iteraciones, marcas
 
 
 def grafica(funcion, a, b, tol="1e-4"):
@@ -67,7 +67,9 @@ class GraficaTests(unittest.TestCase):
         # La ventana no se estira hasta el infinito.
         self.assertLess(g["y_max"], 50)
         self.assertGreater(g["y_min"], -50)
-        self.assertTrue(g["raiz"]["fuera"])        # f(raíz) ≈ 8502 queda fuera
+        # Un punto con f(x) enorme (cerca del polo) queda fuera de la ventana.
+        agregar_iteraciones(g, [], {"raiz": 1.5707, "fraiz": 10000.0})
+        self.assertTrue(g["raiz"]["fuera"])
 
     def test_la_curva_se_recorta_sin_tramos_planos(self):
         g = grafica("tan(x)", 1, 2)
@@ -87,7 +89,7 @@ class GraficaTests(unittest.TestCase):
 
         f = compilar("x*sqrt(x^2 - 1)")
         cont = revisar_continuidad(f, -2, 2)
-        g = datos_grafica(f, -2, 2, [], {"raiz": 0.0, "fraiz": 0.0}, cont)
+        g = datos_grafica(f, -2, 2, cont)
         self.assertEqual(len(g["curva"]), 2)
         self.assertLess(g["curva"][0][-1][0], -0.99)
         self.assertGreater(g["curva"][1][0][0], 0.99)
@@ -154,6 +156,7 @@ class CurvaVentanaTests(unittest.TestCase):
 
     def test_puntos_traen_el_valor_real_de_f(self):
         g = grafica("tan(x)", 1, 2)
+        agregar_iteraciones(g, [], {"raiz": 1.5707, "fraiz": 10000.0})
         self.assertGreater(g["raiz"]["valor"], 8000)       # y está recortado
         self.assertLessEqual(g["raiz"]["y"], g["y_max"])
 

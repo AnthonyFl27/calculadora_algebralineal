@@ -448,10 +448,9 @@ EJERCICIOS = {
         _biseccion(
             "bis-07", "Discontinuidad: 1/x", AVANZADO,
             "Hay cambio de signo en [−1, 2], pero 1/x no es continua en 0: "
-            "la bisección converge a un polo, no a una raíz. Fíjate en el "
-            "aviso y en f(raíz).",
+            "la gráfica lo muestra y el método NO se aplica (no se itera).",
             "1/x", "-1", "2", "0.0001", "50",
-            {"advertencia": "discontinuidad"},
+            {"bloqueada": True, "continuidad": "polo"},
         ),
         _biseccion(
             "bis-08", "Se agotan las iteraciones", AVANZADO,
@@ -464,9 +463,9 @@ EJERCICIOS = {
             "bis-09", "Polo de tan(x)", AVANZADO,
             "tan(x) cambia de signo en [1, 2] porque salta de +∞ a −∞ en "
             "π/2 ≈ 1.5708, no porque valga 0. La revisión de continuidad "
-            "lo detecta antes de iterar.",
+            "lo detecta y el método queda bloqueado.",
             "tan(x)", "1", "2", "0.0001", "50",
-            {"advertencia": "discontinuidad", "continuidad": "polo"},
+            {"bloqueada": True, "continuidad": "polo"},
         ),
         _biseccion(
             "bis-10", "Salto: |x|/x", AVANZADO,
@@ -474,7 +473,7 @@ EJERCICIOS = {
             "de signo pero ningún punto donde f sea 0. Es un salto, no un "
             "polo; fíjate en cómo lo describe la revisión.",
             "abs(x)/x", "-1", "2", "0.0001", "50",
-            {"advertencia": "discontinuidad", "continuidad": "salto"},
+            {"bloqueada": True, "continuidad": "salto"},
         ),
     ],
 }

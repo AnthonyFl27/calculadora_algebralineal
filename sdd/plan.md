@@ -196,6 +196,7 @@ en `sdd/task.md`.
 | 013 | `sdd/specs/v3/013-grafica-biseccion.md` | Gráfica de la bisección (web, PNG y PDF) | implementado |
 | 014 | `sdd/specs/v3/014-graficas-geometricas.md` | Gráficas geométricas 2D y 3D (sistemas, vectores, determinante, inversa, ecuación matricial, A × B) | implementado |
 | 015 | `sdd/specs/v3/015-transformacion-animada.md` | Transformación animada (deslizador `t`) en inversa, A × B y determinante | implementado |
+| 016 | `sdd/specs/v3/016-biseccion-grafica-primero.md` | Bisección: primero graficar, bloquear el método si f no es continua | implementado |
 
 Esta tabla es el único seguimiento de módulos: se actualiza cada vez que se
 agrega una spec nueva (estado `pendiente`) o se cierra el ciclo de una

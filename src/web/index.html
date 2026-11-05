@@ -4252,7 +4252,7 @@
 
       const svg = svgEl("svg", {
         viewBox: `0 0 ${ancho} ${alto}`, role: "img",
-        "aria-label": `Gráfica de f(x) = ${e.funcion} en [${e.a}, ${e.b}] con ${total} iteraciones de bisección`,
+        "aria-label": `Gráfica de f(x) = ${e.funcion} en [${e.a}, ${e.b}]` + (total ? ` con ${total} iteraciones de bisección` : ""),
       });
       const defs = svgEl("defs");
       const recorte = svgEl("clipPath", { id: idRecorte });
@@ -4326,13 +4326,17 @@
       }
 
       // Raíz final (solo cuando se muestran todas las iteraciones).
-      if (actual === total && dentroX(g.raiz.x)) {
+      if (total > 0 && actual === total && g.raiz && dentroX(g.raiz.x)) {
         area.appendChild(svgEl("circle", { class: "g-raiz", cx: sx(g.raiz.x), cy: enBorde(g.raiz.valor), r: 5 }));
       }
 
       svg.appendChild(svgEl("rect", { class: "g-marco", x: izq, y: arr, width: anchoUtil, height: altoUtil }));
 
       lienzo.replaceChildren(svg);
+      if (total === 0) {
+        estado.textContent = `f(x) = ${e.funcion} en [${e.a}, ${e.b}]`;
+        return;
+      }
       etiquetaIter.textContent = `Iteración: ${actual} de ${total}`;
       estado.textContent = textoEstado() + (actual === total ? ` · raíz ≈ ${r.raiz}` : "");
     }
@@ -4493,7 +4497,7 @@
       g.discontinuidades.length ? el("span", {}, [el("i", { class: "l-disc" }), document.createTextNode("posible discontinuidad")]) : null,
     ]);
 
-    const marco = el("div", { class: "grafica-marco" }, [herramientas, lienzo, cursor, control, estado, leyenda]);
+    const marco = el("div", { class: "grafica-marco" }, [herramientas, lienzo, cursor, ...(total > 0 ? [control] : []), estado, leyenda]);
     let anchoPrevio = 0;
     if (typeof ResizeObserver === "function") {
       new ResizeObserver(() => {
@@ -5197,19 +5201,28 @@
     const ultima = bloque.pasos.length - 1;
     const marca = (bien) => (bien ? "✓" : "✕");
 
+    const bloqueada = bloque.bloqueada;
     contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Método de bisección" }));
     contenedor.appendChild(el("div", { class: "planteamiento", texto:
-      `f(x) = ${e.funcion}\n[a, b] = [${e.a}, ${e.b}]   E = ${e.tolerancia} (${e.tolerancia_porcentaje} %)\n` +
-      `f(a) = ${bloque.inicial.fa}   f(b) = ${bloque.inicial.fb}   →   f(a)·f(b) < 0 ✓` }));
+      `f(x) = ${e.funcion}\n[a, b] = [${e.a}, ${e.b}]   E = ${e.tolerancia} (${e.tolerancia_porcentaje} %)` +
+      (bloqueada ? "" : `\nf(a) = ${bloque.inicial.fa}   f(b) = ${bloque.inicial.fb}   →   f(a)·f(b) < 0 ✓`) }));
     contenedor.lastChild.style.whiteSpace = "pre-wrap";
 
+    // Paso 1: la gráfica de f(x) en [a, b], antes de iterar.
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Paso 1 · Gráfica de f(x)" }));
+    const graficaMarco = crearGraficaBiseccion(bloque);
+    contenedor.appendChild(crearSeccionDesplegable("Gráfica de f(x)", graficaMarco, false));
+    contenedor.appendChild(graficaMarco);
+
+    // Paso 2: con la gráfica y el muestreo se decide si f es continua.
     const cont = bloque.continuidad;
     const resto = cont.total - cont.sospechas.length;
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Paso 2 · Continuidad" }));
     contenedor.appendChild(crearTarjetaVeredicto({
-      tipoClase: cont.sin_senales ? "tipo-unica" : "tipo-infinitas",
-      icono: cont.sin_senales ? "✓" : "!",
-      titulo: cont.sin_senales ? "Continuidad: sin señales de discontinuidad" : "Continuidad: posible discontinuidad",
-      detalle: `Antes de iterar se evaluó f en ${cont.muestras} puntos de [${e.a}, ${e.b}]. ` +
+      tipoClase: cont.sin_senales ? "tipo-unica" : "tipo-incompatible",
+      icono: cont.sin_senales ? "✓" : "✕",
+      titulo: cont.sin_senales ? "f es continua en [a, b] (sin señales de discontinuidad)" : "f NO es continua en [a, b]",
+      detalle: `Se evaluó f en ${cont.muestras} puntos de [${e.a}, ${e.b}]. ` +
         "Es una revisión numérica, no una demostración: un salto más angosto que el paso de muestreo podría pasar inadvertido.",
       cuerpoNodo: cont.sin_senales ? null : el("div", {}, [
         ...cont.sospechas.map((q) => el("div", { class: "termino-linea", texto: `⚠ ${q.mensaje}` })),
@@ -5217,10 +5230,17 @@
       ]),
     }));
 
-    const graficaMarco = crearGraficaBiseccion(bloque);
-    contenedor.appendChild(crearSeccionDesplegable("Gráfica de f(x)", graficaMarco, true));
-    contenedor.appendChild(graficaMarco);
+    if (bloqueada) {
+      contenedor.appendChild(crearTarjetaVeredicto({
+        tipoClase: "tipo-incompatible",
+        icono: "✕",
+        titulo: "Método no aplicado",
+        detalle: bloque.motivo_bloqueo,
+      }));
+      return;
+    }
 
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Paso 3 · Iteraciones" }));
     const tablaIteraciones = crearTablaMatriz(
       bloque.pasos.map((p) => [String(p.i), p.a, p.b, p.c, p.fc, p.error]),
       { encabezados: ["i", "a", "b", "c", "f(c)", "εa (%)"], filasResaltadas: new Set([ultima]) });

@@ -18,7 +18,7 @@ import math
 
 from .continuidad import revisar_continuidad
 from .evaluador import compilar, evaluar_numero
-from .grafica import datos_grafica
+from .grafica import agregar_iteraciones, datos_grafica
 
 MAX_ITERACIONES = 200
 ITERACIONES_POR_DEFECTO = 50
@@ -92,14 +92,27 @@ def biseccion(funcion, a, b, tolerancia, max_iter=ITERACIONES_POR_DEFECTO):
     Devuelve un diccionario con `entradas`, `inicial`, `pasos` (una iteración
     cada uno), `resultado`, `cota_iteraciones`, `continuidad` (revisión previa
     del intervalo, ver `continuidad.py`), `grafica` (datos para dibujar f y las
-    iteraciones, ver `grafica.py`), `advertencias` y `comprobacion`. Lanza ValueError (en español) con datos inválidos o sin
-    cambio de signo.
+    iteraciones, ver `grafica.py`), `advertencias` y `comprobacion`. Orden: 1) gráfica, 2) continuidad (si hay señales de
+    discontinuidad devuelve `bloqueada: True` sin iterar), 3) cambio de signo
+    (ValueError si no hay), 4) iteraciones. Lanza ValueError (en español) con
+    datos inválidos o sin cambio de signo.
     """
 
     f, a, b, tolerancia, max_iter = _validar_entradas(
         funcion, a, b, tolerancia, max_iter)
 
     a0, b0 = a, b
+
+    # Paso 1: graficar f en [a, b]. Paso 2: con esa revisión se decide si f es
+    # continua. Si no lo es, el método NO se aplica (regla del profesor).
+    continuidad = revisar_continuidad(f, a0, b0)
+    grafica = datos_grafica(f, a0, b0, continuidad)
+
+    if not continuidad["sin_senales"]:
+        return _resultado_bloqueado(f, a0, b0, tolerancia, max_iter,
+                                    continuidad, grafica)
+
+    # Paso 3: con f continua, se pide el cambio de signo en los extremos.
     fa, fb = f(a), f(b)
 
     if fa == 0 or fb == 0:
@@ -117,8 +130,7 @@ def biseccion(funcion, a, b, tolerancia, max_iter=ITERACIONES_POR_DEFECTO):
             "mismo signo, así que f(a)·f(b) > 0. Prueba con otro intervalo."
         )
 
-    continuidad = revisar_continuidad(f, a0, b0)
-
+    # Paso 4: iteraciones.
     pasos = []
     anterior = None
     motivo = "max_iter"
@@ -170,12 +182,6 @@ def biseccion(funcion, a, b, tolerancia, max_iter=ITERACIONES_POR_DEFECTO):
     }
 
     advertencias = []
-    if not continuidad["sin_senales"]:
-        advertencias.append(
-            "Se detectaron señales de discontinuidad en el intervalo (ver "
-            "el apartado Continuidad): la bisección solo garantiza una raíz "
-            "si f es continua en [a, b]."
-        )
     f_extremos = (abs(f(a0)), abs(f(b0)))
     cerca_de_cero = not (abs(ultimo["fc"]) > max(f_extremos) or (
         convergio and abs(ultimo["fc"]) >= min(f_extremos)))
@@ -191,8 +197,11 @@ def biseccion(funcion, a, b, tolerancia, max_iter=ITERACIONES_POR_DEFECTO):
             "E. Aumenta el máximo de iteraciones o usa una E mayor."
         )
 
+    agregar_iteraciones(grafica, pasos, resultado)
+
     return {
         "operacion": "biseccion",
+        "bloqueada": False,
         "entradas": {
             "funcion": f.texto, "a": a0, "b": b0, "tolerancia": tolerancia,
             "max_iter": max_iter,
@@ -202,10 +211,38 @@ def biseccion(funcion, a, b, tolerancia, max_iter=ITERACIONES_POR_DEFECTO):
         "resultado": resultado,
         "cota_iteraciones": cota_iteraciones(a0, b0, tolerancia),
         "continuidad": continuidad,
-        "grafica": datos_grafica(f, a0, b0, pasos, resultado, continuidad),
+        "grafica": grafica,
         "advertencias": advertencias,
         "comprobacion": _comprobar(
             f, ultimo, resultado, continuidad, cerca_de_cero),
+    }
+
+
+def _resultado_bloqueado(f, a, b, tolerancia, max_iter, continuidad, grafica):
+    """Resultado cuando f no es continua en [a, b]: solo gráfica y continuidad,
+    sin iteraciones (`pasos` vacío, `resultado` y `comprobacion` en None)."""
+
+    return {
+        "operacion": "biseccion",
+        "bloqueada": True,
+        "motivo_bloqueo": (
+            "f no es continua en [{}, {}]: el método de bisección solo se "
+            "aplica a funciones continuas, así que no se calcularon "
+            "iteraciones. Elige un intervalo donde f sea continua (la "
+            "gráfica y la revisión indican dónde está el problema)."
+        ).format(formatear_real(a), formatear_real(b)),
+        "entradas": {
+            "funcion": f.texto, "a": a, "b": b, "tolerancia": tolerancia,
+            "max_iter": max_iter,
+        },
+        "inicial": {"fa": f.evaluar_seguro(a)[0], "fb": f.evaluar_seguro(b)[0]},
+        "pasos": [],
+        "resultado": None,
+        "cota_iteraciones": cota_iteraciones(a, b, tolerancia),
+        "continuidad": continuidad,
+        "grafica": grafica,
+        "advertencias": [],
+        "comprobacion": None,
     }
 
 
@@ -288,6 +325,17 @@ def procedimiento_texto(datos, modo="fraccion", incluir_pasos=True):
     r = datos["resultado"]
     c = datos["comprobacion"]
     marca = lambda ok: "✓" if ok else "✗"
+
+    if datos.get("bloqueada"):
+        return "\n".join([
+            "MÉTODO DE BISECCIÓN", "",
+            f"f(x) = {e['funcion']}",
+            f"Intervalo [a, b] = [{f(e['a'])}, {f(e['b'])}]", "",
+            "Paso 1. Gráfica de f(x) en [a, b] (ver la figura).",
+            "Paso 2. Revisión de continuidad:",
+            *continuidad_texto(datos["continuidad"]), "",
+            "MÉTODO NO APLICADO: " + datos["motivo_bloqueo"],
+        ])
 
     lineas = [
         "MÉTODO DE BISECCIÓN", "",

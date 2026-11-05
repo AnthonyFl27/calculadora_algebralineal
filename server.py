@@ -469,9 +469,35 @@ def _armar_bloque_biseccion(resultado):
     r = resultado["resultado"]
     c = resultado["comprobacion"]
     cont = resultado["continuidad"]
+    bloqueada = resultado["bloqueada"]
+    continuidad = {
+        "muestras": cont["muestras"], "total": cont["total"],
+        "sin_senales": cont["sin_senales"],
+        "sospechas": [
+            {"tipo": q["tipo"], "mensaje": q["mensaje"]}
+            for q in cont["sospechas"]
+        ],
+    }
+
+    if bloqueada:
+        # f no es continua: solo se informan la gráfica y la continuidad.
+        return {
+            "tipo": "biseccion",
+            "bloqueada": True,
+            "motivo_bloqueo": resultado["motivo_bloqueo"],
+            "entradas": {
+                "funcion": e["funcion"], "a": f(e["a"]), "b": f(e["b"]),
+                "tolerancia": f(e["tolerancia"]),
+                "tolerancia_porcentaje": f(e["tolerancia"] * 100),
+                "max_iter": e["max_iter"],
+            },
+            "continuidad": continuidad,
+            "grafica": resultado["grafica"],
+        }
 
     return {
         "tipo": "biseccion",
+        "bloqueada": False,
         "entradas": {
             "funcion": e["funcion"], "a": f(e["a"]), "b": f(e["b"]),
             "tolerancia": f(e["tolerancia"]),
@@ -496,14 +522,7 @@ def _armar_bloque_biseccion(resultado):
             "convergio": r["convergio"], "motivo": r["motivo"],
         },
         "cota_iteraciones": resultado["cota_iteraciones"],
-        "continuidad": {
-            "muestras": cont["muestras"], "total": cont["total"],
-            "sin_senales": cont["sin_senales"],
-            "sospechas": [
-                {"tipo": q["tipo"], "mensaje": q["mensaje"]}
-                for q in cont["sospechas"]
-            ],
-        },
+        "continuidad": continuidad,
         "grafica": resultado["grafica"],
         "advertencias": resultado["advertencias"],
         "comprobacion": {
@@ -720,6 +739,12 @@ def _descripcion_peticion(ruta, datos, resultado):
     if ruta == "/api/biseccion":
         r = resultado.get("resultado", {})
         cont = resultado.get("continuidad", {})
+        if resultado.get("bloqueada"):
+            return (DESTINO[ruta],
+                    f"f(x)={datos.get('funcion')} · [{datos.get('a')}, "
+                    f"{datos.get('b')}] · E={datos.get('tolerancia')}",
+                    f"BLOQUEADO: f no es continua ({cont.get('total')} "
+                    "sospecha(s)); no se iteró")
         return (DESTINO[ruta],
                 f"f(x)={datos.get('funcion')} · [{datos.get('a')}, "
                 f"{datos.get('b')}] · E={datos.get('tolerancia')}",

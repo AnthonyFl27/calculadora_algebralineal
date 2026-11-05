@@ -98,9 +98,17 @@ class ExportarEndpointTest(unittest.TestCase):
         self.assertFalse(cont["sin_senales"])
         self.assertEqual(cont["sospechas"][0]["tipo"], "polo")
         self.assertIn("Posible polo", cont["sospechas"][0]["mensaje"])
-        self.assertFalse(bloque["comprobacion"]["cerca_de_cero"])
-        self.assertFalse(bloque["comprobacion"]["correcto"])
+        self.assertTrue(bloque["bloqueada"])
+        self.assertIn("no es continua", bloque["motivo_bloqueo"])
+        self.assertNotIn("pasos", bloque)
+        self.assertTrue(bloque["grafica"]["curva"])
         json.dumps(bloque)
+        # Exportar también funciona con el método bloqueado.
+        for formato in ("png", "pdf"):
+            r = self.enviar({"modulo": "biseccion", "formato": formato,
+                             "datos": {"funcion": "tan(x)", "a": "1", "b": "2",
+                                       "tolerancia": "0.0001"}})
+            self.assertEqual(r.status, 200)
 
     def test_biseccion_errores_son_json_400(self):
         for datos in ({"funcion": "x^2 + 1", "a": "0", "b": "2",

@@ -182,12 +182,11 @@ class CatalogoTests(unittest.TestCase):
                     continue
 
                 r = biseccion(*args)
-                if "advertencia" in esperado:
-                    self.assertTrue(any(esperado["advertencia"] in a
-                                        for a in r["advertencias"]))
-                    if "continuidad" in esperado:
-                        tipos = {q["tipo"] for q in r["continuidad"]["sospechas"]}
-                        self.assertIn(esperado["continuidad"], tipos)
+                if esperado.get("bloqueada"):
+                    self.assertTrue(r["bloqueada"])
+                    self.assertEqual(r["pasos"], [])
+                    tipos = {q["tipo"] for q in r["continuidad"]["sospechas"]}
+                    self.assertIn(esperado["continuidad"], tipos)
                     continue
 
                 self.assertEqual(r["resultado"]["iteraciones"],
@@ -199,7 +198,7 @@ class CatalogoTests(unittest.TestCase):
 
         # Los ejercicios con solución cubren al menos un caso de cada tipo.
         self.assertTrue(any("error" in e["resultado_esperado"] for e in lista))
-        self.assertTrue(any("advertencia" in e["resultado_esperado"] for e in lista))
+        self.assertTrue(any("bloqueada" in e["resultado_esperado"] for e in lista))
 
     def test_vista_previa_para_todos_los_ejercicios(self):
         for clave, lista in ejercicios.catalogo().items():

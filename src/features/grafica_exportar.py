@@ -114,8 +114,9 @@ def plan_grafica(g, ancho, alto, cw, ch, paleta):
         plan.append(("texto", x0, y_texto, texto, "start", paleta["texto"], True))
 
     # Raíz aproximada.
-    plan.append(("circulo", sx(g["raiz"]["x"]), sy(g["raiz"]["y"]), radio * 1.7,
-                 paleta["grafica_raiz"], paleta["fondo"]))
+    if g["raiz"] is not None:          # sin raíz si el método quedó bloqueado
+        plan.append(("circulo", sx(g["raiz"]["x"]), sy(g["raiz"]["y"]), radio * 1.7,
+                     paleta["grafica_raiz"], paleta["fondo"]))
     return plan
 
 

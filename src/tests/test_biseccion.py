@@ -115,13 +115,39 @@ class OtrosCasosTests(unittest.TestCase):
         self.assertFalse(r["comprobacion"]["correcto"])
         self.assertTrue(any("Se agotaron" in a for a in r["advertencias"]))
 
-    def test_discontinuidad_se_advierte(self):
-        for funcion, a, b in (("1/x", -1, 2), ("tan(x)", 1, 2)):
+    def test_discontinuidad_bloquea_el_metodo(self):
+        # Regla del profesor: si f no es continua en [a, b] no se itera.
+        for funcion, a, b, tipo in (("1/x", -1, 2, "polo"),
+                                    ("tan(x)", 1, 2, "polo"),
+                                    ("abs(x)/x", -1, 2, "salto"),
+                                    ("sqrt(x)", -1, 2, "no_definida")):
             with self.subTest(funcion):
                 r = biseccion(funcion, a, b, "1e-4")
-                self.assertTrue(any("discontinuidad" in x for x in r["advertencias"]))
-                self.assertTrue(r["comprobacion"]["discontinuidad"])
-                self.assertFalse(r["comprobacion"]["correcto"])
+                self.assertTrue(r["bloqueada"])
+                self.assertEqual(r["pasos"], [])
+                self.assertIsNone(r["resultado"])
+                self.assertIsNone(r["comprobacion"])
+                self.assertIn("no es continua", r["motivo_bloqueo"])
+                self.assertFalse(r["continuidad"]["sin_senales"])
+                tipos = {q["tipo"] for q in r["continuidad"]["sospechas"]}
+                self.assertIn(tipo, tipos)
+                # La gráfica sí se entrega (paso 1), sin iteraciones.
+                self.assertGreaterEqual(len(r["grafica"]["curva"]), 1)
+                self.assertEqual(r["grafica"]["iteraciones"], [])
+                self.assertIsNone(r["grafica"]["raiz"])
+                self.assertTrue(r["grafica"]["discontinuidades"])
+
+    def test_discontinuidad_se_revisa_antes_del_cambio_de_signo(self):
+        # 1/x² > 0 en todo el intervalo (sin cambio de signo): como el paso 2
+        # va antes, se informa la discontinuidad y no el error de signo.
+        r = biseccion("1/x^2", -1, 1, "1e-4")
+        self.assertTrue(r["bloqueada"])
+
+    def test_continua_no_se_bloquea(self):
+        r = biseccion("x^2 - 2", 1, 2, "1e-4")
+        self.assertFalse(r["bloqueada"])
+        self.assertTrue(r["continuidad"]["sin_senales"])
+        self.assertIsNotNone(r["grafica"]["raiz"])
 
     def test_continuidad_se_revisa_antes_de_iterar(self):
         r = biseccion("tan(x)", 1, 2, "1e-4")
@@ -129,16 +155,6 @@ class OtrosCasosTests(unittest.TestCase):
         self.assertFalse(cont["sin_senales"])
         self.assertEqual(cont["sospechas"][0]["tipo"], "polo")
         self.assertAlmostEqual(cont["sospechas"][0]["x"], math.pi / 2, places=3)
-        # El aviso de continuidad va primero (antes del posterior a iterar).
-        self.assertIn("señales de discontinuidad", r["advertencias"][0])
-
-    def test_discontinuidad_sin_que_f_raiz_delate(self):
-        # |x|/x salta de -1 a 1: f(raíz) = ±1 no es "grande", pero la revisión
-        # previa sí detecta el salto.
-        r = biseccion("abs(x)/x", -1, 2, "1e-4")
-        self.assertEqual(r["continuidad"]["sospechas"][0]["tipo"], "salto")
-        self.assertTrue(r["comprobacion"]["discontinuidad"])
-        self.assertFalse(r["comprobacion"]["correcto"])
 
     def test_continuidad_en_el_texto_exportado(self):
         bueno = biseccion("x^2 - 2", 1, 2, "1e-4")
@@ -193,7 +209,6 @@ class ErroresTests(unittest.TestCase):
         self.assertError("Escribe una función", "", 1, 2, "1e-3")
         self.assertError("Falta cerrar", "sin(x", 1, 2, "1e-3")
         self.assertError("depender de x", "5", 1, 2, "1e-3")
-        self.assertError("No se puede evaluar", "sqrt(x)", -1, 2, "1e-3")
 
     def test_valores_vacios_o_con_x(self):
         self.assertError("extremo a", "x", "", 2, "1e-3")

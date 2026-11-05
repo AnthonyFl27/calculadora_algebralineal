@@ -63,6 +63,7 @@ def _cuantil(ordenados, q):
 def _ventana_y(valores, con_discontinuidad, extra):
     """(mínimo, máximo) vertical que contiene 0 y los valores relevantes."""
 
+    valores = valores or [0.0]      # f no se pudo evaluar en ningún punto
     if con_discontinuidad:
         ordenados = sorted(valores)
         bajo = _cuantil(ordenados, _CUANTIL_BAJO)
@@ -136,10 +137,12 @@ def _polilineas(xs, ys, y_min, y_max):
     return tramos
 
 
-def datos_grafica(f, a, b, pasos, resultado, continuidad):
+def datos_grafica(f, a, b, continuidad):
     """
-    Datos de la gráfica de `f` (una `Funcion`) en [a, b] con lo que hizo la
-    bisección: `pasos`, `resultado` y `continuidad` de `biseccion()`.
+    Datos de la gráfica de `f` (una `Funcion`) en [a, b], con las
+    discontinuidades de `continuidad`. Es el **primer paso** del método: se
+    dibuja antes de iterar, así que `iteraciones` va vacía y `raiz` es None
+    hasta que `agregar_iteraciones` las completa.
     """
 
     n = PUNTOS
@@ -148,15 +151,10 @@ def datos_grafica(f, a, b, pasos, resultado, continuidad):
     finitos = [y for y in ys if y is not None]
 
     y_min, y_max = _ventana_y(
-        finitos, not continuidad["sin_senales"], [f(a), f(b)])
+        finitos, not continuidad["sin_senales"],
+        [y for y in (ys[0], ys[-1]) if y is not None])
     holgura_x = _MARGEN_X * (b - a)
     x_min, x_max = a - holgura_x, b + holgura_x
-
-    def punto(x, y):
-        # "y" es el valor recortado a la ventana inicial; "valor" es f real,
-        # que la web usa al hacer zoom (el punto puede entrar en la vista).
-        return {"x": x, "y": max(y_min, min(y_max, y)), "valor": y,
-                "fuera": not y_min <= y <= y_max}
 
     return {
         "x_min": x_min, "x_max": x_max, "y_min": y_min, "y_max": y_max,
@@ -164,17 +162,33 @@ def datos_grafica(f, a, b, pasos, resultado, continuidad):
         "marcas_y": marcas(y_min, y_max, 7),
         "curva": _polilineas(xs, ys, y_min, y_max),
         "intervalo": [a, b],
-        "iteraciones": [
-            {"i": p["i"], "a": p["a_nuevo"], "b": p["b_nuevo"],
-             **punto(p["c"], p["fc"])}
-            for p in pasos
-        ],
-        "raiz": punto(resultado["raiz"], resultado["fraiz"]),
+        "iteraciones": [],
+        "raiz": None,
         "discontinuidades": [
             {"tipo": s["tipo"], "desde": s["desde"], "hasta": s["hasta"]}
             for s in continuidad["sospechas"]
         ],
     }
+
+
+def agregar_iteraciones(grafica, pasos, resultado):
+    """Completa la gráfica del paso 1 con los puntos c de cada iteración y la
+    raíz aproximada (`pasos` y `resultado` de `biseccion()`)."""
+
+    y_min, y_max = grafica["y_min"], grafica["y_max"]
+
+    def punto(x, y):
+        # "y" es el valor recortado a la ventana inicial; "valor" es f real,
+        # que la web usa al hacer zoom (el punto puede entrar en la vista).
+        return {"x": x, "y": max(y_min, min(y_max, y)), "valor": y,
+                "fuera": not y_min <= y <= y_max}
+
+    grafica["iteraciones"] = [
+        {"i": p["i"], "a": p["a_nuevo"], "b": p["b_nuevo"],
+         **punto(p["c"], p["fc"])}
+        for p in pasos
+    ]
+    grafica["raiz"] = punto(resultado["raiz"], resultado["fraiz"])
 
 
 # ----------------------------------------------------------------------

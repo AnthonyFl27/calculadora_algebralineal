@@ -176,8 +176,9 @@ class DocumentoTest(unittest.TestCase):
         r = biseccion("1/x", -1, 2, "1e-4")
         texto = texto_documento(ex.construir_documento(
             "biseccion", r, incluir_pasos=False))
-        self.assertIn("Aviso:", texto)
-        self.assertIn("Continuidad", texto)
+        self.assertIn("Método no aplicado", texto)
+        self.assertIn("Paso 2. Continuidad", texto)
+        self.assertNotIn("Raíz aproximada", texto)
         self.assertIn("Posible polo", texto)
         leer_png(ex.exportar("biseccion", r, "png", incluir_pasos=False)[0])
         for formato in ("png", "pdf"):
@@ -198,7 +199,7 @@ class DocumentoTest(unittest.TestCase):
                           texto_documento(doc))
         self.assertNotIn("discontinua", texto_documento(doc))
         malo = biseccion("tan(x)", 1, 2, "1e-4")
-        self.assertIn("Línea naranja discontinua", texto_documento(
+        self.assertIn("naranja: posible discontinuidad", texto_documento(
             ex.construir_documento("biseccion", malo, incluir_pasos=False)))
 
     def test_png_con_grafica_dibuja_pixeles_de_la_curva(self):
@@ -214,8 +215,11 @@ class DocumentoTest(unittest.TestCase):
         self.assertGreater(sin_grafica, 100)
 
     def test_pdf_con_grafica_trae_trazos_vectoriales(self):
-        r = biseccion("tan(x)", 1, 2, "1e-4")
+        r = biseccion("tan(x)", 1, 2, "1e-4")   # bloqueada: solo curva y polo
+        r2 = biseccion("x^2 - 2", 1, 2, "1e-4")
         for pasos in (True, False):
+            pdf2 = ex.exportar("biseccion", r2, "pdf", incluir_pasos=pasos)[0]
+            self.assertIn(b"x", pdf2)
             pdf = ex.exportar("biseccion", r, "pdf", incluir_pasos=pasos)[0]
             flujos = []
             resto = pdf
@@ -225,7 +229,6 @@ class DocumentoTest(unittest.TestCase):
                 flujos.append(zlib.decompress(datos))
             contenido = b"\n".join(flujos)
             self.assertIn(b" l S", contenido)     # polilínea de la curva
-            self.assertIn(b" c f", contenido)     # círculos (puntos y raíz)
             self.assertIn(b"[", contenido)        # línea discontinua del polo
 
     def test_titulo_de_seccion_viaja_con_la_figura(self):
