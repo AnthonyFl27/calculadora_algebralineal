@@ -2208,8 +2208,12 @@
   const panel = document.getElementById("panel");
   const sidebar = document.getElementById("sidebar");
 
+  /* En escritorio el sidebar arranca plegado siempre; el usuario decide
+     desplegarlo y esa elección dura mientras no recargue la página (no se
+     guarda en localStorage). */
+  let sidebarColapsadoEscritorio = true;
   function leerSidebarColapsado() {
-    try { return localStorage.getItem("sidebar-colapsado") === "1"; } catch (e) { return false; }
+    return sidebarColapsadoEscritorio;
   }
 
   function aplicarSidebarColapsado(colapsado, guardar) {
@@ -2221,9 +2225,7 @@
       boton.setAttribute("aria-label", accion);
       boton.setAttribute("aria-expanded", String(!colapsado));
     }
-    if (guardar) {
-      try { localStorage.setItem("sidebar-colapsado", colapsado ? "1" : "0"); } catch (e) {}
-    }
+    if (guardar) sidebarColapsadoEscritorio = colapsado;
   }
 
   const ICONO_SIDEBAR =
@@ -4555,8 +4557,32 @@
       const caja = lienzo.getBoundingClientRect();
       return { x: ev.clientX - caja.left, y: ev.clientY - caja.top };
     };
+    /* Inercia (solo si `acc.inercia`): al soltar un arrastre rápido, la vista
+       sigue girando y se frena sola. Cualquier otra acción la detiene. */
+    const vel = { x: 0, y: 0, t: 0 };
+    let animacionInercia = 0;
+    const reducido = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    function detenerInercia() {
+      if (animacionInercia) { cancelAnimationFrame(animacionInercia); animacionInercia = 0; }
+    }
+    function iniciarInercia() {
+      if (!acc.inercia || reducido() || performance.now() - vel.t > 80) return;
+      if (Math.hypot(vel.x, vel.y) < 0.05) return;        // px por ms
+      let previo = performance.now();
+      const paso = (ahora) => {
+        const dt = Math.min(48, ahora - previo);
+        previo = ahora;
+        vel.x *= Math.exp(-dt / 320); vel.y *= Math.exp(-dt / 320);
+        if (!lienzo.isConnected || Math.hypot(vel.x, vel.y) < 0.015) { animacionInercia = 0; return; }
+        acc.arrastrar(vel.x * dt, vel.y * dt);
+        animacionInercia = requestAnimationFrame(paso);
+      };
+      animacionInercia = requestAnimationFrame(paso);
+    }
     lienzo.addEventListener("pointerdown", (ev) => {
       if (ev.pointerType === "mouse" && ev.button !== 0) return;
+      detenerInercia();
+      vel.x = 0; vel.y = 0; vel.t = 0;
       punteros.set(ev.pointerId, posicion(ev));
       try { lienzo.setPointerCapture(ev.pointerId); } catch (error) { /* sin captura */ }
       lienzo.classList.add("arrastrando");
@@ -4568,8 +4594,14 @@
       const otros = [...punteros.entries()].filter(([id]) => id !== ev.pointerId).map(([, q]) => q);
       punteros.set(ev.pointerId, p);
       if (otros.length === 0) {
+        const ahora = performance.now();
+        const dt = Math.max(1, ahora - (vel.t || ahora - 16));
+        vel.x = 0.6 * ((p.x - anterior.x) / dt) + 0.4 * vel.x;
+        vel.y = 0.6 * ((p.y - anterior.y) / dt) + 0.4 * vel.y;
+        vel.t = ahora;
         acc.arrastrar(p.x - anterior.x, p.y - anterior.y);
       } else {
+        vel.x = 0; vel.y = 0;
         const otro = otros[0];
         const antes = Math.hypot(anterior.x - otro.x, anterior.y - otro.y);
         const ahora = Math.hypot(p.x - otro.x, p.y - otro.y);
@@ -4580,17 +4612,23 @@
       punteros.delete(ev.pointerId);
       if (punteros.size === 0) lienzo.classList.remove("arrastrando");
     };
-    lienzo.addEventListener("pointerup", soltar);
+    lienzo.addEventListener("pointerup", (ev) => {
+      const eraUnico = punteros.size === 1;
+      soltar(ev);
+      if (eraUnico) iniciarInercia();
+    });
     lienzo.addEventListener("pointercancel", soltar);
     lienzo.addEventListener("pointerleave", (ev) => { if (!punteros.has(ev.pointerId)) acc.cursor(null); });
-    lienzo.addEventListener("dblclick", () => acc.restablecer());
+    lienzo.addEventListener("dblclick", () => { detenerInercia(); acc.restablecer(); });
     lienzo.addEventListener("wheel", (ev) => {
       ev.preventDefault();
+      detenerInercia();
       const delta = (ev.deltaY || ev.deltaX) * (ev.deltaMode === 1 ? 16 : 1);
       const p = posicion(ev);
       acc.zoom(Math.exp(Math.max(-200, Math.min(200, delta)) * 0.0015), p.x, p.y, ev);
     }, { passive: false });
     lienzo.addEventListener("keydown", (ev) => {
+      detenerInercia();
       if (acc.tecla(ev)) ev.preventDefault();
     });
   }
@@ -4701,6 +4739,72 @@
     requestAnimationFrame(dibujar);
   }
 
+  /* Profundidad y sombreado de los polígonos 3D (presentación; la geometría
+     viene de Python). Sin buffer de profundidad, el orden "de lejos a cerca"
+     falla cuando dos polígonos se atraviesan (planos que se cortan, cubos
+     dentro de cubos). Arreglo: antes de ordenar, cada polígono se parte por el
+     plano de los demás; así ninguna pieza atraviesa a otra y ordenarlas por su
+     distancia media es correcto. */
+  function normalDePoligono(pts) {          // método de Newell
+    let nx = 0, ny = 0, nz = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      nx += (a[1] - b[1]) * (a[2] + b[2]);
+      ny += (a[2] - b[2]) * (a[0] + b[0]);
+      nz += (a[0] - b[0]) * (a[1] + b[1]);
+    }
+    const largo = Math.hypot(nx, ny, nz);
+    return largo > 1e-12 ? [nx / largo, ny / largo, nz / largo] : null;
+  }
+
+  /* Parte un polígono convexo por el plano n·x = d. Devuelve [delante, detrás]
+     o null si el plano no lo atraviesa. */
+  function partirPoligonoPorPlano(pts, n, d, eps) {
+    const lado = pts.map((p) => n[0] * p[0] + n[1] * p[1] + n[2] * p[2] - d);
+    if (!lado.some((v) => v > eps) || !lado.some((v) => v < -eps)) return null;
+    const pos = [], neg = [];
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length], sa = lado[i], sb = lado[(i + 1) % pts.length];
+      if (sa >= -eps) pos.push(a);
+      if (sa <= eps) neg.push(a);
+      if ((sa > eps && sb < -eps) || (sa < -eps && sb > eps)) {
+        const t = sa / (sa - sb);
+        const q = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+        pos.push(q); neg.push(q);
+      }
+    }
+    return pos.length >= 3 && neg.length >= 3 ? [pos, neg] : null;
+  }
+
+  const MAX_PIEZAS_3D = 600;
+  function partirPoligonos3D(elementos, escalaMundo) {
+    const eps = 1e-7 * Math.max(1, escalaMundo);
+    const base = elementos.map((e) => ({ e, pts: e.puntos, n: normalDePoligono(e.puntos) }));
+    const planos = base.map((b) => b.n && { n: b.n, d: b.n[0] * b.pts[0][0] + b.n[1] * b.pts[0][1] + b.n[2] * b.pts[0][2] });
+    let piezas = base.map((b, i) => ({ ...b, origen: i }));
+    planos.forEach((plano, j) => {
+      if (!plano || piezas.length > MAX_PIEZAS_3D) return;
+      const siguiente = [];
+      for (const pieza of piezas) {
+        const partes = pieza.origen === j ? null : partirPoligonoPorPlano(pieza.pts, plano.n, plano.d, eps);
+        if (partes) partes.forEach((pts) => siguiente.push({ ...pieza, pts }));
+        else siguiente.push(pieza);
+      }
+      piezas = siguiente;
+    });
+    return piezas;
+  }
+
+  /* Sombreado: luz fija respecto a la cámara (arriba a la izquierda y de
+     frente); cuanto más de frente a la luz está una cara, más intenso su
+     relleno. `normalCam` = [derecha, arriba, hacia el observador]. */
+  const LUZ_CAMARA = (() => { const v = [-0.35, 0.45, 0.82]; const l = Math.hypot(...v); return v.map((c) => c / l); })();
+  function opacidadSombreada(normalCam) {
+    if (!normalCam) return 0.2;
+    const luz = Math.abs(normalCam[0] * LUZ_CAMARA[0] + normalCam[1] * LUZ_CAMARA[1] + normalCam[2] * LUZ_CAMARA[2]);
+    return 0.1 + 0.32 * luz;
+  }
+
   /* Escena 3D: proyección ortogonal con cámara orbital (azimut y elevación
      en grados; z hacia arriba). Arrastrar rota, la rueda o el pellizco hacen
      zoom. Los elementos se pintan por capas (polígonos, trazos, puntos) y,
@@ -4791,13 +4895,19 @@
       const lejania = (lista) => lista.reduce((s, p) => s + p[2], 0) / lista.length;
       const porLejania = (a, b) => b.d - a.d;
 
-      const poligonos = anim.elementos().filter((e) => e.tipo === "poligono").map((e) => {
-        const p = pts(e.puntos);
-        return { e, p, d: lejania(p) };
+      const poligonos = partirPoligonos3D(anim.elementos().filter((e) => e.tipo === "poligono"), radio).map((pieza) => {
+        const p = pts(pieza.pts);
+        const n = pieza.n;
+        const normalCam = n && (() => {
+          const a = n[0] * ca - n[1] * sa, b = n[0] * sa + n[1] * ca;
+          return [a, n[2] * ce + b * se, -(b * ce - n[2] * se)];
+        })();
+        return { e: pieza.e, p, d: lejania(p), opacidad: opacidadSombreada(normalCam) };
       }).sort(porLejania);
-      for (const { e, p } of poligonos) {
+      for (const { e, p, opacidad } of poligonos) {
         area.appendChild(svgEl("path", {
           class: `e-relleno ${clase(e.serie)}${e.guion ? " e-guion" : ""}`,
+          style: `fill-opacity:${opacidad.toFixed(3)}`,
           d: p.map((q, k) => `${k ? "L" : "M"}${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join("") + "Z",
         }));
       }
@@ -4846,6 +4956,7 @@
     const restablecer = () => { Object.assign(cam, inicial); redibujar(); };
 
     instalarGestosEscena(lienzo, {
+      inercia: true,
       arrastrar: (dx, dy) => girar(dx * 0.5, dy * 0.5),
       zoom: (factor) => zoom(factor),
       pellizco: (factor) => zoom(factor),

@@ -209,15 +209,19 @@ async function pruebaDrawer(browser) {
   ok(!(await p.isVisible("#sidebar")) && (await foco()) === "btn-menu", "elegir un módulo cierra y devuelve el foco");
   ok((await p.evaluate(() => localStorage.getItem("sidebar-colapsado"))) === null, "la vista móvil no guarda sidebar-colapsado");
 
-  // Escritorio ↔ móvil: el estado plegado se conserva.
+  // Escritorio ↔ móvil: el sidebar arranca plegado y lo que elija el usuario se conserva.
   await p.setViewportSize({ width: 1100, height: 800 }); await esperar(250);
   ok(!(await p.isVisible("#btn-menu")), "escritorio: sin botón de menú");
+  ok(await p.evaluate(() => document.getElementById("sidebar").classList.contains("colapsado")), "escritorio: el sidebar arranca plegado");
   await p.click(".btn-colapsar"); await esperar(200);
+  ok(await p.evaluate(() => !document.getElementById("sidebar").classList.contains("colapsado")), "escritorio: el usuario puede desplegarlo");
   await p.setViewportSize({ width: 360, height: 740 }); await esperar(300);
   ok(await p.evaluate(() => !document.getElementById("sidebar").classList.contains("colapsado")) &&
-     (await p.evaluate(() => localStorage.getItem("sidebar-colapsado"))) === "1", "móvil: sin clase colapsado y valor guardado intacto");
+     (await p.evaluate(() => localStorage.getItem("sidebar-colapsado"))) === null, "móvil: sin clase colapsado y sin guardar nada");
   await p.setViewportSize({ width: 1100, height: 800 }); await esperar(300);
-  ok(await p.evaluate(() => document.getElementById("sidebar").classList.contains("colapsado")), "al ensanchar se restaura el sidebar plegado");
+  ok(await p.evaluate(() => !document.getElementById("sidebar").classList.contains("colapsado")), "al ensanchar se conserva lo que eligió el usuario (desplegado)");
+  await p.reload(); await esperar(500);
+  ok(await p.evaluate(() => document.getElementById("sidebar").classList.contains("colapsado")), "al recargar vuelve a arrancar plegado");
   await p.context().close();
 }
 

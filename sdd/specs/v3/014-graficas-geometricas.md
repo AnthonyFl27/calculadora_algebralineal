@@ -120,3 +120,16 @@ de 3 incógnitas y las matrices de más de 3×3 no se grafican: la vista muestra
   `prueba_web_movil.js` (abre las gráficas en los 9 anchos y ambos temas).
 - **Pendiente del usuario:** visto bueno visual (claro/oscuro, móvil, y los
   PNG/PDF exportados).
+
+## Cambios posteriores
+
+- **Pulido de la vista 3D de la web** (solo presentación; el PNG y el PDF no
+  cambian): (1) **profundidad:** antes de ordenar de lejos a cerca, cada
+  polígono se parte por el plano de los demás (`partirPoligonos3D`), así dos
+  planos o sólidos que se atraviesan ya no se pintan en el orden equivocado
+  (tope de 600 piezas); (2) **sombreado:** el relleno de cada cara es más o
+  menos intenso según su ángulo con una luz fija respecto a la cámara
+  (`opacidadSombreada`); (3) **inercia:** al soltar un arrastre rápido la
+  rotación sigue y se frena sola (`instalarGestosEscena` con `inercia: true`;
+  se detiene con cualquier otra acción y no corre con `prefers-reduced-motion`).
+- **Sidebar de escritorio:** arranca siempre plegado y no guarda el estado.

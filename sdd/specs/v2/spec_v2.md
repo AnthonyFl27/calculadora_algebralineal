@@ -63,8 +63,9 @@ Todo cambio visual o vista nueva se revisa a **320 px y 375 px** (y los anchos
 - Stepper: en móvil, contador + botones grandes (se ocultan los puntos).
 - Sidebar ≤ 768 px → **drawer superpuesto** con barra superior (hamburguesa),
   se cierra al elegir módulo, tocar fuera o `Esc`; el foco vuelve al botón.
-  El estado "replegado" de escritorio (`sidebar-colapsado` en `localStorage`)
-  nunca se modifica desde móvil.
+  En escritorio el sidebar **arranca siempre replegado**; lo que elija el
+  usuario dura hasta recargar (no se guarda en `localStorage`) y el móvil no lo
+  modifica.
 - Modal, toast y menú de exportar siempre dentro de la pantalla (ancho máx.
   `100vw − 32px`, scroll interno, `safe-area`). Alturas con `dvh`.
 - `:hover` solo en dispositivos con hover; `touch-action: manipulation`.
@@ -111,8 +112,8 @@ Todo cambio visual o vista nueva se revisa a **320 px y 375 px** (y los anchos
 ## 004 — Diseño visual (temas y mejoras)
 
 Casa de los cambios visuales. Implementó: temas claro/oscuro (regla C),
-**sidebar replegable** a 56 px (botón en la cabecera; estado en
-`sidebar-colapsado`; con el sidebar replegado queda visible el punto de estado
+**sidebar replegable** a 56 px (botón en la cabecera; arranca replegado en
+escritorio y no guarda el estado; con el sidebar replegado queda visible el punto de estado
 del servidor con tooltip), título "Calculadora" e ícono SVG de calculadora en la
 pestaña, quitar la nota "Requiere: python server.py", **banner y log de la
 consola** de `server.py` (hora, método, ruta, estado, tiempo, bytes + detalle del
