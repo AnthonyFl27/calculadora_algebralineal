@@ -63,6 +63,14 @@ class CasoDelProfesorTests(unittest.TestCase):
         self.assertEqual(self.r["cota_iteraciones"], 13)
         self.assertEqual(self.r["advertencias"], [])
 
+    def test_continuidad_sin_senales(self):
+        cont = self.r["continuidad"]
+        self.assertTrue(cont["sin_senales"])
+        self.assertEqual(cont["sospechas"], [])
+        c = self.r["comprobacion"]
+        self.assertTrue(c["cerca_de_cero"])
+        self.assertFalse(c["discontinuidad"])
+
 
 class OtrosCasosTests(unittest.TestCase):
 
@@ -114,6 +122,33 @@ class OtrosCasosTests(unittest.TestCase):
                 self.assertTrue(any("discontinuidad" in x for x in r["advertencias"]))
                 self.assertTrue(r["comprobacion"]["discontinuidad"])
                 self.assertFalse(r["comprobacion"]["correcto"])
+
+    def test_continuidad_se_revisa_antes_de_iterar(self):
+        r = biseccion("tan(x)", 1, 2, "1e-4")
+        cont = r["continuidad"]
+        self.assertFalse(cont["sin_senales"])
+        self.assertEqual(cont["sospechas"][0]["tipo"], "polo")
+        self.assertAlmostEqual(cont["sospechas"][0]["x"], math.pi / 2, places=3)
+        # El aviso de continuidad va primero (antes del posterior a iterar).
+        self.assertIn("señales de discontinuidad", r["advertencias"][0])
+
+    def test_discontinuidad_sin_que_f_raiz_delate(self):
+        # |x|/x salta de -1 a 1: f(raíz) = ±1 no es "grande", pero la revisión
+        # previa sí detecta el salto.
+        r = biseccion("abs(x)/x", -1, 2, "1e-4")
+        self.assertEqual(r["continuidad"]["sospechas"][0]["tipo"], "salto")
+        self.assertTrue(r["comprobacion"]["discontinuidad"])
+        self.assertFalse(r["comprobacion"]["correcto"])
+
+    def test_continuidad_en_el_texto_exportado(self):
+        bueno = biseccion("x^2 - 2", 1, 2, "1e-4")
+        malo = biseccion("1/x", -1, 2, "1e-4")
+        for incluir in (True, False):
+            self.assertIn("No se detectaron señales de discontinuidad",
+                          procedimiento_texto(bueno, incluir_pasos=incluir))
+            texto = procedimiento_texto(malo, incluir_pasos=incluir)
+            self.assertIn("Continuidad (revisión en 401 puntos", texto)
+            self.assertIn("Posible polo", texto)
 
     def test_cota_teorica(self):
         self.assertEqual(cota_iteraciones(0, 1, 1 / 1024), 10)

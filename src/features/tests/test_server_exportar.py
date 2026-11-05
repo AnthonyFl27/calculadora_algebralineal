@@ -75,6 +75,8 @@ class ExportarEndpointTest(unittest.TestCase):
         self.assertEqual(bloque["resultado"]["raiz"], "0.7639709473")
         self.assertEqual(len(bloque["pasos"]), 13)
         self.assertTrue(bloque["comprobacion"]["correcto"])
+        self.assertTrue(bloque["continuidad"]["sin_senales"])
+        self.assertEqual(bloque["continuidad"]["muestras"], 401)
         json.dumps(bloque)  # serializable
         for formato, mime in (("png", "image/png"), ("pdf", "application/pdf")):
             r = self.enviar({"modulo": "biseccion", "formato": formato,
@@ -84,6 +86,17 @@ class ExportarEndpointTest(unittest.TestCase):
             self.assertRegex(
                 r.headers["Content-Disposition"],
                 rf'filename="metodo-de-biseccion-\d{{8}}-\d{{4}}\.{formato}"')
+
+    def test_biseccion_bloque_con_continuidad(self):
+        bloque = server._resolver_biseccion(
+            {"funcion": "tan(x)", "a": "1", "b": "2", "tolerancia": "0.0001"})
+        cont = bloque["continuidad"]
+        self.assertFalse(cont["sin_senales"])
+        self.assertEqual(cont["sospechas"][0]["tipo"], "polo")
+        self.assertIn("Posible polo", cont["sospechas"][0]["mensaje"])
+        self.assertFalse(bloque["comprobacion"]["cerca_de_cero"])
+        self.assertFalse(bloque["comprobacion"]["correcto"])
+        json.dumps(bloque)
 
     def test_biseccion_errores_son_json_400(self):
         for datos in ({"funcion": "x^2 + 1", "a": "0", "b": "2",

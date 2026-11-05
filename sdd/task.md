@@ -22,6 +22,9 @@ ciclo, el bloque se borra y solo se conservan las tareas que sigan abiertas.
 - [ ] Spec 011 (bisección): visto bueno visual en la máquina del usuario (modo
       claro y oscuro, y la tabla de iteraciones en móvil). Las pruebas
       automáticas validan comportamiento y medidas, no apariencia.
+- [ ] Spec 012 (continuidad en la bisección): visto bueno visual en la máquina
+      del usuario (tarjeta "Continuidad" en modo claro y oscuro y en móvil).
+      Las pruebas automáticas validan comportamiento, no apariencia.
 
 ---
 

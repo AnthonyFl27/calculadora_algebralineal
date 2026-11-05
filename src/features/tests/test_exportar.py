@@ -167,7 +167,14 @@ class DocumentoTest(unittest.TestCase):
         texto = texto_documento(ex.construir_documento(
             "biseccion", r, incluir_pasos=False))
         self.assertIn("Aviso:", texto)
+        self.assertIn("Continuidad", texto)
+        self.assertIn("Posible polo", texto)
         leer_png(ex.exportar("biseccion", r, "png", incluir_pasos=False)[0])
+        for formato in ("png", "pdf"):
+            for pasos in (True, False):
+                datos, _, _ = ex.exportar(
+                    "biseccion", r, formato, incluir_pasos=pasos)
+                self.assertGreater(len(datos), 100)
 
     def test_errores(self):
         with self.assertRaises(ValueError):

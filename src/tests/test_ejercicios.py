@@ -185,6 +185,9 @@ class CatalogoTests(unittest.TestCase):
                 if "advertencia" in esperado:
                     self.assertTrue(any(esperado["advertencia"] in a
                                         for a in r["advertencias"]))
+                    if "continuidad" in esperado:
+                        tipos = {q["tipo"] for q in r["continuidad"]["sospechas"]}
+                        self.assertIn(esperado["continuidad"], tipos)
                     continue
 
                 self.assertEqual(r["resultado"]["iteraciones"],

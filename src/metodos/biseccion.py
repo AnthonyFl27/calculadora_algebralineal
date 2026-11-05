@@ -16,6 +16,7 @@ externas.
 
 import math
 
+from .continuidad import revisar_continuidad
 from .evaluador import compilar, evaluar_numero
 
 MAX_ITERACIONES = 200
@@ -88,8 +89,8 @@ def biseccion(funcion, a, b, tolerancia, max_iter=ITERACIONES_POR_DEFECTO):
     Aplica la bisección a `funcion` (texto) en [a, b].
 
     Devuelve un diccionario con `entradas`, `inicial`, `pasos` (una iteración
-    cada uno), `resultado`, `cota_iteraciones`, `advertencias` y
-    `comprobacion`. Lanza ValueError (en español) con datos inválidos o sin
+    cada uno), `resultado`, `cota_iteraciones`, `continuidad` (revisión previa
+    del intervalo, ver `continuidad.py`), `advertencias` y `comprobacion`. Lanza ValueError (en español) con datos inválidos o sin
     cambio de signo.
     """
 
@@ -113,6 +114,8 @@ def biseccion(funcion, a, b, tolerancia, max_iter=ITERACIONES_POR_DEFECTO):
             f"f(a) = {formatear_real(fa)} y f(b) = {formatear_real(fb)} tienen el "
             "mismo signo, así que f(a)·f(b) > 0. Prueba con otro intervalo."
         )
+
+    continuidad = revisar_continuidad(f, a0, b0)
 
     pasos = []
     anterior = None
@@ -165,9 +168,16 @@ def biseccion(funcion, a, b, tolerancia, max_iter=ITERACIONES_POR_DEFECTO):
     }
 
     advertencias = []
+    if not continuidad["sin_senales"]:
+        advertencias.append(
+            "Se detectaron señales de discontinuidad en el intervalo (ver "
+            "el apartado Continuidad): la bisección solo garantiza una raíz "
+            "si f es continua en [a, b]."
+        )
     f_extremos = (abs(f(a0)), abs(f(b0)))
-    if abs(ultimo["fc"]) > max(f_extremos) or (
-            convergio and abs(ultimo["fc"]) >= min(f_extremos)):
+    cerca_de_cero = not (abs(ultimo["fc"]) > max(f_extremos) or (
+        convergio and abs(ultimo["fc"]) >= min(f_extremos)))
+    if not cerca_de_cero:
         advertencias.append(
             "f(raíz) no es cercano a 0: la función podría tener una "
             "discontinuidad en el intervalo (por ejemplo un polo como 1/x) y "
@@ -189,25 +199,31 @@ def biseccion(funcion, a, b, tolerancia, max_iter=ITERACIONES_POR_DEFECTO):
         "pasos": pasos,
         "resultado": resultado,
         "cota_iteraciones": cota_iteraciones(a0, b0, tolerancia),
+        "continuidad": continuidad,
         "advertencias": advertencias,
-        "comprobacion": _comprobar(f, ultimo, resultado, tolerancia, advertencias),
+        "comprobacion": _comprobar(
+            f, ultimo, resultado, continuidad, cerca_de_cero),
     }
 
 
-def _comprobar(f, ultimo, resultado, tolerancia, advertencias):
-    """Vuelve a evaluar f en la raíz y en los extremos del intervalo final."""
+def _comprobar(f, ultimo, resultado, continuidad, cerca_de_cero):
+    """Vuelve a evaluar f en la raíz y en los extremos del intervalo final.
+
+    `discontinuidad` es True si la revisión previa encontró señales o si f(raíz)
+    no quedó cerca de 0 (la bisección pudo converger a un polo)."""
 
     a, b = ultimo["a_nuevo"], ultimo["b_nuevo"]
     fraiz = f(resultado["raiz"])
     fa, fb = f(a), f(b)
     cambio_signo = a == b or _signo(fa) * _signo(fb) <= 0
-    discontinuidad = any("discontinuidad" in texto for texto in advertencias)
+    discontinuidad = not continuidad["sin_senales"] or not cerca_de_cero
 
     return {
         "raiz": resultado["raiz"], "fraiz": fraiz,
         "intervalo": (a, b), "fa": fa, "fb": fb,
         "cambio_signo": cambio_signo,
         "tolerancia_alcanzada": resultado["convergio"],
+        "cerca_de_cero": cerca_de_cero,
         "discontinuidad": discontinuidad,
         "correcto": cambio_signo and resultado["convergio"] and not discontinuidad,
     }
@@ -243,6 +259,22 @@ def tabla_texto(pasos):
         "  ".join(celda.rjust(anchos[k]) for k, celda in enumerate(fila))
         for fila in filas
     )
+
+
+def continuidad_texto(continuidad):
+    """Líneas de la revisión de continuidad (vista y archivos exportados)."""
+
+    lineas = [f"Continuidad (revisión en {continuidad['muestras']} puntos "
+              "del intervalo):"]
+    if continuidad["sin_senales"]:
+        lineas.append("No se detectaron señales de discontinuidad "
+                      "(es una revisión numérica, no una demostración).")
+        return lineas
+    lineas += [f"- {s['mensaje']}" for s in continuidad["sospechas"]]
+    resto = continuidad["total"] - len(continuidad["sospechas"])
+    if resto > 0:
+        lineas.append(f"- ... y {resto} más.")
+    return lineas
 
 
 def procedimiento_texto(datos, modo="fraccion", incluir_pasos=True):
@@ -290,6 +322,7 @@ def procedimiento_texto(datos, modo="fraccion", incluir_pasos=True):
         f"Error relativo final Ea = {f(r['error'], 6)} %",
     ]
     lineas += [f"Aviso: {texto}" for texto in datos["advertencias"]]
+    lineas += ["", *continuidad_texto(datos["continuidad"])]
     lineas += [
         "", "Comprobación (se vuelve a evaluar f):",
         f"f({f(c['raiz'])}) = {f(c['fraiz'])}",

@@ -26,6 +26,13 @@ import re
 MAX_LONGITUD = 200
 MAX_PROFUNDIDAD = 40
 
+# Motivos por los que f(x) no se puede evaluar en un punto (los usa también
+# `continuidad.py` para distinguir un polo de un punto fuera del dominio).
+MOTIVO_DIVISION = "división entre cero"
+MOTIVO_GRANDE = "el resultado es demasiado grande"
+MOTIVO_DOMINIO = "fuera del dominio de la función"
+MOTIVO_NO_FINITO = "el resultado no es un número finito"
+
 
 def _cbrt(valor):
     return math.copysign(abs(valor) ** (1 / 3), valor)
@@ -278,25 +285,32 @@ class Funcion:
         self.texto = texto
         self.usa_x = analizador.usa_x
 
-    def __call__(self, x):
+    def evaluar_seguro(self, x):
+        """Evalúa f(x) sin lanzar errores: devuelve `(valor, None)` o, si no
+        se puede evaluar, `(None, motivo)` con el motivo en español."""
+
         try:
             valor = _evaluar(self._arbol, float(x))
         except ZeroDivisionError:
-            motivo = "división entre cero"
+            return None, MOTIVO_DIVISION
         except OverflowError:
-            motivo = "el resultado es demasiado grande"
+            return None, MOTIVO_GRANDE
         except (ValueError, RecursionError):
-            motivo = "fuera del dominio de la función"
-        else:
-            if isinstance(valor, float) and math.isfinite(valor):
-                return valor
-            if isinstance(valor, int):
-                return float(valor)
-            motivo = "el resultado no es un número finito"
+            return None, MOTIVO_DOMINIO
 
-        raise ValueError(
-            f"No se puede evaluar f(x) en x = {x:.10g}: {motivo}."
-        )
+        if isinstance(valor, float) and math.isfinite(valor):
+            return valor, None
+        if isinstance(valor, int):
+            return float(valor), None
+        return None, MOTIVO_NO_FINITO
+
+    def __call__(self, x):
+        valor, motivo = self.evaluar_seguro(x)
+        if motivo is not None:
+            raise ValueError(
+                f"No se puede evaluar f(x) en x = {x:.10g}: {motivo}."
+            )
+        return valor
 
 
 def compilar(texto):

@@ -30,6 +30,7 @@ from metodos.general_metodos import (
     texto_comprobacion,
 )
 from metodos.biseccion import (
+    continuidad_texto as _bis_continuidad,
     formatear_real as _real,
     procedimiento_texto as _bis_texto,
 )
@@ -217,6 +218,9 @@ def _documento_biseccion(resultado, modo, incluir_pasos):
             f"Error relativo final Ea = {_real(r['error'], 6)} %"))
         for aviso in resultado["advertencias"]:
             _agregar(documento, TEXTO, f"Aviso: {aviso}")
+        _seccion(documento, "Continuidad")
+        _agregar(documento, TEXTO,
+                 "\n".join(_bis_continuidad(resultado["continuidad"])[1:]))
     return documento
 
 

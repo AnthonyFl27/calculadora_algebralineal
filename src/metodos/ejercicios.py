@@ -443,6 +443,22 @@ EJERCICIOS = {
             "x^2 - 2", "1", "2", "1e-10", "8",
             {"raiz": 1.418, "iteraciones": 8, "convergio": False},
         ),
+        _biseccion(
+            "bis-09", "Polo de tan(x)", AVANZADO,
+            "tan(x) cambia de signo en [1, 2] porque salta de +∞ a −∞ en "
+            "π/2 ≈ 1.5708, no porque valga 0. La revisión de continuidad "
+            "lo detecta antes de iterar.",
+            "tan(x)", "1", "2", "0.0001", "50",
+            {"advertencia": "discontinuidad", "continuidad": "polo"},
+        ),
+        _biseccion(
+            "bis-10", "Salto: |x|/x", AVANZADO,
+            "|x|/x vale −1 a la izquierda de 0 y +1 a la derecha: hay cambio "
+            "de signo pero ningún punto donde f sea 0. Es un salto, no un "
+            "polo; fíjate en cómo lo describe la revisión.",
+            "abs(x)/x", "-1", "2", "0.0001", "50",
+            {"advertencia": "discontinuidad", "continuidad": "salto"},
+        ),
     ],
 }
 

@@ -440,6 +440,7 @@ def _armar_bloque_biseccion(resultado):
     e = resultado["entradas"]
     r = resultado["resultado"]
     c = resultado["comprobacion"]
+    cont = resultado["continuidad"]
 
     return {
         "tipo": "biseccion",
@@ -467,6 +468,14 @@ def _armar_bloque_biseccion(resultado):
             "convergio": r["convergio"], "motivo": r["motivo"],
         },
         "cota_iteraciones": resultado["cota_iteraciones"],
+        "continuidad": {
+            "muestras": cont["muestras"], "total": cont["total"],
+            "sin_senales": cont["sin_senales"],
+            "sospechas": [
+                {"tipo": q["tipo"], "mensaje": q["mensaje"]}
+                for q in cont["sospechas"]
+            ],
+        },
         "advertencias": resultado["advertencias"],
         "comprobacion": {
             "raiz": f(c["raiz"]), "fraiz": f(c["fraiz"]),
@@ -474,6 +483,7 @@ def _armar_bloque_biseccion(resultado):
             "fa": f(c["fa"]), "fb": f(c["fb"]),
             "cambio_signo": c["cambio_signo"],
             "tolerancia_alcanzada": c["tolerancia_alcanzada"],
+            "cerca_de_cero": c["cerca_de_cero"],
             "discontinuidad": c["discontinuidad"],
             "correcto": c["correcto"],
         },
@@ -569,7 +579,7 @@ DESTINO = {
     "/api/inversa": "metodos.vectores_matrices.matriz_inversa",
     "/api/determinante": "metodos.determinante.determinante",
     "/api/determinante/recomendar": "metodos.determinante.recomendar_metodo",
-    "/api/biseccion": "metodos.biseccion.biseccion",
+    "/api/biseccion": "metodos.biseccion.biseccion (+ continuidad)",
     RUTA_EXPORTAR: "features.exportar.exportar",
 }
 
@@ -667,10 +677,14 @@ def _descripcion_peticion(ruta, datos, resultado):
 
     if ruta == "/api/biseccion":
         r = resultado.get("resultado", {})
+        cont = resultado.get("continuidad", {})
         return (DESTINO[ruta],
                 f"f(x)={datos.get('funcion')} · [{datos.get('a')}, "
                 f"{datos.get('b')}] · E={datos.get('tolerancia')}",
-                f"raíz ≈ {r.get('raiz')} · {r.get('iteraciones')} iteraciones")
+                f"raíz ≈ {r.get('raiz')} · {r.get('iteraciones')} iteraciones · "
+                "continuidad: " + (
+                    "sin señales" if cont.get("sin_senales")
+                    else f"{cont.get('total')} sospecha(s)"))
 
     if ruta == RUTA_EXPORTAR:
         return (DESTINO[ruta],

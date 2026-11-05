@@ -3966,6 +3966,20 @@
       `f(a) = ${bloque.inicial.fa}   f(b) = ${bloque.inicial.fb}   →   f(a)·f(b) < 0 ✓` }));
     contenedor.lastChild.style.whiteSpace = "pre-wrap";
 
+    const cont = bloque.continuidad;
+    const resto = cont.total - cont.sospechas.length;
+    contenedor.appendChild(crearTarjetaVeredicto({
+      tipoClase: cont.sin_senales ? "tipo-unica" : "tipo-infinitas",
+      icono: cont.sin_senales ? "✓" : "!",
+      titulo: cont.sin_senales ? "Continuidad: sin señales de discontinuidad" : "Continuidad: posible discontinuidad",
+      detalle: `Antes de iterar se evaluó f en ${cont.muestras} puntos de [${e.a}, ${e.b}]. ` +
+        "Es una revisión numérica, no una demostración: un salto más angosto que el paso de muestreo podría pasar inadvertido.",
+      cuerpoNodo: cont.sin_senales ? null : el("div", {}, [
+        ...cont.sospechas.map((q) => el("div", { class: "termino-linea", texto: `⚠ ${q.mensaje}` })),
+        ...(resto > 0 ? [el("div", { class: "termino-linea", texto: `… y ${resto} más.` })] : []),
+      ]),
+    }));
+
     contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Tabla de iteraciones" }));
     const tablaIteraciones = crearTablaMatriz(
       bloque.pasos.map((p) => [String(p.i), p.a, p.b, p.c, p.fc, p.error]),
@@ -3999,7 +4013,8 @@
         el("div", { class: "termino-linea", texto: `Intervalo final [${c.intervalo[0]}, ${c.intervalo[1]}]: f(a) = ${c.fa}, f(b) = ${c.fb}` }),
         el("div", { class: "termino-linea", texto: `${marca(c.cambio_signo)} Sigue habiendo cambio de signo en el intervalo final` }),
         el("div", { class: "termino-linea", texto: `${marca(c.tolerancia_alcanzada)} Se alcanzó la tolerancia E` }),
-        el("div", { class: "termino-linea", texto: `${marca(!c.discontinuidad)} f(raíz) es cercano a 0 (sin señales de discontinuidad)` }),
+        el("div", { class: "termino-linea", texto: `${marca(c.cerca_de_cero)} f(raíz) es cercano a 0` }),
+        el("div", { class: "termino-linea", texto: `${marca(cont.sin_senales)} Sin señales de discontinuidad en [a, b]` }),
       ]),
     }));
   }

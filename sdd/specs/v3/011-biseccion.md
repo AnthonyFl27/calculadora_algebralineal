@@ -103,3 +103,9 @@ guía como referencia); gráfica de f(x).
 - Ejercicios: `bis-01`…`bis-08` (incluye intervalo sin cambio de signo,
   discontinuidad y paro por máximo de iteraciones).
 - Pendiente del usuario: visto bueno visual (claro/oscuro y móvil).
+
+## Cambios posteriores
+
+- Spec `012` (`012-continuidad.md`): la discontinuidad ahora también se revisa
+  **antes** de iterar (muestreo del intervalo) y se muestra en una tarjeta
+  "Continuidad"; el criterio posterior de esta spec sigue vigente.
