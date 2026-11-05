@@ -938,6 +938,18 @@
   .g-marca3d { fill: var(--texto-tenue); }
   .g-tick-3d { fill: var(--texto-tenue); font-size: 10px; paint-order: stroke; stroke: var(--input-fondo); stroke-width: 3px; }
   .escena-selector { margin: 0 2px 10px; }
+  /* Animación de la transformación (spec 015) */
+  .anim-control { margin-top: 8px; }
+  .anim-control .grafica-control { margin-top: 0; flex-wrap: nowrap; }
+  .anim-control .grafica-control label { flex: none; }
+  .anim-boton { flex: none; min-height: 44px; padding: 0 14px; }
+  .anim-lectura { margin-top: 4px; font-size: 13px; color: var(--texto); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .anim-aviso[hidden] { display: none; }
+  .anim-nota { margin-top: 4px; font-size: 12px; color: var(--texto-tenue); }
+  @media (max-width: 480px) {
+    .anim-control .grafica-control { flex-wrap: wrap; }
+    .anim-control .grafica-control input[type="range"] { flex: 1 1 100%; order: 3; }
+  }
   .escena-no-disponible { font-size: 14px; color: var(--texto-tenue); }
   .grafica-leyenda i.l-escena-linea { border-top: 3px solid var(--c); }
   .grafica-leyenda i.l-escena-punto { width: 10px; height: 10px; border: 0; border-radius: 50%; background: var(--c); }
@@ -4614,6 +4626,69 @@
     return [leyenda, avisos];
   }
 
+  /* Animación de la transformación (spec 015): deslizador t + Reproducir.
+     Python manda los cuadros ya calculados (escena.animacion); aquí solo se
+     elige cuál se ve. Devuelve { nodo, elementos() }: `elementos()` es lo que
+     debe pintar la escena ahora (los fijos + los del cuadro elegido). Sin
+     animación, nodo es null y elementos() es escena.elementos. */
+  function crearControlAnimacion(escena, alCambiar) {
+    const a = escena.animacion;
+    if (!a || !a.pasos || !a.pasos.length) return { nodo: null, elementos: () => escena.elementos };
+    const id = "anim-t-" + (++contadorEscenas);
+    const fijos = escena.elementos.slice(0, a.reemplaza_desde);
+    let k = a.paso_final;              // al abrir se ve el resultado (t = 1)
+    let temporizador = 0;
+
+    const deslizador = el("input", {
+      type: "range", min: 0, max: a.paso_final, value: k, step: 1, id,
+      "aria-label": "Valor de t: de la identidad (0) a la matriz (1)",
+    });
+    const boton = el("button", { type: "button", class: "grafica-boton grafica-boton-texto anim-boton", texto: "▶ Reproducir" });
+    const lectura = el("div", { class: "anim-lectura" });
+    const aviso = el("div", { class: "escena-avisos anim-aviso", role: "note" });
+    const nota = el("div", { class: "anim-nota", texto:
+      "Los pasos intermedios son una ayuda visual (mezcla de la identidad con la matriz): " +
+      "solo el inicio y el final tienen significado algebraico." });
+
+    function actualizar() {
+      const paso = a.pasos[k];
+      const tramo = a.tramos.length > 1 ? `${a.tramos[paso.tramo]} · ` : "";
+      lectura.textContent = `${tramo}t = ${paso.t.toFixed(2)}   det M(t) = ${paso.det}`;
+      aviso.textContent = paso.aplastado ? "En este t la figura está aplastada (det M(t) = 0 o pasa por 0)." : "";
+      aviso.hidden = !paso.aplastado;
+      deslizador.value = String(k);
+      alCambiar();
+    }
+    function pausar() {
+      if (temporizador) { clearInterval(temporizador); temporizador = 0; }
+      boton.textContent = "▶ Reproducir";
+    }
+    function reproducir() {
+      if (k >= a.paso_final) { k = 0; actualizar(); }
+      boton.textContent = "⏸ Pausar";
+      temporizador = setInterval(() => {
+        if (!boton.isConnected) { pausar(); return; }      // la gráfica ya no está en pantalla
+        if (k >= a.paso_final) { pausar(); return; }
+        k += 1;
+        actualizar();
+        if (k >= a.paso_final) pausar();
+      }, 60);
+    }
+    boton.addEventListener("click", () => (temporizador ? pausar() : reproducir()));
+    deslizador.addEventListener("input", () => { pausar(); k = Number(deslizador.value); actualizar(); });
+
+    const nodo = el("div", { class: "anim-control" }, [
+      el("div", { class: "grafica-control" }, [
+        el("label", { for: id, texto: "t" }), deslizador, boton,
+      ]),
+      lectura, aviso, nota,
+    ]);
+    aviso.hidden = true;
+    lectura.textContent = `${a.tramos.length > 1 ? a.tramos[a.pasos[k].tramo] + " · " : ""}t = ${a.pasos[k].t.toFixed(2)}   det M(t) = ${a.pasos[k].det}`;
+    if (a.pasos[k].aplastado) { aviso.hidden = false; aviso.textContent = "En este t la figura está aplastada (det M(t) = 0 o pasa por 0)."; }
+    return { nodo, elementos: () => fijos.concat(a.pasos[k].elementos) };
+  }
+
   /* Redibuja cuando el contenedor cambia de ancho (o aparece al desplegarlo). */
   function observarAnchoEscena(lienzo, dibujar) {
     let anchoPrevio = 0;
@@ -4642,6 +4717,7 @@
     const caja = { izq: 12, der: 12, arr: 10, aba: 10, ancho: 0, alto: 0 };
 
     const { nodo: herramientas, mas: botonMas, menos: botonMenos, reset: botonReset } = crearHerramientasEscena();
+    const anim = crearControlAnimacion(escena, () => redibujar());
     const lienzo = el("div", {
       class: "grafica-lienzo", tabindex: "0", role: "group",
       title: "Arrastra para rotar · rueda o pellizco para zoom",
@@ -4715,7 +4791,7 @@
       const lejania = (lista) => lista.reduce((s, p) => s + p[2], 0) / lista.length;
       const porLejania = (a, b) => b.d - a.d;
 
-      const poligonos = escena.elementos.filter((e) => e.tipo === "poligono").map((e) => {
+      const poligonos = anim.elementos().filter((e) => e.tipo === "poligono").map((e) => {
         const p = pts(e.puntos);
         return { e, p, d: lejania(p) };
       }).sort(porLejania);
@@ -4726,7 +4802,7 @@
         }));
       }
 
-      const trazos = escena.elementos.filter((e) => e.tipo === "segmento" || e.tipo === "flecha").map((e) => {
+      const trazos = anim.elementos().filter((e) => e.tipo === "segmento" || e.tipo === "flecha").map((e) => {
         const p = pts([e.a, e.b]);
         return { e, p, d: lejania(p) };
       }).sort(porLejania);
@@ -4746,7 +4822,7 @@
         }
       }
 
-      for (const e of escena.elementos.filter((x) => x.tipo === "punto").map((x) => ({ e: x, p: proy(x.p) })).sort((a, b) => b.p[2] - a.p[2])) {
+      for (const e of anim.elementos().filter((x) => x.tipo === "punto").map((x) => ({ e: x, p: proy(x.p) })).sort((a, b) => b.p[2] - a.p[2])) {
         area.appendChild(svgEl("circle", {
           class: `e-punto ${clase(e.e.serie)}`, cx: acotar(e.p[0]), cy: acotar(e.p[1]), r: e.e.grosor === "fuerte" ? 6.5 : 4.5,
         }));
@@ -4791,7 +4867,7 @@
     botonMenos.addEventListener("click", () => zoom(1.4));
     botonReset.addEventListener("click", restablecer);
 
-    const marco = el("div", { class: "grafica-marco" }, [herramientas, lienzo, ...crearPieEscena(escena)]);
+    const marco = el("div", { class: "grafica-marco" }, [herramientas, lienzo, anim.nodo, ...crearPieEscena(escena)]);
     observarAnchoEscena(lienzo, dibujar);
     return marco;
   }
@@ -4817,6 +4893,7 @@
     const cursor = el("div", { class: "grafica-cursor", "aria-hidden": "true" });
 
     const { nodo: herramientas, mas: botonMas, menos: botonMenos, reset: botonReset } = crearHerramientasEscena();
+    const anim = crearControlAnimacion(escena, () => redibujar());
 
     function ajustarVista() {
       const v = escena.ventana;
@@ -4873,7 +4950,7 @@
       const rotulos = [];
 
       const orden = { poligono: 0, recta: 1, segmento: 1, flecha: 2, punto: 3 };
-      const elementos = escena.elementos.slice().sort((a, b) => orden[a.tipo] - orden[b.tipo]);
+      const elementos = anim.elementos().slice().sort((a, b) => orden[a.tipo] - orden[b.tipo]);
       for (const e of elementos) {
         if (e.tipo === "poligono") {
           area.appendChild(svgEl("path", {
@@ -4970,7 +5047,7 @@
     botonMenos.addEventListener("click", () => zoom(1.4));
     botonReset.addEventListener("click", restablecer);
 
-    const marco = el("div", { class: "grafica-marco" }, [herramientas, lienzo, cursor, ...crearPieEscena(escena)]);
+    const marco = el("div", { class: "grafica-marco" }, [herramientas, lienzo, cursor, anim.nodo, ...crearPieEscena(escena)]);
     observarAnchoEscena(lienzo, dibujar);
     return marco;
   }

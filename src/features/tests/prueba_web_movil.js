@@ -101,6 +101,28 @@ async function abrirGraficas(p) {
   return botones.length;
 }
 
+/* Animación de la transformación (spec 015): si la vista trae deslizador t,
+   lo mueve, reproduce y comprueba medidas táctiles. Devuelve si había una. */
+async function probarAnimacion(p, etiqueta, verificar) {
+  const deslizador = await p.$(".anim-control input[type=range]");
+  if (!deslizador) return false;
+  const lectura = () => p.textContent(".anim-lectura");
+  await deslizador.fill("0"); await esperar(80);
+  const inicio = await lectura();
+  await deslizador.fill("10"); await esperar(80);
+  const medio = await lectura();
+  ok(inicio !== medio && /t = 0\.00/.test(inicio), `${etiqueta} · el deslizador t cambia la lectura`);
+  const alturas = await p.evaluate(() => [...document.querySelectorAll(".anim-boton, .anim-control input[type=range]")]
+    .map((e) => e.getBoundingClientRect().height));
+  ok(alturas.length === 2 && alturas.every((h) => h >= 44), `${etiqueta} · deslizador y botón táctiles (≥ 44 px)`);
+  await p.click(".anim-boton"); await esperar(150);
+  ok((await p.textContent(".anim-boton")).includes("Pausar"), `${etiqueta} · Reproducir cambia a Pausar`);
+  await p.click(".anim-boton"); await esperar(80);
+  ok((await p.textContent(".anim-boton")).includes("Reproducir"), `${etiqueta} · Pausar detiene la animación`);
+  await verificar(`${etiqueta} con animación`);
+  return true;
+}
+
 async function barrido(browser, ancho, tema) {
   const p = await abrir(browser, ancho);
   if (tema === "dark") await p.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
@@ -137,6 +159,8 @@ async function barrido(browser, ancho, tema) {
       await verificar(mod + " con resultado");
       ok((await abrirGraficas(p)) >= 1, `${ancho}px ${tema} · ${mod} tiene sección de gráfica`);
       await verificar(mod + " con gráfica abierta");
+      ok(await probarAnimacion(p, `${ancho}px ${tema} · ${mod}`, verificar),
+        `${ancho}px ${tema} · ${mod} tiene deslizador t`);
     } else if (mod === "Conversión de bases") {
       await rellenar(p);
       await calcular(p, ["Convertir"]);
@@ -148,7 +172,10 @@ async function barrido(browser, ancho, tema) {
         await rellenar(p);
         await calcular(p, ["Calcular", "Resolver", "Calcular inversa"]);
         await verificar(`${mod} / ${t}`);
-        if (await abrirGraficas(p)) await verificar(`${mod} / ${t} con gráfica abierta`);
+        if (await abrirGraficas(p)) {
+          await verificar(`${mod} / ${t} con gráfica abierta`);
+          await probarAnimacion(p, `${ancho}px ${tema} · ${mod} / ${t}`, verificar);
+        }
       }
     } else if (mod === "Ejercicios") {
       for (const metodo of METODOS_EJERCICIOS) {

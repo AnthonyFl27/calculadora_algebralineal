@@ -15,6 +15,10 @@ método: solo traducen sus números a geometría.
   unitario, su imagen bajo B y luego bajo A (= imagen bajo A·B).
 - `escena_determinante()`: las columnas de A y el paralelogramo (2×2) o
   paralelepípedo (3×3) que forman; su área o volumen es |det A|.
+
+Spec 015: las escenas de la inversa, del producto y del determinante traen
+además `animacion`: cuadros precalculados de M(t) = (1 − t)·I + t·A (en el
+producto, dos tramos: I → B y B → A·B) que la web recorre con un deslizador.
 """
 
 from fractions import Fraction
@@ -567,7 +571,12 @@ def _escena_determinante(resultado, modo):
             "det A > 0: c1, c2, c3 siguen la regla de la mano derecha." if det > 0
             else "det A < 0: c1, c2, c3 invierten la orientación (mano izquierda).")
 
-    _cerrar_escena(escena, [[Fraction(0)] * n] + _puntos_de_forma(columnas))
+    puntos = [[Fraction(0)] * n] + _puntos_de_forma(columnas)
+    _agregar_animacion(escena, puntos, [{
+        "nombre": "Identidad → A", "desde": _identidad(n), "hasta": matriz,
+        "serie": "solucion", "flechas": E.serie_de,
+        "etiqueta": lambda j: f"c{j + 1}"}], 0, modo)
+    _cerrar_escena(escena, puntos)
     escena["resumen"] = (
         f"Columnas de una matriz {n}×{n} y su {nombre.lower()} "
         f"|det A| = {magnitud}.")
@@ -600,6 +609,83 @@ def _identidad(n):
     return [[Fraction(int(i == j)) for j in range(n)] for i in range(n)]
 
 
+# ----------------------------------------------------------------------
+# Transformación animada (spec 015)
+# ----------------------------------------------------------------------
+
+PASOS_ANIMACION = 20   # pasos por tramo (el tramo trae PASOS + 1 cuadros con ambos extremos)
+
+
+def _interpolar(m0, m1, s):
+    """(1 - s)·m0 + s·m1, entrada por entrada, con fracciones exactas."""
+
+    return [[(1 - s) * Fraction(a) + s * Fraction(b) for a, b in zip(f0, f1)]
+            for f0, f1 in zip(m0, m1)]
+
+
+def _cuadro_animacion(m, tramo, final):
+    """Elementos de la figura que generan las columnas de `m`, y su det."""
+
+    elementos = []
+    fantasma = tramo.get("fantasma")
+    if fantasma is not None:
+        for cara in _forma_de_columnas(_columnas(fantasma["matriz"])):
+            elementos.append(E.poligono(cara, fantasma["serie"], guion=True))
+    for cara in _forma_de_columnas(_columnas(m)):
+        elementos.append(E.poligono(cara, tramo["serie"]))
+    origen = [Fraction(0)] * len(m)
+    for j, c in enumerate(_columnas(m)):
+        etiqueta = tramo["etiqueta"](j) if final else None
+        elementos.append(E.flecha(origen, c, tramo["flechas"](j), etiqueta,
+                                  grosor="fuerte"))
+    return elementos, _det_pequeno(m)
+
+
+def _agregar_animacion(escena, puntos, tramos, desde, modo):
+    """Agrega a `escena` la animación de la matriz (spec 015).
+
+    `tramos`: lista de dicts con `desde` y `hasta` (matrices), `nombre`,
+    `serie` (color de la figura), `flechas(j)` y `etiqueta(j)`, y opcional
+    `fantasma` ({"matriz", "serie"}: figura de fondo con línea discontinua).
+    Cada tramo se recorre en `PASOS_ANIMACION` pasos; el deslizador `t` va de
+    0 a 1 sobre todos los tramos. `desde` es el índice del primer elemento de
+    la escena base que la animación reemplaza (los anteriores quedan fijos).
+    Los puntos de todos los cuadros se agregan a `puntos`: la ventana o la
+    caja los contiene a todos y la cámara no salta."""
+
+    total = len(tramos)
+    pasos = []
+    signo_anterior = None
+    for i, tramo in enumerate(tramos):
+        for k in range(0 if i == 0 else 1, PASOS_ANIMACION + 1):
+            s = Fraction(k, PASOS_ANIMACION)
+            m = _interpolar(tramo["desde"], tramo["hasta"], s)
+            final = i == total - 1 and k == PASOS_ANIMACION
+            elementos, det = _cuadro_animacion(m, tramo, final)
+            signo = (det > 0) - (det < 0)
+            # aplastado: det = 0, o el signo cambió respecto al cuadro anterior
+            # (el det pasó por 0 entre los dos)
+            aplastado = det == 0 or (signo_anterior not in (None, 0)
+                                     and signo != signo_anterior)
+            signo_anterior = signo
+            for e in elementos:
+                if e["tipo"] == "poligono":
+                    puntos.extend(e["puntos"])
+            pasos.append({
+                "t": E.a_float((i + s) / total),
+                "tramo": i,
+                "elementos": elementos,
+                "det": E.numero_texto(det, modo),
+                "aplastado": aplastado,
+            })
+    escena["animacion"] = {
+        "pasos": pasos,
+        "paso_final": len(pasos) - 1,
+        "reemplaza_desde": desde,
+        "tramos": [t["nombre"] for t in tramos],
+    }
+
+
 def escena_inversa(resultado, modo="fraccion"):
     """Escena de una matriz inversa ya calculada: el cuadrado (cubo) unitario,
     su imagen bajo A y, si existe, la imagen bajo A⁻¹."""
@@ -626,6 +712,7 @@ def escena_inversa(resultado, modo="fraccion"):
         for cara in _forma_de_columnas(_columnas(inversa)):
             escena["elementos"].append(E.poligono(cara, 0))
             puntos += cara
+    desde_animada = len(escena["elementos"])
     for cara in _forma_de_columnas(columnas):
         escena["elementos"].append(E.poligono(cara, 1))
         puntos += cara
@@ -649,6 +736,10 @@ def escena_inversa(resultado, modo="fraccion"):
             + ("un segmento o un punto" if n == 2 else "un plano, una recta o un punto")
             + " y ninguna transformación puede devolverlo.")
 
+    _agregar_animacion(escena, puntos, [{
+        "nombre": "Identidad → A", "desde": _identidad(n), "hasta": matriz,
+        "serie": 1, "flechas": lambda j: 1,
+        "etiqueta": lambda j: f"A·e{j + 1}"}], desde_animada, modo)
     _cerrar_escena(escena, puntos)
     escena["resumen"] = (
         f"Efecto de una matriz {n}×{n} sobre el {figura} unitario"
@@ -684,6 +775,7 @@ def escena_producto(resultado, modo="fraccion"):
     for cara in _forma_de_columnas(_columnas(_identidad(n))):
         escena["elementos"].append(E.poligono(cara, 5, guion=True))
         puntos += cara
+    desde_animada = len(escena["elementos"])
     for cara in _forma_de_columnas(_columnas(b)):
         escena["elementos"].append(E.poligono(cara, 0))
         puntos += cara
@@ -707,6 +799,15 @@ def escena_producto(resultado, modo="fraccion"):
         f"A·B aplica primero B y luego A: lleva el {figura} unitario a la "
         "figura roja. El orden importa: en general A·B y B·A no son iguales.")
 
+    _agregar_animacion(escena, puntos, [
+        {"nombre": "Identidad → B", "desde": _identidad(n), "hasta": b,
+         "serie": 0, "flechas": lambda j: 0,
+         "etiqueta": lambda j: f"B·e{j + 1}"},
+        {"nombre": "B → A·B", "desde": b, "hasta": producto,
+         "serie": "solucion", "flechas": lambda j: "solucion",
+         "etiqueta": lambda j: f"AB·e{j + 1}",
+         "fantasma": {"matriz": b, "serie": 0}},
+    ], desde_animada, modo)
     _cerrar_escena(escena, puntos)
     escena["resumen"] = (
         f"Efecto del producto A·B de matrices {n}×{n} sobre el {figura} unitario.")

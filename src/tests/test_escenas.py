@@ -601,5 +601,118 @@ class ProductoTests(unittest.TestCase):
         json.dumps(escena_prod([[1, 2, 3], [4, 5, 6], [7, 8, 10]], [[1, 0, 0], [0, 1, 0], [0, 0, 1]]), allow_nan=False)
 
 
+class AnimacionTests(unittest.TestCase):
+    """Spec 015: cuadros precalculados de la transformación (deslizador t)."""
+
+    def test_inversa_t0_es_la_identidad_y_t1_es_a(self):
+        esc = escena_inv([[1, 2], [3, 4]])
+        anim = esc["animacion"]
+        pasos = anim["pasos"]
+        self.assertEqual(len(pasos), 21)
+        self.assertEqual(pasos[0]["t"], 0.0)
+        self.assertEqual(pasos[-1]["t"], 1.0)
+        self.assertEqual(anim["paso_final"], 20)
+        # t = 0: cuadrado unitario; t = 1: imagen por A (columnas (1,3) y (2,4))
+        primero = [e for e in pasos[0]["elementos"] if e["tipo"] == "poligono"][0]
+        ultimo = [e for e in pasos[-1]["elementos"] if e["tipo"] == "poligono"][0]
+        self.assertEqual(primero["puntos"], [[0, 0], [1, 0], [1, 1], [0, 1]])
+        self.assertEqual(ultimo["puntos"], [[0, 0], [1, 3], [3, 7], [2, 4]])
+        # el último cuadro es lo que ya mostraba la escena base
+        base = esc["elementos"][anim["reemplaza_desde"]:]
+        self.assertEqual(pasos[-1]["elementos"], base)
+
+    def test_punto_medio_es_la_mezcla_de_i_y_a(self):
+        pasos = escena_inv([[3, 0], [0, 5]])["animacion"]["pasos"]
+        medio = [e for e in pasos[10]["elementos"] if e["tipo"] == "poligono"][0]
+        self.assertEqual(pasos[10]["t"], 0.5)
+        self.assertEqual(medio["puntos"][2], [2.0, 3.0])   # (1+3)/2, (1+5)/2
+
+    def test_determinante_anima_desde_el_primer_elemento(self):
+        esc = escena_det([[2, 0], [0, 3]])
+        anim = esc["animacion"]
+        self.assertEqual(anim["reemplaza_desde"], 0)
+        self.assertEqual(anim["pasos"][0]["det"], "1")
+        self.assertEqual(anim["pasos"][-1]["det"], "6")
+        self.assertEqual(anim["pasos"][-1]["elementos"], esc["elementos"])
+        self.assertFalse(any(p["aplastado"] for p in anim["pasos"]))
+
+    def test_3x3_trae_seis_caras_y_tres_flechas_por_cuadro(self):
+        pasos = escena_det([[1, 0, 0], [0, 2, 0], [0, 0, 3]])["animacion"]["pasos"]
+        for paso in pasos:
+            tipos = [e["tipo"] for e in paso["elementos"]]
+            self.assertEqual(tipos.count("poligono"), 6)
+            self.assertEqual(tipos.count("flecha"), 3)
+
+    def test_singular_queda_aplastada_al_final(self):
+        pasos = escena_det([[1, 2], [2, 4]])["animacion"]["pasos"]
+        self.assertTrue(pasos[-1]["aplastado"])
+        self.assertEqual(pasos[-1]["det"], "0")
+        self.assertFalse(pasos[0]["aplastado"])
+
+    def test_det_negativo_pasa_por_cero_y_se_marca(self):
+        # intercambiar ejes: det A = -1, así que det M(t) cruza por 0 en t = 1/2
+        pasos = escena_det([[0, 1], [1, 0]])["animacion"]["pasos"]
+        self.assertTrue(pasos[10]["aplastado"])     # t = 0.5: det = 0
+        self.assertFalse(pasos[5]["aplastado"])
+        self.assertFalse(pasos[0]["aplastado"])
+
+    def test_producto_tiene_dos_tramos(self):
+        a, b = [[2, 0], [0, 1]], [[1, 1], [0, 1]]
+        esc = escena_prod(a, b)
+        anim = esc["animacion"]
+        self.assertEqual(len(anim["pasos"]), 41)
+        self.assertEqual(anim["tramos"], ["Identidad → B", "B → A·B"])
+        self.assertEqual([p["tramo"] for p in anim["pasos"]].count(0), 21)
+        self.assertEqual(anim["pasos"][20]["t"], 0.5)
+        # en t = 1/2 la figura es la imagen por B (con B como fantasma encima)
+        figura = [e for e in anim["pasos"][20]["elementos"]
+                  if e["tipo"] == "poligono" and not e["guion"]][0]
+        self.assertEqual(figura["puntos"], [[0, 0], [1, 0], [2, 1], [1, 1]])
+        # t = 1: imagen por A·B (columnas (2,0) y (2,1))
+        final = [e for e in anim["pasos"][-1]["elementos"]
+                 if e["tipo"] == "poligono" and not e["guion"]][0]
+        self.assertEqual(final["puntos"], [[0, 0], [2, 0], [4, 1], [2, 1]])
+        self.assertEqual(anim["pasos"][-1]["det"], "2")
+
+    def test_la_ventana_contiene_todos_los_cuadros(self):
+        for esc in (escena_det([[1, 2], [3, 4]]), escena_inv([[0, 1], [1, 0]]),
+                    escena_prod([[2, 0], [0, 1]], [[1, 1], [0, 1]])):
+            v = esc["ventana"]
+            for paso in esc["animacion"]["pasos"]:
+                for e in paso["elementos"]:
+                    if e["tipo"] != "poligono":
+                        continue
+                    for x, y in e["puntos"]:
+                        self.assertTrue(v["x"][0] <= x <= v["x"][1])
+                        self.assertTrue(v["y"][0] <= y <= v["y"][1])
+
+    def test_la_caja_3d_contiene_todos_los_cuadros(self):
+        esc = escena_det([[1, 2, 0], [0, 1, 3], [4, 0, 1]])
+        caja = esc["caja"]
+        for paso in esc["animacion"]["pasos"]:
+            for e in paso["elementos"]:
+                if e["tipo"] == "poligono":
+                    for punto in e["puntos"]:
+                        for eje, valor in zip("xyz", punto):
+                            self.assertTrue(caja[eje][0] <= valor <= caja[eje][1])
+
+    def test_inversa_de_matriz_singular_tambien_anima(self):
+        esc = escena_inv([[1, 2], [2, 4]])
+        self.assertEqual(len(esc["animacion"]["pasos"]), 21)
+        self.assertTrue(esc["animacion"]["pasos"][-1]["aplastado"])
+
+    def test_sin_grafica_no_hay_animacion(self):
+        self.assertNotIn("animacion", escena_det([[5]]))
+        self.assertNotIn("animacion", escena_prod([[1, 2, 3]], [[1], [2], [3]]))
+
+    def test_decimal_y_serializable(self):
+        for esc in (escena_det([[F(1, 2), 0], [0, 1]], modo="decimal"),
+                    escena_inv([[1, 2, 3], [0, 1, 4], [5, 6, 0]]),
+                    escena_prod([[1, 2], [3, 4]], [[0, 1], [1, 0]])):
+            json.dumps(esc, allow_nan=False)
+        pasos = escena_det([[F(1, 2), 0], [0, 1]], modo="decimal")["animacion"]["pasos"]
+        self.assertEqual(pasos[-1]["det"], "0.5")
+
+
 if __name__ == "__main__":
     unittest.main()

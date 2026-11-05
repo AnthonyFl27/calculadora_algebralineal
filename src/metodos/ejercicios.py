@@ -331,6 +331,23 @@ EJERCICIOS = {
             {"matriz": [["1", "2"], ["2", "4"]]},
             {"existe": False},
         ),
+        _operacion(
+            "vm-13", "Producto de dos 2×2 (con animación)", INTERMEDIO,
+            "Abre la gráfica y mueve el deslizador t: primero se aplica B "
+            "(un corte) y luego A (un estiramiento).",
+            "matrices", "Multiplicación A × B",
+            {"matriz_a": [["2", "0"], ["0", "1"]],
+             "matriz_b": [["1", "1"], ["0", "1"]]},
+            {"resultado": [["2", "2"], ["0", "1"]]},
+        ),
+        _operacion(
+            "vm-14", "Inversa de una reflexión (det < 0)", INTERMEDIO,
+            "Intercambia los ejes: det A = −1. En la animación el cuadrado "
+            "se aplasta en t = 0.5 y sale volteado.",
+            "inversa", None,
+            {"matriz": [["0", "1"], ["1", "0"]]},
+            {"existe": True, "resultado": [["0", "1"], ["1", "0"]]},
+        ),
     ],
     "determinante": [
         _determinante(
