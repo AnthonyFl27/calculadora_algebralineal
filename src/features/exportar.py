@@ -29,6 +29,10 @@ from metodos.general_metodos import (
     matriz_texto,
     texto_comprobacion,
 )
+from metodos.biseccion import (
+    formatear_real as _real,
+    procedimiento_texto as _bis_texto,
+)
 from metodos.conversion import NOMBRES_BASE, procedimiento_texto as _conv_texto
 from metodos.determinante import (
     NOMBRES_METODO as _NOMBRES_DET,
@@ -44,7 +48,8 @@ FORMATOS = {
     "png": ("image/png", "png"),
     "pdf": ("application/pdf", "pdf"),
 }
-MODULOS = ("sistema", "conversion", "vectores_matrices", "determinante")
+MODULOS = ("sistema", "conversion", "vectores_matrices", "determinante",
+           "biseccion")
 
 # Paleta de impresión: único lugar con colores de los archivos exportados
 # (no depende del tema de la interfaz; siempre fondo blanco).
@@ -188,6 +193,33 @@ def _documento_determinante(resultado, modo, incluir_pasos):
     return documento
 
 
+def _documento_biseccion(resultado, modo, incluir_pasos):
+    documento = []
+    r = resultado["resultado"]
+
+    if incluir_pasos:
+        _seccion(documento, "Procedimiento y resultado")
+        lineas = _lineas(_bis_texto(resultado, modo, True))
+        _agregar(documento, TEXTO, "\n".join(lineas[2:]))  # sin el título
+    else:
+        e = resultado["entradas"]
+        _seccion(documento, "Datos de entrada")
+        _agregar(documento, TEXTO, (
+            f"f(x) = {e['funcion']}\n"
+            f"Intervalo [a, b] = [{_real(e['a'])}, {_real(e['b'])}]\n"
+            f"Tolerancia E = {_real(e['tolerancia'])}\n"
+            f"Máximo de iteraciones: {e['max_iter']}"))
+        _seccion(documento, "Resultado")
+        _agregar(documento, TEXTO, (
+            f"Raíz aproximada: x = {_real(r['raiz'])}\n"
+            f"Iteraciones: {r['iteraciones']}\n"
+            f"f(raíz) = {_real(r['fraiz'])}\n"
+            f"Error relativo final Ea = {_real(r['error'], 6)} %"))
+        for aviso in resultado["advertencias"]:
+            _agregar(documento, TEXTO, f"Aviso: {aviso}")
+    return documento
+
+
 _NOMBRES_ENTRADA = {
     "vectores": "Vectores", "objetivo": "Vector objetivo",
     "vector": "Vector", "vector_a": "Vector a", "vector_b": "Vector b",
@@ -295,6 +327,8 @@ def titulo_documento(modulo, resultado, titulo=None):
         return _TITULOS_OPERACION.get(operacion, "Vectores y matrices")
     if modulo == "determinante":
         return f"Determinante ({_NOMBRES_DET[resultado['metodo']]})"
+    if modulo == "biseccion":
+        return "Método de bisección"
     return "Sistema de ecuaciones"
 
 
@@ -319,6 +353,8 @@ def construir_documento(modulo, resultado, modo="fraccion",
         cuerpo = _documento_conversion(resultado, incluir_pasos)
     elif modulo == "determinante":
         cuerpo = _documento_determinante(resultado, modo, incluir_pasos)
+    elif modulo == "biseccion":
+        cuerpo = _documento_biseccion(resultado, modo, incluir_pasos)
     else:
         cuerpo = _documento_vectores_matrices(resultado, modo, incluir_pasos)
 

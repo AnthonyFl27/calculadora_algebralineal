@@ -191,6 +191,7 @@ en `sdd/task.md`.
 | 008 | `sdd/specs/v2/spec_v2.md` | Web adaptable a móviles | implementado |
 | 009 | `sdd/specs/v2/spec_v2.md` | Eliminar la GUI de Tkinter | implementado |
 | 010 | `sdd/specs/v2/spec_v2.md` | Determinante (cofactores y LU, con recomendación de eficiencia) | implementado |
+| 011 | `sdd/specs/v3/011-biseccion.md` | Método de Bisección (búsqueda de raíces) | implementado |
 
 Esta tabla es el único seguimiento de módulos: se actualiza cada vez que se
 agrega una spec nueva (estado `pendiente`) o se cierra el ciclo de una

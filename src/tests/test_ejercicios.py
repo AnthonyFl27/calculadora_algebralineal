@@ -5,6 +5,7 @@ import unittest
 from fractions import Fraction
 
 from metodos import ejercicios
+from metodos.biseccion import biseccion
 from metodos.determinante import determinante
 from metodos.conversion import resolver as resolver_conversion
 from metodos.gauss_jordan import resolver as resolver_gauss_jordan
@@ -161,6 +162,41 @@ class CatalogoTests(unittest.TestCase):
                                      esperado["resultado"], metodo)
                     self.assertEqual(resultado["singular"], esperado["singular"])
                 self.assertIn(datos["metodo"], ("lu", "cofactores"))
+
+    def test_biseccion_coincide_con_el_motor(self):
+        lista = ejercicios.EJERCICIOS["biseccion"]
+        self.assertGreaterEqual(len(lista), 5)
+        self.assertEqual({e["dificultad"] for e in lista}, DIFICULTADES)
+
+        for ejercicio in lista:
+            with self.subTest(ejercicio["id"]):
+                d = ejercicio["datos"]
+                esperado = ejercicio["resultado_esperado"]
+                args = (d["funcion"], d["a"], d["b"], d["tolerancia"],
+                        d["max_iter"])
+
+                if "error" in esperado:
+                    with self.assertRaises(ValueError) as cm:
+                        biseccion(*args)
+                    self.assertIn(esperado["error"], str(cm.exception))
+                    continue
+
+                r = biseccion(*args)
+                if "advertencia" in esperado:
+                    self.assertTrue(any(esperado["advertencia"] in a
+                                        for a in r["advertencias"]))
+                    continue
+
+                self.assertEqual(r["resultado"]["iteraciones"],
+                                 esperado["iteraciones"])
+                self.assertAlmostEqual(r["resultado"]["raiz"],
+                                       esperado["raiz"], places=3)
+                self.assertEqual(r["resultado"]["convergio"],
+                                 esperado.get("convergio", True))
+
+        # Los ejercicios con solución cubren al menos un caso de cada tipo.
+        self.assertTrue(any("error" in e["resultado_esperado"] for e in lista))
+        self.assertTrue(any("advertencia" in e["resultado_esperado"] for e in lista))
 
     def test_vista_previa_para_todos_los_ejercicios(self):
         for clave, lista in ejercicios.catalogo().items():

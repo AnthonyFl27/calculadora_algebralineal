@@ -16,6 +16,10 @@ Estructura de cada ejercicio:
     descripcion, datos, resultado_esperado
 Los de "determinante" llevan en `datos` la `matriz` y el `metodo` ("lu" |
 "cofactores") con el que conviene probarlos.
+Los de "biseccion" llevan en `datos` la `funcion`, `a`, `b`, `tolerancia` y
+`max_iter` (todo como texto, tal cual se escribiría en los campos) y en
+`resultado_esperado` la `raiz` y las `iteraciones`, o un `error` (fragmento
+del mensaje) cuando el método debe rechazar el intervalo.
 Los ejercicios de "vectores-matrices" añaden `categoria`
 ("vectores" | "matrices" | "ecuacion-matricial" | "inversa") y `operacion`
 (el nombre que usa el selector de la vista, cuando aplica).
@@ -32,6 +36,7 @@ METODOS_EJERCICIOS = [
     ("conversion", "Conversión de bases"),
     ("vectores-matrices", "Vectores y matrices"),
     ("determinante", "Determinante"),
+    ("biseccion", "Bisección"),
 ]
 
 
@@ -85,6 +90,19 @@ def _determinante(id, titulo, dificultad, descripcion, matriz, metodo,
         "descripcion": descripcion,
         "datos": {"matriz": matriz, "metodo": metodo},
         "resultado_esperado": {"resultado": resultado, "singular": singular},
+    }
+
+
+def _biseccion(id, titulo, dificultad, descripcion, funcion, a, b,
+               tolerancia, max_iter, esperado):
+    return {
+        "id": id,
+        "titulo": titulo,
+        "dificultad": dificultad,
+        "descripcion": descripcion,
+        "datos": {"funcion": funcion, "a": a, "b": b,
+                  "tolerancia": tolerancia, "max_iter": max_iter},
+        "resultado_esperado": esperado,
     }
 
 
@@ -367,6 +385,65 @@ EJERCICIOS = {
             "lu", "76",
         ),
     ],
+    "biseccion": [
+        _biseccion(
+            "bis-01", "Raíz cuadrada de 2", BASICO,
+            "x² − 2 = 0 en [1, 2]: la raíz es √2 ≈ 1.41421. Observa cómo el "
+            "intervalo se reduce a la mitad en cada fila.",
+            "x^2 - 2", "1", "2", "0.0001", "50",
+            {"raiz": 1.4142, "iteraciones": 13},
+        ),
+        _biseccion(
+            "bis-02", "Cúbica x³ − x − 2", BASICO,
+            "Una sola raíz real, cerca de 1.52. Verifica a mano que "
+            "f(1) < 0 y f(2) > 0 antes de calcular.",
+            "x^3 - x - 2", "1", "2", "0.0001", "50",
+            {"raiz": 1.5214, "iteraciones": 13},
+        ),
+        _biseccion(
+            "bis-03", "Polinomio del profesor", INTERMEDIO,
+            "x⁴ − 5x³ + 0.5x² − 11x + 10 en [0.55, 1.1] con E = 0.0001: "
+            "13 iteraciones y raíz ≈ 0.7639709473.",
+            "x^4 - 5x^3 + 0.5x^2 - 11x + 10", "0.55", "1.1", "0.0001", "50",
+            {"raiz": 0.7639709473, "iteraciones": 13},
+        ),
+        _biseccion(
+            "bis-04", "cos(x) = x", INTERMEDIO,
+            "Reescríbela como cos(x) − x = 0. La raíz (≈ 0.739085) es la "
+            "constante de Dottie; el argumento va en radianes.",
+            "cos(x) - x", "0", "1", "0.00001", "50",
+            {"raiz": 0.739085, "iteraciones": 18},
+        ),
+        _biseccion(
+            "bis-05", "e⁻ˣ = x", INTERMEDIO,
+            "e^(-x) − x = 0 en [0, 1]: raíz ≈ 0.5671433. Prueba también "
+            "con una E más pequeña y compara las iteraciones.",
+            "exp(-x) - x", "0", "1", "0.00001", "50",
+            {"raiz": 0.5671433, "iteraciones": 18},
+        ),
+        _biseccion(
+            "bis-06", "Intervalo sin cambio de signo", AVANZADO,
+            "x² + 1 no se anula nunca: f(a)·f(b) > 0 y el método debe "
+            "rechazar el intervalo con un mensaje claro.",
+            "x^2 + 1", "0", "2", "0.0001", "50",
+            {"error": "No hay cambio de signo"},
+        ),
+        _biseccion(
+            "bis-07", "Discontinuidad: 1/x", AVANZADO,
+            "Hay cambio de signo en [−1, 2], pero 1/x no es continua en 0: "
+            "la bisección converge a un polo, no a una raíz. Fíjate en el "
+            "aviso y en f(raíz).",
+            "1/x", "-1", "2", "0.0001", "50",
+            {"advertencia": "discontinuidad"},
+        ),
+        _biseccion(
+            "bis-08", "Se agotan las iteraciones", AVANZADO,
+            "Con E = 1e-10 y solo 8 iteraciones no se llega a la "
+            "tolerancia: revisa el aviso y sube el máximo de iteraciones.",
+            "x^2 - 2", "1", "2", "1e-10", "8",
+            {"raiz": 1.418, "iteraciones": 8, "convergio": False},
+        ),
+    ],
 }
 
 
@@ -410,6 +487,13 @@ def vista_previa(clave, ejercicio):
         return "\n".join(
             "[ " + "  ".join(celda.rjust(ancho) for celda in fila) + " ]"
             for fila in matriz
+        )
+
+    if clave == "biseccion":
+        return (
+            f"f(x) = {datos['funcion']}\n"
+            f"[a, b] = [{datos['a']}, {datos['b']}]\n"
+            f"E = {datos['tolerancia']} · máx. {datos['max_iter']} iteraciones"
         )
 
     categoria = ejercicio["categoria"]

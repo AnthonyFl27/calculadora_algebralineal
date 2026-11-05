@@ -8,6 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from features import exportar as ex
+from metodos.biseccion import biseccion
 from metodos.conversion import resolver as convertir
 from metodos.determinante import determinante
 from metodos.gauss_jordan import resolver as gauss_jordan
@@ -137,6 +138,35 @@ class DocumentoTest(unittest.TestCase):
         for formato in ("png", "pdf"):
             datos, _, _ = ex.exportar("determinante", r, formato)
             self.assertGreater(len(datos), 100)
+
+    def test_biseccion_con_y_sin_pasos(self):
+        r = biseccion("x^4 - 5x^3 + 0.5x^2 - 11x + 10", 0.55, 1.1, 0.0001)
+        con = texto_documento(ex.construir_documento(
+            "biseccion", r, "fraccion", True))
+        sin = texto_documento(ex.construir_documento(
+            "biseccion", r, "fraccion", False))
+        self.assertIn("Método de bisección", con)
+        self.assertIn("Tabla de iteraciones", con)
+        self.assertIn("Iteración 13", con)
+        self.assertIn("0.7639709473", con)
+        self.assertIn("Comprobación", con)
+        self.assertNotIn("Tabla de iteraciones", sin)
+        self.assertIn("Raíz aproximada: x = 0.7639709473", sin)
+        self.assertIn("Iteraciones: 13", sin)
+        self.assertEqual(
+            ex.titulo_documento("biseccion", r), "Método de bisección")
+        for formato in ("png", "pdf"):
+            for pasos in (True, False):
+                datos, _, _ = ex.exportar(
+                    "biseccion", r, formato, incluir_pasos=pasos)
+                self.assertGreater(len(datos), 100)
+
+    def test_biseccion_con_aviso(self):
+        r = biseccion("1/x", -1, 2, "1e-4")
+        texto = texto_documento(ex.construir_documento(
+            "biseccion", r, incluir_pasos=False))
+        self.assertIn("Aviso:", texto)
+        leer_png(ex.exportar("biseccion", r, "png", incluir_pasos=False)[0])
 
     def test_errores(self):
         with self.assertRaises(ValueError):

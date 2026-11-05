@@ -19,6 +19,9 @@ ciclo, el bloque se borra y solo se conservan las tareas que sigan abiertas.
 - [ ] Spec 010 (determinante): visto bueno visual en la máquina del usuario
       (modo claro y oscuro, y la tarjeta "L·U coincide con P·A" en móvil). Las
       pruebas automáticas validan comportamiento y medidas, no apariencia.
+- [ ] Spec 011 (bisección): visto bueno visual en la máquina del usuario (modo
+      claro y oscuro, y la tabla de iteraciones en móvil). Las pruebas
+      automáticas validan comportamiento y medidas, no apariencia.
 
 ---
 

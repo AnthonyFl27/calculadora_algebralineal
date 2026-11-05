@@ -789,6 +789,38 @@
     .metodo-opciones { grid-template-columns: 1fr; }
   }
 
+  /* ---------- BISECCIÓN: formulario de la función ---------- */
+
+  .biseccion-formulario {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px 14px;
+    max-width: 760px;
+    margin: 8px auto;
+  }
+
+  .biseccion-formulario .campo-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    font-size: 13px;
+  }
+
+  .biseccion-formulario .campo-ancho { grid-column: 1 / -1; }
+  .biseccion-formulario input { width: 100%; box-sizing: border-box; }
+  .biseccion-formulario .btn { grid-column: 1 / -1; justify-self: center; }
+  .campo-ayuda { font-size: 12px; color: var(--texto-suave-1); }
+
+  /* Tabla de iteraciones: los números no se parten; si no caben, scroll interno. */
+  table.tabla-matriz.tabla-iteraciones th,
+  table.tabla-matriz.tabla-iteraciones td { white-space: nowrap; }
+
+  @media (max-width: 480px) {
+    .biseccion-formulario { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .biseccion-formulario .btn { justify-self: stretch; }
+  }
+
   /* ---------- TABLA DE MATRIZ (resultado) ---------- */
 
   .tabla-matriz-envoltorio {
@@ -1822,6 +1854,7 @@
     conversion: '<path d="M4 8h14l-3-3M20 16H6l3 3"/>',
     vectores: '<path d="M5 19L19 5M19 5h-7M19 5v7"/>',
     determinante: '<path d="M8 4H5v16h3M16 4h3v16h-3M10 9l4 6M14 9l-4 6"/>',
+    biseccion: '<path d="M3 12h18M12 4v16M5 17c4 0 5-10 14-10"/>',
     ejercicios: '<path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',
   };
 
@@ -1869,6 +1902,11 @@
       exportar: true, clave: "determinante", nombre: "Determinante", icono: "determinante",
       descripcion: "Calcula el determinante por cofactores o LU, indicando cuál es más eficiente.",
       vista: vistaDeterminante,
+    },
+    {
+      exportar: true, clave: "biseccion", nombre: "Bisección", icono: "biseccion",
+      descripcion: "Encuentra una raíz de f(x) = 0 partiendo el intervalo a la mitad, con tabla de iteraciones y error.",
+      vista: vistaBiseccion,
     },
   ];
 
@@ -2086,6 +2124,7 @@
     "/api/ecuacion-matricial": "ecuacion-matricial",
     "/api/inversa": "inversa",
     "/api/determinante": "determinante",
+    "/api/biseccion": "biseccion",
   };
 
   const TEXTO_SIN_RESULTADO = "Resuelve primero para exportar";
@@ -3786,6 +3825,157 @@
       panelRecomendacion,
       marcoMatriz,
       formato,
+      panelResultado,
+    ]);
+  }
+
+  /* ==========================================================
+     VISTA: BISECCIÓN (búsqueda de raíces)
+     ========================================================== */
+
+  const DECISION_BISECCION = {
+    izquierda: "f(a)·f(c) < 0: la raíz está en [a, c], así que b = c.",
+    derecha: "f(a)·f(c) > 0: la raíz está en [c, b], así que a = c.",
+    raiz_exacta: "f(c) = 0: c es la raíz exacta. Fin.",
+  };
+
+  const MOTIVO_BISECCION = {
+    tolerancia: "Se alcanzó la tolerancia: εa/100 < E.",
+    raiz_exacta: "Se encontró una raíz exacta: f(c) = 0.",
+    max_iter: "Se agotó el máximo de iteraciones sin llegar a E.",
+  };
+
+  function renderPasoBiseccion(p, indice, total) {
+    const partes = [
+      el("div", { class: "paso-encabezado" }, [
+        el("span", { class: "paso-numero", texto: `Iteración ${p.i} de ${total}` }),
+        el("span", { class: "paso-operacion tipo-eliminar", texto: `c = ${p.c}` }),
+      ]),
+      el("div", { class: "termino-linea", texto: `c = (a + b) / 2 = (${p.a} + ${p.b}) / 2 = ${p.c}` }),
+      el("div", { class: "termino-linea", texto: `f(a) = ${p.fa}   f(c) = ${p.fc}` }),
+      el("div", { class: "termino-linea", texto: DECISION_BISECCION[p.decision] }),
+    ];
+    if (p.decision !== "raiz_exacta") {
+      partes.push(el("div", { class: "termino-linea", texto: `Nuevo intervalo: [${p.a_nuevo}, ${p.b_nuevo}]` }));
+    }
+    partes.push(el("div", {
+      class: "termino-linea" + (p.error === "—" ? " omitido" : ""),
+      texto: p.error === "—"
+        ? "εa: se calcula desde la segunda iteración."
+        : `εa = |(c − c anterior) / c| · 100 = ${p.error} %`,
+    }));
+    return el("div", { class: "paso-tarjeta" }, partes);
+  }
+
+  function renderBiseccion(contenedor, bloque) {
+    contenedor.innerHTML = "";
+    const e = bloque.entradas, r = bloque.resultado, c = bloque.comprobacion;
+    const ultima = bloque.pasos.length - 1;
+    const marca = (bien) => (bien ? "✓" : "✕");
+
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Método de bisección" }));
+    contenedor.appendChild(el("div", { class: "planteamiento", texto:
+      `f(x) = ${e.funcion}\n[a, b] = [${e.a}, ${e.b}]   E = ${e.tolerancia} (${e.tolerancia_porcentaje} %)\n` +
+      `f(a) = ${bloque.inicial.fa}   f(b) = ${bloque.inicial.fb}   →   f(a)·f(b) < 0 ✓` }));
+    contenedor.lastChild.style.whiteSpace = "pre-wrap";
+
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Tabla de iteraciones" }));
+    const tablaIteraciones = crearTablaMatriz(
+      bloque.pasos.map((p) => [String(p.i), p.a, p.b, p.c, p.fc, p.error]),
+      { encabezados: ["i", "a", "b", "c", "f(c)", "εa (%)"], filasResaltadas: new Set([ultima]) });
+    tablaIteraciones.querySelector("table").classList.add("tabla-iteraciones");
+    contenedor.appendChild(tablaIteraciones);
+
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Procedimiento" }));
+    contenedor.appendChild(crearStepperGenerico(bloque.pasos, renderPasoBiseccion));
+
+    const aviso = bloque.advertencias.length > 0;
+    contenedor.appendChild(crearTarjetaVeredicto({
+      tipoClase: r.convergio && !aviso ? "tipo-unica" : "tipo-infinitas",
+      icono: r.convergio && !aviso ? "✓" : "!",
+      titulo: `x ≈ ${r.raiz}`,
+      detalle: MOTIVO_BISECCION[r.motivo],
+      cuerpoTexto:
+        `Iteraciones: ${r.iteraciones} (cota teórica: n ≥ ${bloque.cota_iteraciones})\n` +
+        `f(raíz) = ${r.fraiz}\nεa final = ${r.error} %`,
+      cuerpoNodo: aviso ? el("div", {}, bloque.advertencias.map((t) =>
+        el("div", { class: "termino-linea", texto: `⚠ ${t}` }))) : null,
+    }));
+
+    contenedor.appendChild(crearTarjetaVeredicto({
+      tipoClase: c.correcto ? "tipo-unica" : (c.cambio_signo ? "tipo-infinitas" : "tipo-incompatible"),
+      icono: c.correcto ? "✓" : (c.cambio_signo ? "!" : "✕"),
+      titulo: c.correcto ? "Comprobación correcta" : "Revisa la comprobación",
+      detalle: "Se vuelve a evaluar f en la raíz y en los extremos del intervalo final.",
+      cuerpoNodo: el("div", {}, [
+        el("div", { class: "termino-linea", texto: `f(${c.raiz}) = ${c.fraiz}` }),
+        el("div", { class: "termino-linea", texto: `Intervalo final [${c.intervalo[0]}, ${c.intervalo[1]}]: f(a) = ${c.fa}, f(b) = ${c.fb}` }),
+        el("div", { class: "termino-linea", texto: `${marca(c.cambio_signo)} Sigue habiendo cambio de signo en el intervalo final` }),
+        el("div", { class: "termino-linea", texto: `${marca(c.tolerancia_alcanzada)} Se alcanzó la tolerancia E` }),
+        el("div", { class: "termino-linea", texto: `${marca(!c.discontinuidad)} f(raíz) es cercano a 0 (sin señales de discontinuidad)` }),
+      ]),
+    }));
+  }
+
+  function vistaBiseccion(ejercicio) {
+    const panelResultado = el("div", { class: "resultado-panel" });
+    const atributos = { type: "text", autocomplete: "off", autocapitalize: "off", autocorrect: "off", spellcheck: "false" };
+    const entradaFuncion = el("input", { ...atributos, placeholder: "x^2 - 2", enterkeyhint: "go" });
+    const entradaA = el("input", { ...atributos, placeholder: "1", enterkeyhint: "next" });
+    const entradaB = el("input", { ...atributos, placeholder: "2", enterkeyhint: "next" });
+    const entradaE = el("input", { ...atributos, value: "0.0001", enterkeyhint: "next" });
+    const entradaIter = el("input", { ...atributos, value: "50", enterkeyhint: "go" });
+
+    async function calcular() {
+      const cuerpo = {
+        funcion: entradaFuncion.value.trim(),
+        a: entradaA.value.trim(),
+        b: entradaB.value.trim(),
+        tolerancia: entradaE.value.trim(),
+        max_iter: entradaIter.value.trim(),
+      };
+      try {
+        const resultado = await llamarApi("/api/biseccion", cuerpo);
+        renderBiseccion(panelResultado, resultado);
+      } catch (error) {
+        mostrarError(error.message);
+      }
+    }
+
+    const campo = (etiqueta, entrada, ayuda, ancho) => el("label", {
+      class: "campo-vertical" + (ancho ? " campo-ancho" : ""),
+    }, [
+      el("span", { texto: etiqueta }), entrada,
+      ayuda ? el("span", { class: "campo-ayuda", texto: ayuda }) : null,
+    ]);
+
+    for (const entrada of [entradaFuncion, entradaA, entradaB, entradaE, entradaIter]) {
+      entrada.addEventListener("keydown", (ev) => { if (ev.key === "Enter") calcular(); });
+    }
+
+    const formulario = el("div", { class: "biseccion-formulario" }, [
+      campo("f(x) =", entradaFuncion,
+        "Usa x, + − * / ^, paréntesis, pi, e y funciones como sin(x), cos(x), exp(x), ln(x), sqrt(x). Ej.: x^3 - 2x - 5", true),
+      campo("Extremo a", entradaA),
+      campo("Extremo b", entradaB),
+      campo("Tolerancia E", entradaE, "Error relativo en fracción: 0.0001 = 0.01 %"),
+      campo("Máx. iteraciones", entradaIter, "De 1 a 200"),
+      el("button", { class: "btn", texto: "Calcular raíz", onclick: calcular }),
+    ]);
+
+    /* Ejercicio de práctica: carga los datos sin calcular. */
+    if (ejercicio && ejercicio.datos) {
+      const d = ejercicio.datos;
+      entradaFuncion.value = d.funcion;
+      entradaA.value = d.a;
+      entradaB.value = d.b;
+      entradaE.value = d.tolerancia;
+      entradaIter.value = d.max_iter;
+    }
+
+    return el("div", {}, [
+      el("div", { class: "titulo", texto: "Método de bisección" }),
+      formulario,
       panelResultado,
     ]);
   }

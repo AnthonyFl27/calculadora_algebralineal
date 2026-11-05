@@ -15,8 +15,8 @@
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || "playwright-core");
 const BASE = process.env.BASE || "http://127.0.0.1:8124";
 const ANCHOS = [320, 360, 375, 390, 412, 430, 600, 768, 1024];
-const MODULOS = ["Inicio", "Gauss-Jordan", "Pivoteo", "Conversión de bases", "Vectores y matrices", "Determinante", "Ejercicios"];
-const METODOS_EJERCICIOS = ["Gauss-Jordan", "Pivoteo", "Conversión de bases", "Vectores y matrices", "Determinante"];
+const MODULOS = ["Inicio", "Gauss-Jordan", "Pivoteo", "Conversión de bases", "Vectores y matrices", "Determinante", "Bisección", "Ejercicios"];
+const METODOS_EJERCICIOS = ["Gauss-Jordan", "Pivoteo", "Conversión de bases", "Vectores y matrices", "Determinante", "Bisección"];
 
 let fallos = 0;
 const ok = (c, m) => { console.log((c ? "OK   " : "FALLA") + " " + m); if (!c) fallos++; };
@@ -109,6 +109,12 @@ async function barrido(browser, ancho, tema) {
       await verificar(mod + " con pasos");
       await calcular(p, ["Comprobar resultado"]);
       await verificar(mod + " con comprobación");
+    } else if (mod === "Bisección") {
+      await p.fill('#panel input[placeholder="x^2 - 2"]', "x^2 - 2");
+      await p.fill('#panel input[placeholder="1"]', "1");
+      await p.fill('#panel input[placeholder="2"]', "2");
+      await calcular(p, ["Calcular raíz"]);
+      await verificar(mod + " con resultado");
     } else if (mod === "Conversión de bases") {
       await rellenar(p);
       await calcular(p, ["Convertir"]);

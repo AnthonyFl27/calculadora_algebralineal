@@ -35,6 +35,11 @@ from metodos.general_metodos import formatear
 from metodos.gauss_jordan import resolver as resolver_gauss_jordan
 from metodos.pivote import resolver as resolver_pivote
 from metodos.conversion import NOMBRES_BASE, resolver as resolver_conversion
+from metodos.biseccion import (
+    ITERACIONES_POR_DEFECTO,
+    biseccion,
+    formatear_real,
+)
 from metodos.determinante import determinante, recomendar_metodo
 from metodos.ejercicios import METODOS_EJERCICIOS, catalogo as catalogo_ejercicios
 from metodos.vectores_matrices import (
@@ -427,6 +432,70 @@ def _resolver_recomendacion_determinante(datos):
     return recomendar_metodo(n)
 
 
+def _armar_bloque_biseccion(resultado):
+    """Formatea el resultado de metodos/biseccion.biseccion(): todos los
+    números salen ya como texto (10 cifras significativas)."""
+
+    f = formatear_real
+    e = resultado["entradas"]
+    r = resultado["resultado"]
+    c = resultado["comprobacion"]
+
+    return {
+        "tipo": "biseccion",
+        "entradas": {
+            "funcion": e["funcion"], "a": f(e["a"]), "b": f(e["b"]),
+            "tolerancia": f(e["tolerancia"]),
+            "tolerancia_porcentaje": f(e["tolerancia"] * 100),
+            "max_iter": e["max_iter"],
+        },
+        "inicial": {"fa": f(resultado["inicial"]["fa"]),
+                    "fb": f(resultado["inicial"]["fb"])},
+        "pasos": [
+            {
+                "i": p["i"], "a": f(p["a"]), "b": f(p["b"]), "c": f(p["c"]),
+                "fa": f(p["fa"]), "fb": f(p["fb"]), "fc": f(p["fc"]),
+                "error": f(p["error"], 6), "signo": p["signo"],
+                "decision": p["decision"],
+                "a_nuevo": f(p["a_nuevo"]), "b_nuevo": f(p["b_nuevo"]),
+            }
+            for p in resultado["pasos"]
+        ],
+        "resultado": {
+            "raiz": f(r["raiz"]), "iteraciones": r["iteraciones"],
+            "fraiz": f(r["fraiz"]), "error": f(r["error"], 6),
+            "convergio": r["convergio"], "motivo": r["motivo"],
+        },
+        "cota_iteraciones": resultado["cota_iteraciones"],
+        "advertencias": resultado["advertencias"],
+        "comprobacion": {
+            "raiz": f(c["raiz"]), "fraiz": f(c["fraiz"]),
+            "intervalo": [f(c["intervalo"][0]), f(c["intervalo"][1])],
+            "fa": f(c["fa"]), "fb": f(c["fb"]),
+            "cambio_signo": c["cambio_signo"],
+            "tolerancia_alcanzada": c["tolerancia_alcanzada"],
+            "discontinuidad": c["discontinuidad"],
+            "correcto": c["correcto"],
+        },
+    }
+
+
+def _calcular_biseccion(datos):
+    resultado = biseccion(
+        datos.get("funcion", ""), datos.get("a"), datos.get("b"),
+        datos.get("tolerancia"),
+        datos.get("max_iter", ITERACIONES_POR_DEFECTO),
+    )
+
+    return "biseccion", resultado, "fraccion", None
+
+
+def _resolver_biseccion(datos):
+    _, resultado, _, _ = _calcular_biseccion(datos)
+
+    return _armar_bloque_biseccion(resultado)
+
+
 RUTAS = {
     "/api/sistema": _resolver_sistema,
     "/api/conversion": _resolver_conversion,
@@ -436,6 +505,7 @@ RUTAS = {
     "/api/inversa": _resolver_inversa,
     "/api/determinante": _resolver_determinante,
     "/api/determinante/recomendar": _resolver_recomendacion_determinante,
+    "/api/biseccion": _resolver_biseccion,
 }
 
 # Cálculo crudo de cada módulo (el mismo que usan las rutas de arriba);
@@ -448,6 +518,7 @@ CALCULOS = {
     "ecuacion-matricial": _calcular_ecuacion_matricial,
     "inversa": _calcular_inversa,
     "determinante": _calcular_determinante,
+    "biseccion": _calcular_biseccion,
 }
 
 RUTA_EXPORTAR = "/api/exportar"
@@ -498,6 +569,7 @@ DESTINO = {
     "/api/inversa": "metodos.vectores_matrices.matriz_inversa",
     "/api/determinante": "metodos.determinante.determinante",
     "/api/determinante/recomendar": "metodos.determinante.recomendar_metodo",
+    "/api/biseccion": "metodos.biseccion.biseccion",
     RUTA_EXPORTAR: "features.exportar.exportar",
 }
 
@@ -592,6 +664,13 @@ def _descripcion_peticion(ruta, datos, resultado):
     if ruta == "/api/determinante/recomendar":
         return (DESTINO[ruta], f"n={datos.get('n')}",
                 f"recomendado: {resultado.get('recomendado')}")
+
+    if ruta == "/api/biseccion":
+        r = resultado.get("resultado", {})
+        return (DESTINO[ruta],
+                f"f(x)={datos.get('funcion')} · [{datos.get('a')}, "
+                f"{datos.get('b')}] · E={datos.get('tolerancia')}",
+                f"raíz ≈ {r.get('raiz')} · {r.get('iteraciones')} iteraciones")
 
     if ruta == RUTA_EXPORTAR:
         return (DESTINO[ruta],
