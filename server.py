@@ -653,7 +653,7 @@ def _resolver_intervalos(datos):
 
     r = buscar_intervalos(
         datos.get("funcion", ""),
-        datos.get("desde", -10), datos.get("hasta", 10),
+        datos.get("desde"), datos.get("hasta"), datos.get("paso", 0.1),
     )
     f = formatear_real
 
@@ -662,14 +662,15 @@ def _resolver_intervalos(datos):
         "tabla": [[f(x), f(v) if v is not None else "no definida"]
                   for x, v in r["tabla"]],
         "intervalos": [
-            {"a": f(i["a"]), "b": f(i["b"]), "fa": f(i["fa"]),
+            {"a": repr(i["a"]), "b": repr(i["b"]), "fa": f(i["fa"]),
              "fb": f(i["fb"]), "origen": i["origen"]}
             for i in r["intervalos"]],
         "total_intervalos": r["total_intervalos"],
         "descartados": [
             {"a": f(d["a"]), "b": f(d["b"]), "motivo": d["motivo"]}
             for d in r["descartados"]],
-        "raices_exactas": [f(x) for x in r["raices_exactas"]],
+        "raices_exactas": [format(x, ".17g") for x in r["raices_exactas"]],
+        "agotado": r["agotado"], "evaluaciones": r["evaluaciones"],
     }
 
 

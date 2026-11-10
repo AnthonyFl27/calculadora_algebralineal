@@ -38,3 +38,7 @@ Es una ayuda numérica, no una demostración: dos raíces en un mismo tramo
 `src/tests/test_intervalos.py` (polinomios, dos raíces, tan con polo y refinado,
 raíz exacta, sin raíces, 1/x, dominio, y que cada sugerencia converge en ambos
 métodos).
+
+## Cambios posteriores
+
+La spec 021 sustituye el rango fijo por búsqueda adaptable con paso decimal configurable y límites de trabajo; la continuidad es una revisión numérica, no una demostración.
