@@ -182,9 +182,7 @@ def biseccion(funcion, a, b, tolerancia, max_iter=ITERACIONES_POR_DEFECTO):
     }
 
     advertencias = []
-    f_extremos = (abs(f(a0)), abs(f(b0)))
-    cerca_de_cero = not (abs(ultimo["fc"]) > max(f_extremos) or (
-        convergio and abs(ultimo["fc"]) >= min(f_extremos)))
+    cerca_de_cero = f_cerca_de_cero(f, a0, b0, ultimo["fc"], convergio)
     if not cerca_de_cero:
         advertencias.append(
             "f(raíz) no es cercano a 0: la función podría tener una "
@@ -218,19 +216,30 @@ def biseccion(funcion, a, b, tolerancia, max_iter=ITERACIONES_POR_DEFECTO):
     }
 
 
-def _resultado_bloqueado(f, a, b, tolerancia, max_iter, continuidad, grafica):
+def f_cerca_de_cero(f, a0, b0, fc, convergio):
+    """True si f(raíz) es creíble como una raíz (no un polo): no supera los
+    valores de f en los extremos del intervalo inicial ni, al converger, queda
+    por encima del menor de ellos. Lo comparten bisección y falsa posición."""
+
+    f_extremos = (abs(f(a0)), abs(f(b0)))
+    return not (abs(fc) > max(f_extremos) or (
+        convergio and abs(fc) >= min(f_extremos)))
+
+
+def _resultado_bloqueado(f, a, b, tolerancia, max_iter, continuidad, grafica,
+                         operacion="biseccion", nombre="de bisección"):
     """Resultado cuando f no es continua en [a, b]: solo gráfica y continuidad,
     sin iteraciones (`pasos` vacío, `resultado` y `comprobacion` en None)."""
 
     return {
-        "operacion": "biseccion",
+        "operacion": operacion,
         "bloqueada": True,
         "motivo_bloqueo": (
-            "f no es continua en [{}, {}]: el método de bisección solo se "
+            "f no es continua en [{}, {}]: el método {} solo se "
             "aplica a funciones continuas, así que no se calcularon "
             "iteraciones. Elige un intervalo donde f sea continua (la "
             "gráfica y la revisión indican dónde está el problema)."
-        ).format(formatear_real(a), formatear_real(b)),
+        ).format(formatear_real(a), formatear_real(b), nombre),
         "entradas": {
             "funcion": f.texto, "a": a, "b": b, "tolerancia": tolerancia,
             "max_iter": max_iter,

@@ -110,6 +110,43 @@ class ExportarEndpointTest(unittest.TestCase):
                                        "tolerancia": "0.0001"}})
             self.assertEqual(r.status, 200)
 
+    def test_falsa_posicion_resuelve_y_exporta(self):
+        datos = {"funcion": "x^2 - 2", "a": "1", "b": "2",
+                 "tolerancia": "0.0001", "max_iter": 50}
+        bloque = server._resolver_falsa_posicion(datos)
+        self.assertEqual(bloque["tipo"], "falsa_posicion")
+        self.assertEqual(bloque["resultado"]["iteraciones"], 6)
+        self.assertEqual(bloque["resultado"]["raiz"], "1.414201183")
+        self.assertNotIn("cota_iteraciones", bloque)
+        self.assertTrue(bloque["comprobacion"]["correcto"])
+        self.assertEqual(len(bloque["grafica"]["iteraciones"]), 6)
+        self.assertIn("secante", bloque["grafica"]["iteraciones"][0])
+        json.dumps(bloque)
+        bloqueado = server._resolver_falsa_posicion(
+            {"funcion": "tan(x)", "a": "1", "b": "2", "tolerancia": "0.0001"})
+        self.assertTrue(bloqueado["bloqueada"])
+        self.assertEqual(bloqueado["tipo"], "falsa_posicion")
+        for formato, mime in (("png", "image/png"), ("pdf", "application/pdf")):
+            r = self.enviar({"modulo": "falsa-posicion", "formato": formato,
+                             "datos": datos})
+            self.assertEqual(r.status, 200)
+            self.assertEqual(r.headers["Content-Type"], mime)
+            self.assertRegex(
+                r.headers["Content-Disposition"],
+                rf'filename="metodo-de-regula-falsi-\d{{8}}-\d{{4}}\.{formato}"')
+
+    def test_falsa_posicion_errores_son_json_400(self):
+        for datos in ({"funcion": "x^2 + 1", "a": "0", "b": "2",
+                       "tolerancia": "0.001"},
+                      {"funcion": "", "a": "0", "b": "2", "tolerancia": "1"}):
+            peticion = urllib.request.Request(
+                f"http://127.0.0.1:{self.puerto}/api/falsa-posicion",
+                data=json.dumps(datos).encode(), method="POST")
+            with self.assertRaises(urllib.error.HTTPError) as cm:
+                urllib.request.urlopen(peticion)
+            self.assertEqual(cm.exception.code, 400)
+            self.assertIn("error", json.loads(cm.exception.read()))
+
     def test_biseccion_errores_son_json_400(self):
         for datos in ({"funcion": "x^2 + 1", "a": "0", "b": "2",
                        "tolerancia": "0.001"},

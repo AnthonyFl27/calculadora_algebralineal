@@ -20,6 +20,7 @@ Los de "biseccion" llevan en `datos` la `funcion`, `a`, `b`, `tolerancia` y
 `max_iter` (todo como texto, tal cual se escribiría en los campos) y en
 `resultado_esperado` la `raiz` y las `iteraciones`, o un `error` (fragmento
 del mensaje) cuando el método debe rechazar el intervalo.
+Los de "falsa-posicion" tienen la misma forma que los de "biseccion".
 Los ejercicios de "vectores-matrices" añaden `categoria`
 ("vectores" | "matrices" | "ecuacion-matricial" | "inversa") y `operacion`
 (el nombre que usa el selector de la vista, cuando aplica).
@@ -37,6 +38,7 @@ METODOS_EJERCICIOS = [
     ("vectores-matrices", "Vectores y matrices"),
     ("determinante", "Determinante"),
     ("biseccion", "Bisección"),
+    ("falsa-posicion", "Regula Falsi"),
 ]
 
 
@@ -476,6 +478,73 @@ EJERCICIOS = {
             {"bloqueada": True, "continuidad": "salto"},
         ),
     ],
+    "falsa-posicion": [
+        _biseccion(
+            "fp-01", "Raíz cuadrada de 2", BASICO,
+            "x² − 2 = 0 en [1, 2]: la misma del ejercicio de bisección, pero "
+            "aquí bastan 6 iteraciones (la bisección necesita 13). Observa "
+            "cómo c es el corte de la secante con el eje x.",
+            "x^2 - 2", "1", "2", "0.0001", "50",
+            {"raiz": 1.41420, "iteraciones": 6},
+        ),
+        _biseccion(
+            "fp-02", "Cúbica x³ − x − 2", BASICO,
+            "Una sola raíz real, cerca de 1.52. Comprueba que f(1) < 0 y "
+            "f(2) > 0 antes de calcular.",
+            "x^3 - x - 2", "1", "2", "0.0001", "50",
+            {"raiz": 1.52134, "iteraciones": 8},
+        ),
+        _biseccion(
+            "fp-03", "Polinomio del profesor", INTERMEDIO,
+            "x⁴ − 5x³ + 0.5x² − 11x + 10 en [0.55, 1.1] con E = 0.0001: "
+            "Regula Falsi llega a ≈ 0.76392 en 5 iteraciones; compárala con "
+            "las 13 de la bisección.",
+            "x^4 - 5x^3 + 0.5x^2 - 11x + 10", "0.55", "1.1", "0.0001", "50",
+            {"raiz": 0.76392, "iteraciones": 5},
+        ),
+        _biseccion(
+            "fp-04", "cos(x) = x", INTERMEDIO,
+            "cos(x) − x = 0 en [0, 1]: la raíz ≈ 0.739085 (constante de "
+            "Dottie). El argumento va en radianes.",
+            "cos(x) - x", "0", "1", "0.00001", "50",
+            {"raiz": 0.739085, "iteraciones": 5},
+        ),
+        _biseccion(
+            "fp-05", "e⁻ˣ = x", INTERMEDIO,
+            "e^(-x) − x = 0 en [0, 1]: raíz ≈ 0.5671433.",
+            "exp(-x) - x", "0", "1", "0.00001", "50",
+            {"raiz": 0.567143, "iteraciones": 7},
+        ),
+        _biseccion(
+            "fp-06", "Convergencia lenta: x¹⁰ − 1", AVANZADO,
+            "Con una función muy curva un extremo se queda fijo y Regula "
+            "Falsi avanza despacio (39 iteraciones). Fíjate en que a o b no "
+            "cambia en la tabla; la bisección sería más estable aquí.",
+            "x^10 - 1", "0", "1.3", "0.0001", "200",
+            {"raiz": 0.99969, "iteraciones": 39},
+        ),
+        _biseccion(
+            "fp-07", "Intervalo sin cambio de signo", AVANZADO,
+            "x² + 1 no se anula nunca: f(a)·f(b) > 0 y el método debe "
+            "rechazar el intervalo con un mensaje claro.",
+            "x^2 + 1", "0", "2", "0.0001", "50",
+            {"error": "No hay cambio de signo"},
+        ),
+        _biseccion(
+            "fp-08", "Discontinuidad: 1/x", AVANZADO,
+            "Hay cambio de signo en [−1, 2], pero 1/x no es continua en 0: "
+            "la gráfica lo muestra y el método NO se aplica.",
+            "1/x", "-1", "2", "0.0001", "50",
+            {"bloqueada": True, "continuidad": "polo"},
+        ),
+        _biseccion(
+            "fp-09", "Se agotan las iteraciones", AVANZADO,
+            "x¹⁰ − 1 con solo 10 iteraciones no alcanza la tolerancia: "
+            "revisa el aviso y sube el máximo de iteraciones.",
+            "x^10 - 1", "0", "1.3", "0.0001", "10",
+            {"raiz": 0.68694, "iteraciones": 10, "convergio": False},
+        ),
+    ],
 }
 
 
@@ -521,7 +590,7 @@ def vista_previa(clave, ejercicio):
             for fila in matriz
         )
 
-    if clave == "biseccion":
+    if clave in ("biseccion", "falsa-posicion"):
         return (
             f"f(x) = {datos['funcion']}\n"
             f"[a, b] = [{datos['a']}, {datos['b']}]\n"

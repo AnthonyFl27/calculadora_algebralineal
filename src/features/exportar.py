@@ -37,6 +37,7 @@ from metodos.biseccion import (
     formatear_real as _real,
     procedimiento_texto as _bis_texto,
 )
+from metodos.falsa_posicion import procedimiento_texto as _fp_texto
 from metodos.conversion import NOMBRES_BASE, procedimiento_texto as _conv_texto
 from metodos.determinante import (
     NOMBRES_METODO as _NOMBRES_DET,
@@ -53,7 +54,7 @@ FORMATOS = {
     "pdf": ("application/pdf", "pdf"),
 }
 MODULOS = ("sistema", "conversion", "vectores_matrices", "determinante",
-           "biseccion")
+           "biseccion", "falsa_posicion")
 
 # Paleta de impresión: único lugar con colores de los archivos exportados
 # (no depende del tema de la interfaz; siempre fondo blanco).
@@ -231,7 +232,10 @@ def _documento_determinante(resultado, modo, incluir_pasos):
     return documento
 
 
-def _documento_biseccion(resultado, modo, incluir_pasos):
+def _documento_biseccion(resultado, modo, incluir_pasos,
+                         procedimiento=_bis_texto, medio="punto medio c"):
+    """Documento de bisección o, con otro `procedimiento` (texto) y `medio`
+    (cómo se llama c), de cualquier método de raíces con el mismo formato."""
     documento = []
     r = resultado["resultado"]
     e = resultado["entradas"]
@@ -244,7 +248,7 @@ def _documento_biseccion(resultado, modo, incluir_pasos):
     leyenda = (f"f(x) = {e['funcion']}   en [a, b] = "
                f"[{_real(e['a'])}, {_real(e['b'])}]\nCurva verde: f(x).")
     if not bloqueada:
-        leyenda += (" Puntos oscuros: punto medio c de cada iteración (se "
+        leyenda += (f" Puntos oscuros: {medio} de cada iteración (se "
                     f"numeran las primeras {_grafica.PUNTOS_NUMERADOS}).\n"
                     f"Círculo rojo: raíz aproximada x = {_real(r['raiz'])}.")
     if resultado["grafica"]["discontinuidades"]:
@@ -262,7 +266,7 @@ def _documento_biseccion(resultado, modo, incluir_pasos):
 
     if incluir_pasos:
         _seccion(documento, "Paso 3. Procedimiento y resultado")
-        lineas = _lineas(_bis_texto(resultado, modo, True))
+        lineas = _lineas(procedimiento(resultado, modo, True))
         _agregar(documento, TEXTO, "\n".join(lineas[2:]))  # sin el título
     else:
         _seccion(documento, "Paso 3. Resultado")
@@ -412,6 +416,8 @@ def titulo_documento(modulo, resultado, titulo=None):
         return f"Determinante ({_NOMBRES_DET[resultado['metodo']]})"
     if modulo == "biseccion":
         return "Método de bisección"
+    if modulo == "falsa_posicion":
+        return "Método de Regula Falsi"
     return "Sistema de ecuaciones"
 
 
@@ -438,6 +444,10 @@ def construir_documento(modulo, resultado, modo="fraccion",
         cuerpo = _documento_determinante(resultado, modo, incluir_pasos)
     elif modulo == "biseccion":
         cuerpo = _documento_biseccion(resultado, modo, incluir_pasos)
+    elif modulo == "falsa_posicion":
+        cuerpo = _documento_biseccion(
+            resultado, modo, incluir_pasos, _fp_texto,
+            "punto c donde la secante corta el eje x")
     else:
         cuerpo = _documento_vectores_matrices(resultado, modo, incluir_pasos)
 

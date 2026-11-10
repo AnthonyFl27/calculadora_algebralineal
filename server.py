@@ -40,6 +40,7 @@ from metodos.biseccion import (
     biseccion,
     formatear_real,
 )
+from metodos.falsa_posicion import falsa_posicion
 from metodos.determinante import determinante, recomendar_metodo
 from metodos.escenas import (
     escena_determinante,
@@ -460,9 +461,10 @@ def _resolver_recomendacion_determinante(datos):
     return recomendar_metodo(n)
 
 
-def _armar_bloque_biseccion(resultado):
-    """Formatea el resultado de metodos/biseccion.biseccion(): todos los
-    números salen ya como texto (10 cifras significativas)."""
+def _armar_bloque_biseccion(resultado, tipo="biseccion"):
+    """Formatea el resultado de metodos/biseccion.biseccion() (o de
+    falsa_posicion(), que tiene el mismo formato): todos los números salen ya
+    como texto (10 cifras significativas)."""
 
     f = formatear_real
     e = resultado["entradas"]
@@ -482,7 +484,7 @@ def _armar_bloque_biseccion(resultado):
     if bloqueada:
         # f no es continua: solo se informan la gráfica y la continuidad.
         return {
-            "tipo": "biseccion",
+            "tipo": tipo,
             "bloqueada": True,
             "motivo_bloqueo": resultado["motivo_bloqueo"],
             "entradas": {
@@ -495,8 +497,8 @@ def _armar_bloque_biseccion(resultado):
             "grafica": resultado["grafica"],
         }
 
-    return {
-        "tipo": "biseccion",
+    bloque = {
+        "tipo": tipo,
         "bloqueada": False,
         "entradas": {
             "funcion": e["funcion"], "a": f(e["a"]), "b": f(e["b"]),
@@ -521,7 +523,6 @@ def _armar_bloque_biseccion(resultado):
             "fraiz": f(r["fraiz"]), "error": f(r["error"], 6),
             "convergio": r["convergio"], "motivo": r["motivo"],
         },
-        "cota_iteraciones": resultado["cota_iteraciones"],
         "continuidad": continuidad,
         "grafica": resultado["grafica"],
         "advertencias": resultado["advertencias"],
@@ -536,6 +537,9 @@ def _armar_bloque_biseccion(resultado):
             "correcto": c["correcto"],
         },
     }
+    if "cota_iteraciones" in resultado:     # solo la bisección tiene cota
+        bloque["cota_iteraciones"] = resultado["cota_iteraciones"]
+    return bloque
 
 
 def _calcular_biseccion(datos):
@@ -552,6 +556,22 @@ def _resolver_biseccion(datos):
     _, resultado, _, _ = _calcular_biseccion(datos)
 
     return _armar_bloque_biseccion(resultado)
+
+
+def _calcular_falsa_posicion(datos):
+    resultado = falsa_posicion(
+        datos.get("funcion", ""), datos.get("a"), datos.get("b"),
+        datos.get("tolerancia"),
+        datos.get("max_iter", ITERACIONES_POR_DEFECTO),
+    )
+
+    return "falsa_posicion", resultado, "fraccion", None
+
+
+def _resolver_falsa_posicion(datos):
+    _, resultado, _, _ = _calcular_falsa_posicion(datos)
+
+    return _armar_bloque_biseccion(resultado, "falsa_posicion")
 
 
 def _resolver_grafica(datos):
@@ -575,6 +595,7 @@ RUTAS = {
     "/api/determinante": _resolver_determinante,
     "/api/determinante/recomendar": _resolver_recomendacion_determinante,
     "/api/biseccion": _resolver_biseccion,
+    "/api/falsa-posicion": _resolver_falsa_posicion,
     "/api/grafica": _resolver_grafica,
 }
 
@@ -589,6 +610,7 @@ CALCULOS = {
     "inversa": _calcular_inversa,
     "determinante": _calcular_determinante,
     "biseccion": _calcular_biseccion,
+    "falsa-posicion": _calcular_falsa_posicion,
 }
 
 RUTA_EXPORTAR = "/api/exportar"
@@ -640,6 +662,7 @@ DESTINO = {
     "/api/determinante": "metodos.determinante.determinante",
     "/api/determinante/recomendar": "metodos.determinante.recomendar_metodo",
     "/api/biseccion": "metodos.biseccion.biseccion (+ continuidad)",
+    "/api/falsa-posicion": "metodos.falsa_posicion.falsa_posicion (+ continuidad)",
     "/api/grafica": "metodos.grafica.curva_ventana",
     RUTA_EXPORTAR: "features.exportar.exportar",
 }
@@ -736,7 +759,7 @@ def _descripcion_peticion(ruta, datos, resultado):
         return (DESTINO[ruta], f"n={datos.get('n')}",
                 f"recomendado: {resultado.get('recomendado')}")
 
-    if ruta == "/api/biseccion":
+    if ruta in ("/api/biseccion", "/api/falsa-posicion"):
         r = resultado.get("resultado", {})
         cont = resultado.get("continuidad", {})
         if resultado.get("bloqueada"):

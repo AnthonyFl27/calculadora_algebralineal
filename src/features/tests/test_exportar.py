@@ -12,6 +12,7 @@ from features import exportar as ex
 from metodos.biseccion import biseccion
 from metodos.conversion import resolver as convertir
 from metodos.determinante import determinante
+from metodos.falsa_posicion import falsa_posicion
 from metodos.escenas import (
     escena_determinante,
     escena_inversa,
@@ -171,6 +172,37 @@ class DocumentoTest(unittest.TestCase):
                 datos, _, _ = ex.exportar(
                     "biseccion", r, formato, incluir_pasos=pasos)
                 self.assertGreater(len(datos), 100)
+
+    def test_falsa_posicion_con_y_sin_pasos(self):
+        r = falsa_posicion("x^2 - 2", 1, 2, "0.0001")
+        con = texto_documento(ex.construir_documento(
+            "falsa_posicion", r, "fraccion", True))
+        sin = texto_documento(ex.construir_documento(
+            "falsa_posicion", r, "fraccion", False))
+        self.assertIn("Método de Regula Falsi", con)
+        self.assertIn("Tabla de iteraciones", con)
+        self.assertIn("Iteración 6", con)
+        self.assertIn("corta el eje x", con)
+        self.assertNotIn("bisección", con)
+        self.assertNotIn("Tabla de iteraciones", sin)
+        self.assertIn("Raíz aproximada: x = 1.414201183", sin)
+        self.assertEqual(
+            ex.titulo_documento("falsa_posicion", r), "Método de Regula Falsi")
+        for formato in ("png", "pdf"):
+            for pasos in (True, False):
+                datos, _, _ = ex.exportar(
+                    "falsa_posicion", r, formato, incluir_pasos=pasos)
+                self.assertGreater(len(datos), 100)
+
+    def test_falsa_posicion_bloqueada(self):
+        r = falsa_posicion("1/x", -1, 2, "0.0001")
+        texto = texto_documento(ex.construir_documento(
+            "falsa_posicion", r, incluir_pasos=True))
+        self.assertIn("Método no aplicado", texto)
+        self.assertNotIn("Raíz aproximada", texto)
+        for formato in ("png", "pdf"):
+            self.assertGreater(len(ex.exportar(
+                "falsa_posicion", r, formato)[0]), 100)
 
     def test_biseccion_con_aviso(self):
         r = biseccion("1/x", -1, 2, "1e-4")

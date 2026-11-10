@@ -896,6 +896,7 @@
   .g-marco { fill: none; stroke: var(--borde-input); stroke-width: 1; }
   .g-eje { stroke: var(--texto-tenue); stroke-width: 1.3; }
   .g-curva { fill: none; stroke: var(--acento-texto); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+  .g-secante { stroke: var(--color-alerta); stroke-width: 1.8; stroke-linecap: round; }
   .g-intervalo { fill: var(--pivote-fondo); }
   .g-intervalo-borde { stroke: var(--acento-texto); stroke-width: 1.2; stroke-dasharray: 4 3; }
   .g-punto { fill: var(--texto-titulo); }
@@ -954,6 +955,7 @@
   .grafica-leyenda i.l-escena-linea { border-top: 3px solid var(--c); }
   .grafica-leyenda i.l-escena-punto { width: 10px; height: 10px; border: 0; border-radius: 50%; background: var(--c); }
   .grafica-leyenda i.l-escena-poligono { height: 10px; border: 1px solid var(--c); background: var(--c); background-clip: padding-box; opacity: 0.8; }
+  .grafica-leyenda i.l-secante { width: 18px; height: 0; border: 0; border-top: 2px solid var(--color-alerta); border-radius: 0; background: none; }
   .grafica-leyenda i.l-raiz { width: 10px; height: 10px; border: 0; border-radius: 50%; background: var(--color-error); }
 
   .biseccion-formulario {
@@ -2150,6 +2152,7 @@
     vectores: '<path d="M5 19L19 5M19 5h-7M19 5v7"/>',
     determinante: '<path d="M8 4H5v16h3M16 4h3v16h-3M10 9l4 6M14 9l-4 6"/>',
     biseccion: '<path d="M3 12h18M12 4v16M5 17c4 0 5-10 14-10"/>',
+    falsaposicion: '<path d="M3 19h18M5 6c3 9 8 12 15 12M5 9l15 9"/>',
     ejercicios: '<path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',
   };
 
@@ -2202,6 +2205,11 @@
       exportar: true, clave: "biseccion", nombre: "Bisección", icono: "biseccion",
       descripcion: "Encuentra una raíz de f(x) = 0 partiendo el intervalo a la mitad, con tabla de iteraciones y error.",
       vista: vistaBiseccion,
+    },
+    {
+      exportar: true, clave: "falsa-posicion", nombre: "Regula Falsi", icono: "falsaposicion",
+      descripcion: "Encuentra una raíz de f(x) = 0 con la recta secante entre los extremos, con tabla de iteraciones y error.",
+      vista: vistaFalsaPosicion,
     },
   ];
 
@@ -2422,6 +2430,7 @@
     "/api/inversa": "inversa",
     "/api/determinante": "determinante",
     "/api/biseccion": "biseccion",
+    "/api/falsa-posicion": "falsa-posicion",
   };
 
   const TEXTO_SIN_RESULTADO = "Resuelve primero para exportar";
@@ -4160,13 +4169,28 @@
     max_iter: "Se agotó el máximo de iteraciones sin llegar a E.",
   };
 
-  function renderPasoBiseccion(p, indice, total) {
+  /* Métodos de raíces con el mismo formato de bloque (bisección y Regula Falsi):
+     cada uno trae su título, ruta, cómo se calcula c y el texto del botón. */
+  const METODOS_RAICES = {
+    biseccion: {
+      titulo: "Método de bisección", ruta: "/api/biseccion", boton: "Calcular raíz",
+      calculoC: (p) => `c = (a + b) / 2 = (${p.a} + ${p.b}) / 2 = ${p.c}`,
+    },
+    falsa_posicion: {
+      titulo: "Método de Regula Falsi", ruta: "/api/falsa-posicion", boton: "Calcular raíz",
+      calculoC: (p) => `c = b − f(b)·(b − a) / (f(b) − f(a)) = ${p.b} − (${p.fb})·(${p.b} − ${p.a}) / (${p.fb} − (${p.fa})) = ${p.c}`,
+      ayudaC: "c es donde la recta secante por (a, f(a)) y (b, f(b)) corta el eje x.",
+    },
+  };
+
+  function renderPasoRaices(tipo, p, indice, total) {
+    const cfg = METODOS_RAICES[tipo];
     const partes = [
       el("div", { class: "paso-encabezado" }, [
         el("span", { class: "paso-numero", texto: `Iteración ${p.i} de ${total}` }),
         el("span", { class: "paso-operacion tipo-eliminar", texto: `c = ${p.c}` }),
       ]),
-      el("div", { class: "termino-linea", texto: `c = (a + b) / 2 = (${p.a} + ${p.b}) / 2 = ${p.c}` }),
+      el("div", { class: "termino-linea", texto: cfg.calculoC(p) }),
       el("div", { class: "termino-linea", texto: `f(a) = ${p.fa}   f(c) = ${p.fc}` }),
       el("div", { class: "termino-linea", texto: DECISION_BISECCION[p.decision] }),
     ];
@@ -4252,7 +4276,7 @@
 
       const svg = svgEl("svg", {
         viewBox: `0 0 ${ancho} ${alto}`, role: "img",
-        "aria-label": `Gráfica de f(x) = ${e.funcion} en [${e.a}, ${e.b}]` + (total ? ` con ${total} iteraciones de bisección` : ""),
+        "aria-label": `Gráfica de f(x) = ${e.funcion} en [${e.a}, ${e.b}]` + (total ? ` con ${total} iteraciones` : ""),
       });
       const defs = svgEl("defs");
       const recorte = svgEl("clipPath", { id: idRecorte });
@@ -4304,6 +4328,12 @@
 
       for (const tramo of curva) {
         area.appendChild(svgEl("path", { class: "g-curva", d: tramo.map((p, k) => `${k ? "L" : "M"}${xl(p[0]).toFixed(1)} ${yl(p[1]).toFixed(1)}`).join("") }));
+      }
+
+      // Regula Falsi: la recta secante de la iteración mostrada (de (a, f(a)) a (b, f(b))).
+      if (actual > 0 && g.iteraciones[actual - 1].secante) {
+        const [[x1, y1], [x2, y2]] = g.iteraciones[actual - 1].secante;
+        area.appendChild(svgEl("line", { class: "g-secante", x1: xl(x1), y1: yl(y1), x2: xl(x2), y2: yl(y2) }));
       }
 
       // Un punto cuyo f queda fuera de la vista se pega al borde.
@@ -4491,7 +4521,8 @@
 
     const leyenda = el("div", { class: "grafica-leyenda" }, [
       el("span", {}, [el("i"), document.createTextNode("f(x)")]),
-      el("span", {}, [el("i", { class: "l-punto" }), document.createTextNode("punto medio c de cada iteración")]),
+      el("span", {}, [el("i", { class: "l-punto" }), document.createTextNode(bloque.tipo === "falsa_posicion" ? "punto c de cada iteración (corte de la secante)" : "punto medio c de cada iteración")]),
+      g.iteraciones.some((p) => p.secante) ? el("span", {}, [el("i", { class: "l-secante" }), document.createTextNode("recta secante de la iteración")]) : null,
       el("span", {}, [el("i", { class: "l-intervalo" }), document.createTextNode("intervalo [a, b] vigente")]),
       el("span", {}, [el("i", { class: "l-raiz" }), document.createTextNode("raíz aproximada")]),
       g.discontinuidades.length ? el("span", {}, [el("i", { class: "l-disc" }), document.createTextNode("posible discontinuidad")]) : null,
@@ -5198,11 +5229,12 @@
   function renderBiseccion(contenedor, bloque) {
     contenedor.innerHTML = "";
     const e = bloque.entradas, r = bloque.resultado, c = bloque.comprobacion;
-    const ultima = bloque.pasos.length - 1;
+    const ultima = (bloque.pasos || []).length - 1;   // bloqueada: no hay pasos
     const marca = (bien) => (bien ? "✓" : "✕");
 
     const bloqueada = bloque.bloqueada;
-    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Método de bisección" }));
+    const cfg = METODOS_RAICES[bloque.tipo];
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: cfg.titulo }));
     contenedor.appendChild(el("div", { class: "planteamiento", texto:
       `f(x) = ${e.funcion}\n[a, b] = [${e.a}, ${e.b}]   E = ${e.tolerancia} (${e.tolerancia_porcentaje} %)` +
       (bloqueada ? "" : `\nf(a) = ${bloque.inicial.fa}   f(b) = ${bloque.inicial.fb}   →   f(a)·f(b) < 0 ✓`) }));
@@ -5249,7 +5281,8 @@
     contenedor.appendChild(tablaIteraciones);
 
     contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Procedimiento" }));
-    contenedor.appendChild(crearStepperGenerico(bloque.pasos, renderPasoBiseccion));
+    if (cfg.ayudaC) contenedor.appendChild(el("p", { class: "campo-ayuda", texto: cfg.ayudaC }));
+    contenedor.appendChild(crearStepperGenerico(bloque.pasos, (p, i, t) => renderPasoRaices(bloque.tipo, p, i, t)));
 
     const aviso = bloque.advertencias.length > 0;
     contenedor.appendChild(crearTarjetaVeredicto({
@@ -5258,7 +5291,8 @@
       titulo: `x ≈ ${r.raiz}`,
       detalle: MOTIVO_BISECCION[r.motivo],
       cuerpoTexto:
-        `Iteraciones: ${r.iteraciones} (cota teórica: n ≥ ${bloque.cota_iteraciones})\n` +
+        `Iteraciones: ${r.iteraciones}` +
+        (bloque.cota_iteraciones !== undefined ? ` (cota teórica: n ≥ ${bloque.cota_iteraciones})` : "") + "\n" +
         `f(raíz) = ${r.fraiz}\nεa final = ${r.error} %`,
       cuerpoNodo: aviso ? el("div", {}, bloque.advertencias.map((t) =>
         el("div", { class: "termino-linea", texto: `⚠ ${t}` }))) : null,
@@ -5330,7 +5364,12 @@
     ] }],
   ];
 
-  function vistaBiseccion(ejercicio) {
+  function vistaBiseccion(ejercicio) { return vistaRaices(ejercicio, "biseccion"); }
+  function vistaFalsaPosicion(ejercicio) { return vistaRaices(ejercicio, "falsa_posicion"); }
+
+  /* Formulario y resultado compartidos por los métodos de raíces (`tipo`: clave de METODOS_RAICES). */
+  function vistaRaices(ejercicio, tipo) {
+    const cfg = METODOS_RAICES[tipo];
     const panelResultado = el("div", { class: "resultado-panel" });
     const atributos = { type: "text", autocomplete: "off", autocapitalize: "off", autocorrect: "off", spellcheck: "false" };
     const entradaFuncion = el("input", { ...atributos, placeholder: "x^2 - 2", enterkeyhint: "go" });
@@ -5348,7 +5387,7 @@
         max_iter: entradaIter.value.trim(),
       };
       try {
-        const resultado = await llamarApi("/api/biseccion", cuerpo);
+        const resultado = await llamarApi(cfg.ruta, cuerpo);
         renderBiseccion(panelResultado, resultado);
       } catch (error) {
         mostrarError(error.message);
@@ -5457,7 +5496,7 @@
       campo("Extremo b", entradaB),
       campo("Tolerancia E", entradaE, "Error relativo en fracción: 0.0001 = 0.01 %"),
       campo("Máx. iteraciones", entradaIter, "De 1 a 200"),
-      el("button", { class: "btn", texto: "Calcular raíz", onclick: calcular }),
+      el("button", { class: "btn", texto: cfg.boton, onclick: calcular }),
     ]);
 
     actualizarVistaPrevia();
@@ -5474,7 +5513,7 @@
     }
 
     return el("div", {}, [
-      el("div", { class: "titulo", texto: "Método de bisección" }),
+      el("div", { class: "titulo", texto: cfg.titulo }),
       formulario,
       panelResultado,
     ]);

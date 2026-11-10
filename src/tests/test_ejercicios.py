@@ -6,6 +6,7 @@ from fractions import Fraction
 
 from metodos import ejercicios
 from metodos.biseccion import biseccion
+from metodos.falsa_posicion import falsa_posicion
 from metodos.determinante import determinante
 from metodos.conversion import resolver as resolver_conversion
 from metodos.gauss_jordan import resolver as resolver_gauss_jordan
@@ -164,7 +165,13 @@ class CatalogoTests(unittest.TestCase):
                 self.assertIn(datos["metodo"], ("lu", "cofactores"))
 
     def test_biseccion_coincide_con_el_motor(self):
-        lista = ejercicios.EJERCICIOS["biseccion"]
+        self._raices_coinciden("biseccion", biseccion)
+
+    def test_falsa_posicion_coincide_con_el_motor(self):
+        self._raices_coinciden("falsa-posicion", falsa_posicion)
+
+    def _raices_coinciden(self, clave, metodo):
+        lista = ejercicios.EJERCICIOS[clave]
         self.assertGreaterEqual(len(lista), 5)
         self.assertEqual({e["dificultad"] for e in lista}, DIFICULTADES)
 
@@ -177,11 +184,11 @@ class CatalogoTests(unittest.TestCase):
 
                 if "error" in esperado:
                     with self.assertRaises(ValueError) as cm:
-                        biseccion(*args)
+                        metodo(*args)
                     self.assertIn(esperado["error"], str(cm.exception))
                     continue
 
-                r = biseccion(*args)
+                r = metodo(*args)
                 if esperado.get("bloqueada"):
                     self.assertTrue(r["bloqueada"])
                     self.assertEqual(r["pasos"], [])
