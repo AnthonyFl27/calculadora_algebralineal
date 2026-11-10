@@ -41,6 +41,7 @@ from metodos.biseccion import (
     formatear_real,
 )
 from metodos.falsa_posicion import falsa_posicion
+from metodos.intervalos import buscar_intervalos
 from metodos.determinante import determinante, recomendar_metodo
 from metodos.escenas import (
     escena_determinante,
@@ -574,6 +575,32 @@ def _resolver_falsa_posicion(datos):
     return _armar_bloque_biseccion(resultado, "falsa_posicion")
 
 
+def _resolver_intervalos(datos):
+    """Sugiere intervalos [a, b] con cambio de signo y f continua (todo sale
+    ya como texto; la web solo los muestra y los copia a los campos a y b)."""
+
+    r = buscar_intervalos(
+        datos.get("funcion", ""),
+        datos.get("desde", -10), datos.get("hasta", 10),
+    )
+    f = formatear_real
+
+    return {
+        "desde": f(r["desde"]), "hasta": f(r["hasta"]), "paso": f(r["paso"]),
+        "tabla": [[f(x), f(v) if v is not None else "no definida"]
+                  for x, v in r["tabla"]],
+        "intervalos": [
+            {"a": f(i["a"]), "b": f(i["b"]), "fa": f(i["fa"]),
+             "fb": f(i["fb"]), "origen": i["origen"]}
+            for i in r["intervalos"]],
+        "total_intervalos": r["total_intervalos"],
+        "descartados": [
+            {"a": f(d["a"]), "b": f(d["b"]), "motivo": d["motivo"]}
+            for d in r["descartados"]],
+        "raices_exactas": [f(x) for x in r["raices_exactas"]],
+    }
+
+
 def _resolver_grafica(datos):
     """Curva de f(x) para la ventana que la web está mostrando (zoom/arrastre)."""
 
@@ -597,6 +624,7 @@ RUTAS = {
     "/api/biseccion": _resolver_biseccion,
     "/api/falsa-posicion": _resolver_falsa_posicion,
     "/api/grafica": _resolver_grafica,
+    "/api/intervalos": _resolver_intervalos,
 }
 
 # Cálculo crudo de cada módulo (el mismo que usan las rutas de arriba);
@@ -664,6 +692,7 @@ DESTINO = {
     "/api/biseccion": "metodos.biseccion.biseccion (+ continuidad)",
     "/api/falsa-posicion": "metodos.falsa_posicion.falsa_posicion (+ continuidad)",
     "/api/grafica": "metodos.grafica.curva_ventana",
+    "/api/intervalos": "metodos.intervalos.buscar_intervalos",
     RUTA_EXPORTAR: "features.exportar.exportar",
 }
 
@@ -775,6 +804,12 @@ def _descripcion_peticion(ruta, datos, resultado):
                 "continuidad: " + (
                     "sin señales" if cont.get("sin_senales")
                     else f"{cont.get('total')} sospecha(s)"))
+
+    if ruta == "/api/intervalos":
+        return (DESTINO[ruta], f"f(x)={datos.get('funcion')}",
+                f"{len(resultado.get('intervalos', []))} intervalo(s) · "
+                f"{len(resultado.get('descartados', []))} descartado(s) · "
+                f"{len(resultado.get('raices_exactas', []))} raíz(ces) exacta(s)")
 
     if ruta == "/api/grafica":
         return (DESTINO[ruta],

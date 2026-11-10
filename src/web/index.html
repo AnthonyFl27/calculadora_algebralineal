@@ -1118,6 +1118,26 @@
     .biseccion-formulario .btn { justify-self: stretch; }
   }
 
+  /* ---------- BUSCADOR DE INTERVALO (bisección / Regula Falsi) ---------- */
+
+  .buscador-intervalo { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 10px; }
+  .buscador-intervalo .btn-secundario {
+    align-self: flex-start;
+    min-height: 44px;
+    padding: 6px 14px;
+    border: 1px solid var(--color-borde);
+    border-radius: 8px;
+    background: var(--chip-fondo);
+    color: var(--texto-acento);
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .buscador-intervalo .btn-secundario:focus-visible { outline: 2px solid var(--color-boton-act); outline-offset: 2px; }
+  @media (hover: hover) { .buscador-intervalo .btn-secundario:hover { border-color: var(--color-boton-act); } }
+  .sugerencias-intervalo { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sugerencias-intervalo .chip { max-width: 100%; text-align: left; }
+  .buscador-intervalo .explicacion { white-space: pre-wrap; overflow-wrap: anywhere; }
+
   /* ---------- TABLA DE MATRIZ (resultado) ---------- */
 
   .tabla-matriz-envoltorio {
@@ -5490,10 +5510,66 @@
     ]);
     entradaFuncion.setAttribute("aria-label", "Función f(x)");
 
+    /* Buscador de intervalo: tabla de valores + cambios de signo (todo lo
+       calcula metodos/intervalos.py; aquí solo se muestra y se copia a a y b). */
+    const panelBuscador = el("div", { class: "buscador-intervalo", "aria-live": "polite" });
+
+    async function buscarIntervalo() {
+      panelBuscador.querySelectorAll(".resultado-buscador").forEach((n) => n.remove());
+      let r;
+      try {
+        r = await llamarApi("/api/intervalos", { funcion: entradaFuncion.value.trim() });
+      } catch (error) {
+        mostrarError(error.message);
+        return;
+      }
+      const salida = el("div", { class: "resultado-buscador" });
+      salida.style.display = "flex";
+      salida.style.flexDirection = "column";
+      salida.style.gap = "8px";
+
+      salida.appendChild(el("div", { class: "campo-ayuda explicacion", texto:
+        `Se evaluó f en los enteros de ${r.desde} a ${r.hasta} y se buscaron dos valores consecutivos con signo contrario ` +
+        "(f(a)·f(b) < 0). Cada candidato se revisó con la continuidad: si cruza un polo o un salto, se descarta." }));
+
+      if (r.intervalos.length) {
+        salida.appendChild(el("div", { class: "campo-ayuda", texto: "Toca un intervalo para llenar a y b:" }));
+        salida.appendChild(el("div", { class: "sugerencias-intervalo" }, r.intervalos.map((i) => el("button", {
+          type: "button", class: "chip",
+          texto: `[${i.a}, ${i.b}]   f(a) = ${i.fa}, f(b) = ${i.fb}` + (i.origen === "refinado" ? "  (paso 0.1)" : ""),
+          onclick: () => { entradaA.value = i.a; entradaB.value = i.b; },
+        }))));
+        if (r.total_intervalos > r.intervalos.length) {
+          salida.appendChild(el("div", { class: "campo-ayuda", texto: `Hay ${r.total_intervalos} en total; se muestran los primeros ${r.intervalos.length}.` }));
+        }
+      } else {
+        salida.appendChild(el("div", { class: "campo-ayuda", texto:
+          "No se encontró un cambio de signo con f continua entre " + r.desde + " y " + r.hasta +
+          ". Puede que f no tenga raíces reales ahí o que toque el eje sin cruzarlo (como x²)." }));
+      }
+      for (const x of r.raices_exactas) {
+        salida.appendChild(el("div", { class: "campo-ayuda", texto: `f(${x}) = 0: x = ${x} es una raíz exacta de la tabla (el método pide f(a)·f(b) < 0, así que usa un intervalo que la rodee sin que sea un extremo).` }));
+      }
+      for (const d of r.descartados) {
+        salida.appendChild(el("div", { class: "campo-ayuda", texto: `Descartado [${d.a}, ${d.b}]: ${d.motivo}` }));
+      }
+
+      const filasMuestra = r.tabla.map(([x, v]) => [x, v]);
+      const tabla = crearTablaMatriz(filasMuestra, { encabezados: ["x", "f(x)"] });
+      salida.appendChild(crearSeccionDesplegable("Tabla de valores", tabla, true));
+      salida.appendChild(tabla);
+      panelBuscador.appendChild(salida);
+    }
+
+    panelBuscador.appendChild(el("button", {
+      type: "button", class: "btn-secundario", texto: "Buscar intervalo automáticamente", onclick: buscarIntervalo,
+    }));
+
     const formulario = el("div", { class: "biseccion-formulario" }, [
       bloqueFuncion,
       campo("Extremo a", entradaA),
       campo("Extremo b", entradaB),
+      el("div", { class: "campo-ancho" }, [panelBuscador]),
       campo("Tolerancia E", entradaE, "Error relativo en fracción: 0.0001 = 0.01 %"),
       campo("Máx. iteraciones", entradaIter, "De 1 a 200"),
       el("button", { class: "btn", texto: cfg.boton, onclick: calcular }),

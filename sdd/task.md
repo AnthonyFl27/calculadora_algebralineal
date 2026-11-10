@@ -34,6 +34,8 @@ ciclo, el bloque se borra y solo se conservan las tareas que sigan abiertas.
       usuario (deslizador `t` en claro/oscuro y móvil, y los PNG/PDF en
       `t = 1`), y confirmar que la interpolación `(1 − t)·I + t·A` es la que
       se quiere mostrar.
+- [ ] Spec 018 (buscador de intervalo): visto bueno visual en la máquina del
+      usuario (botón y sugerencias en claro/oscuro y móvil).
 - [ ] Spec 017 (Regula Falsi): visto bueno visual en la máquina del usuario
       (secante en la gráfica en claro/oscuro y móvil, y los PNG/PDF), y
       confirmar con el profesor el criterio de paro (ε_a entre aproximaciones).

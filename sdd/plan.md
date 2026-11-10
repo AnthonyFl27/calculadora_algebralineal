@@ -198,6 +198,7 @@ en `sdd/task.md`.
 | 015 | `sdd/specs/v3/015-transformacion-animada.md` | Transformación animada (deslizador `t`) en inversa, A × B y determinante | implementado |
 | 016 | `sdd/specs/v3/016-biseccion-grafica-primero.md` | Bisección: primero graficar, bloquear el método si f no es continua | implementado |
 | 017 | `sdd/specs/v3/017-falsa-posicion.md` | Método de Regula Falsi (falsa posición) | implementado |
+| 018 | `sdd/specs/v3/018-buscador-intervalo.md` | Buscador de intervalo para bisección y Regula Falsi | implementado |
 
 Esta tabla es el único seguimiento de módulos: se actualiza cada vez que se
 agrega una spec nueva (estado `pendiente`) o se cierra el ciclo de una
