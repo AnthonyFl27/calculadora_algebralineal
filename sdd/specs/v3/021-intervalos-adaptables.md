@@ -9,4 +9,4 @@ La búsqueda automática amplía [-10, 10] a [-100, 100] y [-1000, 1000] si no e
 
 ## Cambios posteriores
 
-En Regula Falsi se conserva el formulario original. La búsqueda se activa al terminar de escribir la función y llena directamente los campos editables Extremo a y Extremo b. El motivo de la sugerencia se muestra como texto breve junto a los campos. Si cambia la función, se descarta la sugerencia anterior. Los valores introducidos por el usuario o cargados con un ejercicio se conservan. El buscador detallado sigue disponible en bisección.
+Regula Falsi y bisección usan el mismo formulario de extremos automáticos. La búsqueda se activa al terminar de escribir la función y llena directamente los campos editables Extremo a y Extremo b. El motivo de la sugerencia se muestra como texto breve junto a los campos. Si cambia la función, se descarta la sugerencia anterior. Los valores introducidos por el usuario o cargados con un ejercicio se conservan. Si no se encuentra un intervalo, los extremos automáticos quedan vacíos y se muestra un aviso.
