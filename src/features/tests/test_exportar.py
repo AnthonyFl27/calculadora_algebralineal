@@ -13,6 +13,7 @@ from metodos.biseccion import biseccion
 from metodos.conversion import resolver as convertir
 from metodos.determinante import determinante
 from metodos.falsa_posicion import falsa_posicion
+from metodos.newton_raphson import newton_raphson
 from metodos.escenas import (
     escena_determinante,
     escena_inversa,
@@ -192,6 +193,25 @@ class DocumentoTest(unittest.TestCase):
             for pasos in (True, False):
                 datos, _, _ = ex.exportar(
                     "falsa_posicion", r, formato, incluir_pasos=pasos)
+                self.assertGreater(len(datos), 100)
+
+    def test_newton_raphson_con_y_sin_pasos(self):
+        r = newton_raphson("x^3 - x - 2", "", 1.5, "0.000001")
+        con = texto_documento(ex.construir_documento(
+            "newton_raphson", r, "fraccion", True))
+        sin = texto_documento(ex.construir_documento(
+            "newton_raphson", r, "fraccion", False))
+        self.assertIn("Newton-Raphson", con)
+        self.assertIn("Tabla de iteraciones", con)
+        self.assertIn("Iteración 3", con)
+        self.assertNotIn("Tabla de iteraciones", sin)
+        self.assertIn("Raíz aproximada: x = 1.521379707", sin)
+        self.assertEqual(ex.titulo_documento("newton_raphson", r),
+                         "Método de Newton-Raphson")
+        for formato in ("png", "pdf"):
+            for pasos in (True, False):
+                datos, _, _ = ex.exportar(
+                    "newton_raphson", r, formato, incluir_pasos=pasos)
                 self.assertGreater(len(datos), 100)
 
     def test_falsa_posicion_bloqueada(self):

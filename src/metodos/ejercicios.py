@@ -21,6 +21,10 @@ Los de "biseccion" llevan en `datos` la `funcion`, `a`, `b`, `tolerancia` y
 `resultado_esperado` la `raiz` y las `iteraciones`, o un `error` (fragmento
 del mensaje) cuando el método debe rechazar el intervalo.
 Los de "falsa-posicion" tienen la misma forma que los de "biseccion".
+Los de "newton-raphson" llevan en `datos` la `funcion`, la `derivada` (vacía =
+automática), `x0`, `tolerancia` y `max_iter`, y en `resultado_esperado` la
+`raiz` y las `iteraciones` (más `motivo`/`convergio` si no converge), o un
+`error` (fragmento del mensaje) cuando el método falla en la 1.ª iteración.
 Los ejercicios de "vectores-matrices" añaden `categoria`
 ("vectores" | "matrices" | "ecuacion-matricial" | "inversa") y `operacion`
 (el nombre que usa el selector de la vista, cuando aplica).
@@ -39,6 +43,7 @@ METODOS_EJERCICIOS = [
     ("determinante", "Determinante"),
     ("biseccion", "Bisección"),
     ("falsa-posicion", "Regula Falsi"),
+    ("newton-raphson", "Newton-Raphson"),
 ]
 
 
@@ -103,6 +108,19 @@ def _biseccion(id, titulo, dificultad, descripcion, funcion, a, b,
         "dificultad": dificultad,
         "descripcion": descripcion,
         "datos": {"funcion": funcion, "a": a, "b": b,
+                  "tolerancia": tolerancia, "max_iter": max_iter},
+        "resultado_esperado": esperado,
+    }
+
+
+def _newton(id, titulo, dificultad, descripcion, funcion, derivada, x0,
+            tolerancia, max_iter, esperado):
+    return {
+        "id": id,
+        "titulo": titulo,
+        "dificultad": dificultad,
+        "descripcion": descripcion,
+        "datos": {"funcion": funcion, "derivada": derivada, "x0": x0,
                   "tolerancia": tolerancia, "max_iter": max_iter},
         "resultado_esperado": esperado,
     }
@@ -545,6 +563,83 @@ EJERCICIOS = {
             {"raiz": 0.68694, "iteraciones": 10, "convergio": False},
         ),
     ],
+    "newton-raphson": [
+        _newton(
+            "nr-01", "Ejemplo guiado: x³ − x − 2", BASICO,
+            "El problema conductor de la clase con x₀ = 1.5: la primera "
+            "iteración da x₁ ≈ 1.521739130 y en 3 iteraciones llega a "
+            "1.521379707.",
+            "x^3 - x - 2", "", "1.5", "0.000001", "50",
+            {"raiz": 1.521380, "iteraciones": 3},
+        ),
+        _newton(
+            "nr-02", "Actividad 1: x³ − 2x − 5", BASICO,
+            "La actividad colaborativa de la clase con x₀ = 2: determina "
+            "f′(x) = 3x² − 2, haz las iteraciones y calcula el residuo de "
+            "cada una.",
+            "x^3 - 2x - 5", "", "2", "0.000001", "50",
+            {"raiz": 2.094551, "iteraciones": 4},
+        ),
+        _newton(
+            "nr-03", "Raíz cuadrada de 2", BASICO,
+            "x² − 2 = 0 desde x₀ = 1: Newton calcula √2 en 4 iteraciones "
+            "(la bisección necesita 13).",
+            "x^2 - 2", "", "1", "0.0001", "50",
+            {"raiz": 1.414214, "iteraciones": 4},
+        ),
+        _newton(
+            "nr-04", "cos(x) = x", INTERMEDIO,
+            "cos(x) − x = 0 desde x₀ = 1: la raíz ≈ 0.739085. La derivada "
+            "(−sin(x) − 1) la calcula el programa. El argumento va en "
+            "radianes.",
+            "cos(x) - x", "", "1", "0.00001", "50",
+            {"raiz": 0.739085, "iteraciones": 4},
+        ),
+        _newton(
+            "nr-05", "e⁻ˣ = x", INTERMEDIO,
+            "e^(−x) − x = 0 desde x₀ = 0: raíz ≈ 0.5671433.",
+            "exp(-x) - x", "", "0", "0.00001", "50",
+            {"raiz": 0.567143, "iteraciones": 4},
+        ),
+        _newton(
+            "nr-06", "Derivada escrita a mano", INTERMEDIO,
+            "Mismo problema que nr-01, pero escribiendo tú f′(x) = 3x² − 1 "
+            "en el campo de la derivada. Si la escribes mal, el programa lo "
+            "avisa al compararla con la pendiente numérica.",
+            "x^3 - x - 2", "3x^2 - 1", "1.5", "0.000001", "50",
+            {"raiz": 1.521380, "iteraciones": 3},
+        ),
+        _newton(
+            "nr-07", "Raíz doble: (x − 1)²", AVANZADO,
+            "En una raíz múltiple Newton pierde su rapidez: cada paso solo "
+            "reduce el error a la mitad (15 iteraciones en lugar de 4).",
+            "(x - 1)^2", "", "3", "0.0001", "50",
+            {"raiz": 1.000061, "iteraciones": 15},
+        ),
+        _newton(
+            "nr-08", "Ciclo sin convergencia", AVANZADO,
+            "x³ − 2x + 2 desde x₀ = 0 salta entre 0 y 1 sin acercarse a la "
+            "raíz (≈ −1.769). Con un x₀ inadecuado Newton no converge: mira "
+            "el aviso y prueba x₀ = −2.",
+            "x^3 - 2x + 2", "", "0", "0.0001", "20",
+            {"raiz": 0.0, "iteraciones": 20, "convergio": False,
+             "motivo": "max_iter"},
+        ),
+        _newton(
+            "nr-09", "Derivada cero en x₀", AVANZADO,
+            "x² − 1 desde x₀ = 0: f′(0) = 0, la tangente es horizontal y la "
+            "fórmula no está definida. Prueba con x₀ = 0.5.",
+            "x^2 - 1", "", "0", "0.0001", "50",
+            {"error": "es cero"},
+        ),
+        _newton(
+            "nr-10", "Se sale del dominio: ln(x)", AVANZADO,
+            "ln(x) desde x₀ = 3: la primera tangente cae en x ≈ −0.30, donde "
+            "ln no existe. Con x₀ = 1.5 sí converge a 1.",
+            "ln(x)", "", "3", "0.0001", "50",
+            {"error": "fuera del dominio"},
+        ),
+    ],
 }
 
 
@@ -588,6 +683,14 @@ def vista_previa(clave, ejercicio):
         return "\n".join(
             "[ " + "  ".join(celda.rjust(ancho) for celda in fila) + " ]"
             for fila in matriz
+        )
+
+    if clave == "newton-raphson":
+        derivada = datos["derivada"] or "automática"
+        return (
+            f"f(x) = {datos['funcion']}\n"
+            f"f'(x) = {derivada} · x₀ = {datos['x0']}\n"
+            f"E = {datos['tolerancia']} · máx. {datos['max_iter']} iteraciones"
         )
 
     if clave in ("biseccion", "falsa-posicion"):

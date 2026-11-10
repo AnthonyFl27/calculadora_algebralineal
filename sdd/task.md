@@ -40,6 +40,11 @@ ciclo, el bloque se borra y solo se conservan las tareas que sigan abiertas.
       (secante en la gráfica en claro/oscuro y móvil, y los PNG/PDF), y
       confirmar con el profesor el criterio de paro (ε_a entre aproximaciones).
 
+- [ ] Spec 019 (Newton-Raphson): visto bueno visual en la máquina del usuario
+      (tangente en la gráfica en claro/oscuro y móvil, y los PNG/PDF), y
+      confirmar con el profesor el criterio de paro (ε_a) y si se pide la
+      secante (spec 020).
+
 ---
 
 ## Specs en curso

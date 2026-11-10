@@ -104,7 +104,7 @@ def plan_grafica(g, ancho, alto, cw, ch, paleta):
     for p in g["iteraciones"][:PUNTOS_NUMERADOS]:
         x, y = sx(p["x"]), sy(p["y"])
         y_texto = min(max(y - 0.9 * ch, arr + 0.6 * ch), arr + util_h - 0.6 * ch)
-        texto = f"c{p['i']}"
+        texto = p.get("etiqueta", f"c{p['i']}")
         x0 = x + radio + 2
         caja = (x0, y_texto - ch / 2, x0 + len(texto) * cw, y_texto + ch / 2)
         if any(caja[0] < o[2] and caja[2] > o[0] and caja[1] < o[3] and caja[3] > o[1]

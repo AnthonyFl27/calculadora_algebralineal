@@ -285,6 +285,20 @@ class Funcion:
         self.texto = texto
         self.usa_x = analizador.usa_x
 
+    @classmethod
+    def desde_arbol(cls, arbol, texto):
+        """Función a partir de un árbol ya construido (la derivada simbólica)."""
+
+        nueva = cls.__new__(cls)
+        nueva._arbol = arbol
+        nueva.texto = texto
+        nueva.usa_x = True
+        return nueva
+
+    @property
+    def arbol(self):
+        return self._arbol
+
     def evaluar_seguro(self, x):
         """Evalúa f(x) sin lanzar errores: devuelve `(valor, None)` o, si no
         se puede evaluar, `(None, motivo)` con el motivo en español."""

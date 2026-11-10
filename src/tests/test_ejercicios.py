@@ -8,6 +8,7 @@ from metodos import ejercicios
 from metodos.biseccion import biseccion
 from metodos.falsa_posicion import falsa_posicion
 from metodos.determinante import determinante
+from metodos.newton_raphson import newton_raphson
 from metodos.conversion import resolver as resolver_conversion
 from metodos.gauss_jordan import resolver as resolver_gauss_jordan
 from metodos.pivote import resolver as resolver_pivote
@@ -169,6 +170,32 @@ class CatalogoTests(unittest.TestCase):
 
     def test_falsa_posicion_coincide_con_el_motor(self):
         self._raices_coinciden("falsa-posicion", falsa_posicion)
+
+    def test_newton_raphson_coincide_con_el_motor(self):
+        lista = ejercicios.EJERCICIOS["newton-raphson"]
+        self.assertGreaterEqual(len(lista), 5)
+        self.assertEqual({e["dificultad"] for e in lista}, DIFICULTADES)
+
+        for ejercicio in lista:
+            with self.subTest(ejercicio["id"]):
+                d = ejercicio["datos"]
+                esperado = ejercicio["resultado_esperado"]
+                args = (d["funcion"], d["derivada"], d["x0"], d["tolerancia"],
+                        d["max_iter"])
+                if "error" in esperado:
+                    with self.assertRaises(ValueError) as cm:
+                        newton_raphson(*args)
+                    self.assertIn(esperado["error"], str(cm.exception))
+                    continue
+                r = newton_raphson(*args)
+                self.assertEqual(r["resultado"]["iteraciones"],
+                                 esperado["iteraciones"])
+                self.assertAlmostEqual(r["resultado"]["raiz"],
+                                       esperado["raiz"], places=3)
+                self.assertEqual(r["resultado"]["convergio"],
+                                 esperado.get("convergio", True))
+                self.assertEqual(r["resultado"]["motivo"],
+                                 esperado.get("motivo", r["resultado"]["motivo"]))
 
     def _raices_coinciden(self, clave, metodo):
         lista = ejercicios.EJERCICIOS[clave]

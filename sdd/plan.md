@@ -199,6 +199,7 @@ en `sdd/task.md`.
 | 016 | `sdd/specs/v3/016-biseccion-grafica-primero.md` | Bisección: primero graficar, bloquear el método si f no es continua | implementado |
 | 017 | `sdd/specs/v3/017-falsa-posicion.md` | Método de Regula Falsi (falsa posición) | implementado |
 | 018 | `sdd/specs/v3/018-buscador-intervalo.md` | Buscador de intervalo para bisección y Regula Falsi | implementado |
+| 019 | `sdd/specs/v3/019-newton-raphson.md` | Método de Newton-Raphson (método abierto, con derivada simbólica) | implementado |
 
 Esta tabla es el único seguimiento de módulos: se actualiza cada vez que se
 agrega una spec nueva (estado `pendiente`) o se cierra el ciclo de una

@@ -38,6 +38,7 @@ from metodos.biseccion import (
     procedimiento_texto as _bis_texto,
 )
 from metodos.falsa_posicion import procedimiento_texto as _fp_texto
+from metodos.newton_raphson import procedimiento_texto as _nr_texto
 from metodos.conversion import NOMBRES_BASE, procedimiento_texto as _conv_texto
 from metodos.determinante import (
     NOMBRES_METODO as _NOMBRES_DET,
@@ -54,7 +55,7 @@ FORMATOS = {
     "pdf": ("application/pdf", "pdf"),
 }
 MODULOS = ("sistema", "conversion", "vectores_matrices", "determinante",
-           "biseccion", "falsa_posicion")
+           "biseccion", "falsa_posicion", "newton_raphson")
 
 # Paleta de impresión: único lugar con colores de los archivos exportados
 # (no depende del tema de la interfaz; siempre fondo blanco).
@@ -282,6 +283,46 @@ def _documento_biseccion(resultado, modo, incluir_pasos,
     return documento
 
 
+def _documento_newton(resultado, modo, incluir_pasos):
+    """Documento de Newton-Raphson: gráfica, aviso de continuidad y resultado."""
+    documento = []
+    r = resultado["resultado"]
+    e = resultado["entradas"]
+
+    _seccion(documento, "Paso 1. Gráfica de f(x)")
+    documento.append((GRAFICA, resultado["grafica"]))
+    documento.append((TEXTO, ""))
+    leyenda = (f"f(x) = {e['funcion']}   con x0 = {_real(e['x0'])}\n"
+               "Curva verde: f(x). Puntos oscuros: aproximación x(n) de cada "
+               f"iteración (se numeran las primeras {_grafica.PUNTOS_NUMERADOS}).\n"
+               f"Círculo rojo: raíz aproximada x = {_real(r['raiz'])}.")
+    if resultado["grafica"]["discontinuidades"]:
+        leyenda += "\nLínea o banda naranja: posible discontinuidad."
+    _agregar(documento, TEXTO, leyenda)
+
+    _seccion(documento, "Paso 2. Continuidad cerca de las aproximaciones")
+    _agregar(documento, TEXTO,
+             "\n".join(_bis_continuidad(resultado["continuidad"])[1:]))
+
+    if incluir_pasos:
+        _seccion(documento, "Paso 3. Procedimiento y resultado")
+        lineas = _lineas(_nr_texto(resultado, modo, True))
+        _agregar(documento, TEXTO, "\n".join(lineas[2:]))  # sin el título
+    else:
+        _seccion(documento, "Paso 3. Resultado")
+        _agregar(documento, TEXTO, (
+            f"f'(x) = {e['derivada']}\n"
+            f"Valor inicial x0 = {_real(e['x0'])}\n"
+            f"Tolerancia E = {_real(e['tolerancia'])}\n"
+            f"Raíz aproximada: x = {_real(r['raiz'])}\n"
+            f"Iteraciones: {r['iteraciones']}\n"
+            f"Residuo |f(x)| = {_real(r['residuo'])}\n"
+            f"Error relativo final Ea = {_real(r['error'], 6)} %"))
+        for aviso in resultado["advertencias"]:
+            _agregar(documento, TEXTO, f"Aviso: {aviso}")
+    return documento
+
+
 _NOMBRES_ENTRADA = {
     "vectores": "Vectores", "objetivo": "Vector objetivo",
     "vector": "Vector", "vector_a": "Vector a", "vector_b": "Vector b",
@@ -418,6 +459,8 @@ def titulo_documento(modulo, resultado, titulo=None):
         return "Método de bisección"
     if modulo == "falsa_posicion":
         return "Método de Regula Falsi"
+    if modulo == "newton_raphson":
+        return "Método de Newton-Raphson"
     return "Sistema de ecuaciones"
 
 
@@ -444,6 +487,8 @@ def construir_documento(modulo, resultado, modo="fraccion",
         cuerpo = _documento_determinante(resultado, modo, incluir_pasos)
     elif modulo == "biseccion":
         cuerpo = _documento_biseccion(resultado, modo, incluir_pasos)
+    elif modulo == "newton_raphson":
+        cuerpo = _documento_newton(resultado, modo, incluir_pasos)
     elif modulo == "falsa_posicion":
         cuerpo = _documento_biseccion(
             resultado, modo, incluir_pasos, _fp_texto,

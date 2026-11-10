@@ -2173,6 +2173,7 @@
     determinante: '<path d="M8 4H5v16h3M16 4h3v16h-3M10 9l4 6M14 9l-4 6"/>',
     biseccion: '<path d="M3 12h18M12 4v16M5 17c4 0 5-10 14-10"/>',
     falsaposicion: '<path d="M3 19h18M5 6c3 9 8 12 15 12M5 9l15 9"/>',
+    newton: '<path d="M3 19h18M5 5c3 9 8 12 15 12M9 3l9 16"/>',
     ejercicios: '<path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',
   };
 
@@ -2230,6 +2231,11 @@
       exportar: true, clave: "falsa-posicion", nombre: "Regula Falsi", icono: "falsaposicion",
       descripcion: "Encuentra una raíz de f(x) = 0 con la recta secante entre los extremos, con tabla de iteraciones y error.",
       vista: vistaFalsaPosicion,
+    },
+    {
+      exportar: true, clave: "newton-raphson", nombre: "Newton-Raphson", icono: "newton",
+      descripcion: "Encuentra una raíz de f(x) = 0 con la recta tangente desde un valor inicial, con la derivada calculada sola.",
+      vista: vistaNewtonRaphson,
     },
   ];
 
@@ -2451,6 +2457,7 @@
     "/api/determinante": "determinante",
     "/api/biseccion": "biseccion",
     "/api/falsa-posicion": "falsa-posicion",
+    "/api/newton-raphson": "newton-raphson",
   };
 
   const TEXTO_SIN_RESULTADO = "Resuelve primero para exportar";
@@ -4201,6 +4208,18 @@
       calculoC: (p) => `c = b − f(b)·(b − a) / (f(b) − f(a)) = ${p.b} − (${p.fb})·(${p.b} − ${p.a}) / (${p.fb} − (${p.fa})) = ${p.c}`,
       ayudaC: "c es donde la recta secante por (a, f(a)) y (b, f(b)) corta el eje x.",
     },
+    newton_raphson: {
+      titulo: "Método de Newton-Raphson", ruta: "/api/newton-raphson", boton: "Calcular raíz", abierto: true,
+    },
+  };
+
+  const MOTIVO_NEWTON = {
+    tolerancia: "Se alcanzó la tolerancia: εa/100 < E.",
+    raiz_exacta: "Se encontró una raíz exacta: f(x) = 0.",
+    max_iter: "Se agotó el máximo de iteraciones sin llegar a E.",
+    derivada_cero: "El método se detuvo: la derivada es cero (o casi).",
+    no_evaluable: "El método se detuvo: f o f′ no se pueden evaluar.",
+    divergencia: "El método se detuvo: las aproximaciones divergen.",
   };
 
   function renderPasoRaices(tipo, p, indice, total) {
@@ -4276,6 +4295,11 @@
     ]);
 
     function textoEstado() {
+      if (bloque.tipo === "newton_raphson") {
+        if (actual === 0) return `Valor inicial x₀ = ${e.x0}`;
+        const q = bloque.pasos[actual - 1];
+        return `Iteración ${actual}: x${actual} = ${q.x_nuevo}, f(x${actual}) = ${q.f_nuevo} (la tangente en x${actual - 1} corta el eje x ahí)`;
+      }
       if (actual === 0) return `Intervalo inicial [${e.a}, ${e.b}]`;
       const p = bloque.pasos[actual - 1];
       return `Iteración ${actual}: c = ${p.c}, f(c) = ${p.fc} → nuevo intervalo [${p.a_nuevo}, ${p.b_nuevo}]`;
@@ -4296,7 +4320,7 @@
 
       const svg = svgEl("svg", {
         viewBox: `0 0 ${ancho} ${alto}`, role: "img",
-        "aria-label": `Gráfica de f(x) = ${e.funcion} en [${e.a}, ${e.b}]` + (total ? ` con ${total} iteraciones` : ""),
+        "aria-label": `Gráfica de f(x) = ${e.funcion}` + (e.a !== undefined ? ` en [${e.a}, ${e.b}]` : "") + (total ? ` con ${total} iteraciones` : ""),
       });
       const defs = svgEl("defs");
       const recorte = svgEl("clipPath", { id: idRecorte });
@@ -4324,11 +4348,13 @@
       svg.appendChild(area);
 
       // Intervalo [a, b] vigente (inicial o tras la iteración elegida).
-      const [ia, ib] = actual === 0 ? g.intervalo : [g.iteraciones[actual - 1].a, g.iteraciones[actual - 1].b];
-      const xa = xl(ia), xb = xl(ib);
-      area.appendChild(svgEl("rect", { class: "g-intervalo", x: xa, y: arr, width: Math.max(xb - xa, 1.5), height: altoUtil }));
-      for (const x of [xa, xb]) {
-        area.appendChild(svgEl("line", { class: "g-intervalo-borde", x1: x, x2: x, y1: arr, y2: arr + altoUtil }));
+      if (g.intervalo) {     // los métodos abiertos (Newton-Raphson) no tienen intervalo
+        const [ia, ib] = actual === 0 ? g.intervalo : [g.iteraciones[actual - 1].a, g.iteraciones[actual - 1].b];
+        const xa = xl(ia), xb = xl(ib);
+        area.appendChild(svgEl("rect", { class: "g-intervalo", x: xa, y: arr, width: Math.max(xb - xa, 1.5), height: altoUtil }));
+        for (const x of [xa, xb]) {
+          area.appendChild(svgEl("line", { class: "g-intervalo-borde", x1: x, x2: x, y1: arr, y2: arr + altoUtil }));
+        }
       }
 
       // Discontinuidades detectadas (línea si es un punto, banda si es un tramo).
@@ -4351,14 +4377,22 @@
       }
 
       // Regula Falsi: la recta secante de la iteración mostrada (de (a, f(a)) a (b, f(b))).
-      if (actual > 0 && g.iteraciones[actual - 1].secante) {
-        const [[x1, y1], [x2, y2]] = g.iteraciones[actual - 1].secante;
+      // Newton-Raphson: la recta tangente (de (xₙ, f(xₙ)) al corte con el eje x).
+      const recta = actual > 0 ? (g.iteraciones[actual - 1].secante || g.iteraciones[actual - 1].tangente) : null;
+      if (recta) {
+        const [[x1, y1], [x2, y2]] = recta;
         area.appendChild(svgEl("line", { class: "g-secante", x1: xl(x1), y1: yl(y1), x2: xl(x2), y2: yl(y2) }));
       }
 
       // Un punto cuyo f queda fuera de la vista se pega al borde.
       const enBorde = (y) => Math.max(arr, Math.min(arr + altoUtil, sy(y)));
       const dentroX = (x) => { const px = sx(x); return px >= izq - 8 && px <= izq + anchoUtil + 8; };
+
+      // Valor inicial x₀ (solo Newton-Raphson).
+      if (g.inicio && dentroX(g.inicio.x)) {
+        area.appendChild(svgEl("circle", { class: "g-punto", cx: sx(g.inicio.x), cy: enBorde(g.inicio.valor), r: 4 }));
+        area.appendChild(svgEl("text", { class: "g-etiqueta", x: sx(g.inicio.x) + 8, y: Math.min(Math.max(enBorde(g.inicio.valor) - 9, arr + 12), arr + altoUtil - 4), "text-anchor": "start" }, "x0"));
+      }
 
       // Puntos c de las iteraciones mostradas; el último, resaltado y rotulado.
       g.iteraciones.slice(0, actual).forEach((p, k) => {
@@ -4372,7 +4406,7 @@
         area.appendChild(svgEl("text", {
           class: "g-etiqueta", x: sx(p.x) + (derecha ? 9 : -9), y: Math.min(Math.max(enBorde(p.valor) - 9, arr + 12), arr + altoUtil - 4),
           "text-anchor": derecha ? "start" : "end",
-        }, `c${actual}`));
+        }, g.iteraciones[actual - 1].etiqueta || `c${actual}`));
       }
 
       // Raíz final (solo cuando se muestran todas las iteraciones).
@@ -4384,7 +4418,7 @@
 
       lienzo.replaceChildren(svg);
       if (total === 0) {
-        estado.textContent = `f(x) = ${e.funcion} en [${e.a}, ${e.b}]`;
+        estado.textContent = `f(x) = ${e.funcion}` + (e.a !== undefined ? ` en [${e.a}, ${e.b}]` : "");
         return;
       }
       etiquetaIter.textContent = `Iteración: ${actual} de ${total}`;
@@ -4541,9 +4575,12 @@
 
     const leyenda = el("div", { class: "grafica-leyenda" }, [
       el("span", {}, [el("i"), document.createTextNode("f(x)")]),
-      el("span", {}, [el("i", { class: "l-punto" }), document.createTextNode(bloque.tipo === "falsa_posicion" ? "punto c de cada iteración (corte de la secante)" : "punto medio c de cada iteración")]),
+      el("span", {}, [el("i", { class: "l-punto" }), document.createTextNode(
+        bloque.tipo === "newton_raphson" ? "aproximación xₙ de cada iteración (corte de la tangente)"
+          : bloque.tipo === "falsa_posicion" ? "punto c de cada iteración (corte de la secante)" : "punto medio c de cada iteración")]),
       g.iteraciones.some((p) => p.secante) ? el("span", {}, [el("i", { class: "l-secante" }), document.createTextNode("recta secante de la iteración")]) : null,
-      el("span", {}, [el("i", { class: "l-intervalo" }), document.createTextNode("intervalo [a, b] vigente")]),
+      g.iteraciones.some((p) => p.tangente) ? el("span", {}, [el("i", { class: "l-secante" }), document.createTextNode("recta tangente de la iteración")]) : null,
+      g.intervalo ? el("span", {}, [el("i", { class: "l-intervalo" }), document.createTextNode("intervalo [a, b] vigente")]) : null,
       el("span", {}, [el("i", { class: "l-raiz" }), document.createTextNode("raíz aproximada")]),
       g.discontinuidades.length ? el("span", {}, [el("i", { class: "l-disc" }), document.createTextNode("posible discontinuidad")]) : null,
     ]);
@@ -5246,7 +5283,93 @@
     contenedor.appendChild(marco);
   }
 
+  function renderNewton(contenedor, bloque) {
+    contenedor.innerHTML = "";
+    const e = bloque.entradas, r = bloque.resultado, c = bloque.comprobacion, cont = bloque.continuidad;
+    const marca = (bien) => (bien ? "✓" : "✕");
+    const ultima = bloque.pasos.length - 1;
+
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: METODOS_RAICES.newton_raphson.titulo }));
+    contenedor.appendChild(el("div", { class: "planteamiento", texto:
+      `f(x) = ${e.funcion}\nf′(x) = ${e.derivada}  (${e.derivada_origen === "automatica" ? "calculada automáticamente" : "escrita por ti"})\n` +
+      `x₀ = ${e.x0}   E = ${e.tolerancia} (${e.tolerancia_porcentaje} %)\nf(x₀) = ${bloque.inicial.fx0}   f′(x₀) = ${bloque.inicial.dfx0}` }));
+    contenedor.lastChild.style.whiteSpace = "pre-wrap";
+
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Paso 1 · Gráfica de f(x)" }));
+    const graficaMarco = crearGraficaBiseccion(bloque);
+    contenedor.appendChild(crearSeccionDesplegable("Gráfica de f(x)", graficaMarco, false));
+    contenedor.appendChild(graficaMarco);
+
+    // Paso 2: aviso de continuidad (no bloquea: Newton-Raphson no usa intervalo).
+    const resto = cont.total - cont.sospechas.length;
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Paso 2 · Continuidad cerca de las aproximaciones" }));
+    contenedor.appendChild(crearTarjetaVeredicto({
+      tipoClase: cont.sin_senales ? "tipo-unica" : "tipo-infinitas",
+      icono: cont.sin_senales ? "✓" : "!",
+      titulo: cont.sin_senales ? "Sin señales de discontinuidad en la zona graficada" : "Hay señales de discontinuidad (solo un aviso)",
+      detalle: `Se evaluó f en ${cont.muestras} puntos de la zona graficada. Es una revisión numérica, no una demostración.`,
+      cuerpoNodo: cont.sin_senales ? null : el("div", {}, [
+        ...cont.sospechas.map((q) => el("div", { class: "termino-linea", texto: `⚠ ${q.mensaje}` })),
+        ...(resto > 0 ? [el("div", { class: "termino-linea", texto: `… y ${resto} más.` })] : []),
+      ]),
+    }));
+
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Paso 3 · Iteraciones" }));
+    const tabla = crearTablaMatriz(
+      bloque.pasos.map((p) => [String(p.i), p.x, p.fx, p.dfx, p.x_nuevo, p.delta, p.error]),
+      { encabezados: ["n", "xₙ", "f(xₙ)", "f′(xₙ)", "xₙ₊₁", "|Δx|", "εa (%)"], filasResaltadas: new Set([ultima]) });
+    tabla.querySelector("table").classList.add("tabla-iteraciones");
+    contenedor.appendChild(crearSeccionDesplegable("Tabla de iteraciones", tabla, false));
+    contenedor.appendChild(tabla);
+
+    contenedor.appendChild(el("div", { class: "bloque-titulo", texto: "Procedimiento" }));
+    contenedor.appendChild(el("p", { class: "campo-ayuda", texto: "xₙ₊₁ = xₙ − f(xₙ) / f′(xₙ): la nueva aproximación es donde la recta tangente en xₙ corta el eje x." }));
+    contenedor.appendChild(crearStepperGenerico(bloque.pasos, (p) => {
+      const partes = [
+        el("div", { class: "paso-encabezado" }, [
+          el("span", { class: "paso-numero", texto: `Iteración ${p.i} de ${bloque.pasos.length}` }),
+          el("span", { class: "paso-operacion tipo-eliminar", texto: `x${p.i} = ${p.x_nuevo}` }),
+        ]),
+      ];
+      if (p.decision === "raiz_exacta" && p.x === p.x_nuevo) {
+        partes.push(el("div", { class: "termino-linea", texto: `f(${p.x}) = 0: ${p.x} es la raíz exacta. Fin.` }));
+      } else {
+        partes.push(
+          el("div", { class: "termino-linea", texto: `f(x${p.i - 1}) = ${p.fx}   f′(x${p.i - 1}) = ${p.dfx}` }),
+          el("div", { class: "termino-linea", texto: `x${p.i} = ${p.x} − (${p.fx}) / (${p.dfx}) = ${p.x_nuevo}` }),
+          el("div", { class: "termino-linea", texto: `Residuo |f(x${p.i})| = ${p.f_nuevo.replace(/^-/, "")}   Cambio |x${p.i} − x${p.i - 1}| = ${p.delta}` }),
+          el("div", { class: "termino-linea", texto: `εa = |(x${p.i} − x${p.i - 1}) / x${p.i}| · 100 = ${p.error} %` }));
+      }
+      return el("div", { class: "paso-tarjeta" }, partes);
+    }));
+
+    const aviso = bloque.advertencias.length > 0;
+    contenedor.appendChild(crearTarjetaVeredicto({
+      tipoClase: r.convergio && !aviso ? "tipo-unica" : (r.convergio ? "tipo-infinitas" : "tipo-incompatible"),
+      icono: r.convergio && !aviso ? "✓" : (r.convergio ? "!" : "✕"),
+      titulo: r.convergio ? `x ≈ ${r.raiz}` : `Sin convergencia (última aproximación x ≈ ${r.raiz})`,
+      detalle: MOTIVO_NEWTON[r.motivo],
+      cuerpoTexto: `Iteraciones: ${r.iteraciones}\nResiduo |f(x)| = ${r.residuo}\nεa final = ${r.error} %`,
+      cuerpoNodo: aviso ? el("div", {}, bloque.advertencias.map((t) =>
+        el("div", { class: "termino-linea", texto: `⚠ ${t}` }))) : null,
+    }));
+
+    contenedor.appendChild(crearTarjetaVeredicto({
+      tipoClase: c.correcto ? "tipo-unica" : "tipo-infinitas",
+      icono: c.correcto ? "✓" : "!",
+      titulo: c.correcto ? "Comprobación correcta" : "Revisa la comprobación",
+      detalle: "Se vuelve a evaluar f en la raíz aproximada y se revisa la derivada.",
+      cuerpoNodo: el("div", {}, [
+        el("div", { class: "termino-linea", texto: `f(${c.raiz}) = ${c.fraiz}   (residuo ${c.residuo})` }),
+        el("div", { class: "termino-linea", texto: `${marca(c.tolerancia_alcanzada)} Se alcanzó la tolerancia E` }),
+        el("div", { class: "termino-linea", texto: `${marca(c.derivada_correcta)} f′(x) coincide con la pendiente numérica de f en x₀` }),
+        el("div", { class: "termino-linea", texto: `${marca(!c.discontinuidad)} Sin señales de discontinuidad cerca de las aproximaciones` }),
+      ]),
+    }));
+  }
+
   function renderBiseccion(contenedor, bloque) {
+    if (bloque.tipo === "newton_raphson") return renderNewton(contenedor, bloque);
     contenedor.innerHTML = "";
     const e = bloque.entradas, r = bloque.resultado, c = bloque.comprobacion;
     const ultima = (bloque.pasos || []).length - 1;   // bloqueada: no hay pasos
@@ -5386,6 +5509,7 @@
 
   function vistaBiseccion(ejercicio) { return vistaRaices(ejercicio, "biseccion"); }
   function vistaFalsaPosicion(ejercicio) { return vistaRaices(ejercicio, "falsa_posicion"); }
+  function vistaNewtonRaphson(ejercicio) { return vistaRaices(ejercicio, "newton_raphson"); }
 
   /* Formulario y resultado compartidos por los métodos de raíces (`tipo`: clave de METODOS_RAICES). */
   function vistaRaices(ejercicio, tipo) {
@@ -5395,17 +5519,23 @@
     const entradaFuncion = el("input", { ...atributos, placeholder: "x^2 - 2", enterkeyhint: "go" });
     const entradaA = el("input", { ...atributos, placeholder: "1", enterkeyhint: "next" });
     const entradaB = el("input", { ...atributos, placeholder: "2", enterkeyhint: "next" });
+    const entradaDerivada = el("input", { ...atributos, placeholder: "3x^2 - 1", enterkeyhint: "next" });
     const entradaE = el("input", { ...atributos, value: "0.0001", enterkeyhint: "next" });
     const entradaIter = el("input", { ...atributos, value: "50", enterkeyhint: "go" });
 
     async function calcular() {
       const cuerpo = {
         funcion: entradaFuncion.value.trim(),
-        a: entradaA.value.trim(),
-        b: entradaB.value.trim(),
         tolerancia: entradaE.value.trim(),
         max_iter: entradaIter.value.trim(),
       };
+      if (cfg.abierto) {
+        cuerpo.x0 = entradaA.value.trim();
+        cuerpo.derivada = entradaDerivada.value.trim();
+      } else {
+        cuerpo.a = entradaA.value.trim();
+        cuerpo.b = entradaB.value.trim();
+      }
       try {
         const resultado = await llamarApi(cfg.ruta, cuerpo);
         renderBiseccion(panelResultado, resultado);
@@ -5421,7 +5551,7 @@
       ayuda ? el("span", { class: "campo-ayuda", texto: ayuda }) : null,
     ]);
 
-    for (const entrada of [entradaFuncion, entradaA, entradaB, entradaE, entradaIter]) {
+    for (const entrada of [entradaFuncion, entradaA, entradaB, entradaDerivada, entradaE, entradaIter]) {
       entrada.addEventListener("keydown", (ev) => { if (ev.key === "Enter") calcular(); });
     }
 
@@ -5565,11 +5695,17 @@
       type: "button", class: "btn-secundario", texto: "Buscar intervalo automáticamente", onclick: buscarIntervalo,
     }));
 
-    const formulario = el("div", { class: "biseccion-formulario" }, [
-      bloqueFuncion,
+    const camposIntervalo = cfg.abierto ? [
+      campo("Valor inicial x₀", entradaA, "Una sola aproximación de partida"),
+      campo("Derivada f′(x) (opcional)", entradaDerivada, "Vacío = se calcula sola"),
+    ] : [
       campo("Extremo a", entradaA),
       campo("Extremo b", entradaB),
       el("div", { class: "campo-ancho" }, [panelBuscador]),
+    ];
+    const formulario = el("div", { class: "biseccion-formulario" }, [
+      bloqueFuncion,
+      ...camposIntervalo,
       campo("Tolerancia E", entradaE, "Error relativo en fracción: 0.0001 = 0.01 %"),
       campo("Máx. iteraciones", entradaIter, "De 1 a 200"),
       el("button", { class: "btn", texto: cfg.boton, onclick: calcular }),
@@ -5581,8 +5717,13 @@
     if (ejercicio && ejercicio.datos) {
       const d = ejercicio.datos;
       entradaFuncion.value = d.funcion;
-      entradaA.value = d.a;
-      entradaB.value = d.b;
+      if (cfg.abierto) {
+        entradaA.value = d.x0;
+        entradaDerivada.value = d.derivada;
+      } else {
+        entradaA.value = d.a;
+        entradaB.value = d.b;
+      }
       entradaE.value = d.tolerancia;
       entradaIter.value = d.max_iter;
       actualizarVistaPrevia();
