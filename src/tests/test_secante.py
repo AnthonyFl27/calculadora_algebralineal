@@ -56,6 +56,35 @@ class CasoClaseTests(unittest.TestCase):
             self.r, incluir_pasos=False))
 
 
+class TablaDelProfesorTests(unittest.TestCase):
+    """Tabla «Iteraciones del método de la secante» de la clase (6 decimales):
+    f(x) = x³ − x − 2, x₀ = 1, x₁ = 2, E = 0.0001."""
+
+    TABLA = [
+        (1, "1.000000", "2.000000", "1.333333"),
+        (2, "2.000000", "1.333333", "1.462687"),
+        (3, "1.333333", "1.462687", "1.531169"),
+        (4, "1.462687", "1.531169", "1.520926"),
+        (5, "1.531169", "1.520926", "1.521376"),
+        (6, "1.520926", "1.521376", "1.521380"),
+    ]
+
+    def test_coincide_con_la_tabla(self):
+        r = secante("x^3 - x - 2", 1, 2, "0.0001")
+        self.assertEqual(len(r["pasos"]), len(self.TABLA))
+        for p, (n, anterior, actual, nueva) in zip(r["pasos"], self.TABLA):
+            with self.subTest(iteracion=n):
+                self.assertEqual(p["i"], n)
+                self.assertEqual(f"{p['x_ant']:.6f}", anterior)
+                self.assertEqual(f"{p['x']:.6f}", actual)
+                self.assertEqual(f"{p['x_nuevo']:.6f}", nueva)
+
+    def test_primera_iteracion_guiada(self):
+        p = secante("x^3 - x - 2", 1, 2, "0.0001")["pasos"][0]
+        self.assertEqual((p["f_ant"], p["fx"]), (-2, 4))     # f(1), f(2)
+        self.assertEqual(f"{p['x_nuevo']:.9f}", "1.333333333")
+
+
 class OtrosCasosTests(unittest.TestCase):
 
     def test_sin_cambio_de_signo(self):

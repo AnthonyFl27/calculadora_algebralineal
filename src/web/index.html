@@ -787,6 +787,17 @@
   .metodo-opcion-nombre { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-weight: bold; color: var(--texto-titulo); }
   .metodo-opcion-costo { font-size: 12px; color: var(--texto-suave-1); }
 
+  .etiqueta-variante {
+    font-size: 11px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--color-borde);
+    background: var(--superficie-2);
+    color: var(--texto-suave-1);
+  }
+  .etiqueta-variante.variante-secante { background: var(--exito-fondo); color: var(--exito-texto); border-color: transparent; }
+
   .etiqueta-recomendado {
     font-size: 11px;
     font-weight: bold;
@@ -2154,7 +2165,6 @@
     biseccion: '<path d="M3 12h18M12 4v16M5 17c4 0 5-10 14-10"/>',
     falsaposicion: '<path d="M3 19h18M5 6c3 9 8 12 15 12M5 9l15 9"/>',
     newton: '<path d="M3 19h18M5 5c3 9 8 12 15 12M9 3l9 16"/>',
-    secante: '<path d="M3 19h18M4 6c3 9 8 12 16 12M7 17l12-8"/>',
     ejercicios: '<path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',
   };
 
@@ -2215,13 +2225,8 @@
     },
     {
       exportar: true, clave: "newton-raphson", nombre: "Newton-Raphson", icono: "newton",
-      descripcion: "Encuentra una raíz de f(x) = 0 con la recta tangente desde un valor inicial, con la derivada calculada sola.",
+      descripcion: "Encuentra una raíz de f(x) = 0 con la recta tangente (derivada calculada sola) o con la secante, sin derivada.",
       vista: vistaNewtonRaphson,
-    },
-    {
-      exportar: true, clave: "secante", nombre: "Secante", icono: "secante",
-      descripcion: "Encuentra una raíz de f(x) = 0 con la recta secante por dos valores iniciales, sin necesidad de derivada.",
-      vista: vistaSecante,
     },
   ];
 
@@ -5604,11 +5609,11 @@
   function vistaBiseccion(ejercicio) { return vistaRaices(ejercicio, "biseccion"); }
   function vistaFalsaPosicion(ejercicio) { return vistaRaices(ejercicio, "falsa_posicion"); }
   function vistaNewtonRaphson(ejercicio) { return vistaRaices(ejercicio, "newton_raphson"); }
-  function vistaSecante(ejercicio) { return vistaRaices(ejercicio, "secante"); }
 
   /* Formulario y resultado compartidos por los métodos de raíces (`tipo`: clave de METODOS_RAICES). */
   function vistaRaices(ejercicio, tipo) {
-    const cfg = METODOS_RAICES[tipo];
+    let cfg = METODOS_RAICES[tipo];
+    const permiteSecante = tipo === "newton_raphson";   // Newton-Raphson: se elige derivada o secante
     const autoExtremos = !cfg.abierto;
     const panelResultado = el("div", { class: "resultado-panel" });
     const atributos = { type: "text", autocomplete: "off", autocapitalize: "off", autocorrect: "off", spellcheck: "false" };
@@ -5801,13 +5806,49 @@
       if (entradaFuncion.value.trim()) temporizadorBusqueda = setTimeout(sugerirExtremos, 800);
     });
 
-    const camposIntervalo = cfg.secante ? [
-      campo("Valor inicial x₀", entradaA, "Primera aproximación de partida"),
-      campo("Valor inicial x₁", entradaB, "Segunda aproximación (distinta de x₀). No hace falta derivada ni cambio de signo"),
-    ] : cfg.abierto ? [
-      campo("Valor inicial x₀", entradaA, "Una sola aproximación de partida"),
-      campo("Derivada f′(x) (opcional)", entradaDerivada, "Vacío = se calcula sola"),
-    ] : [
+    /* Newton-Raphson: el usuario elige si resolver con la derivada o con la secante. */
+    const tituloVista = el("div", { class: "titulo", texto: cfg.titulo });
+    const campoX0 = permiteSecante ? campo("Valor inicial x₀", entradaA, "Una sola aproximación de partida") : null;
+    const campoX1 = permiteSecante ? campo("Valor inicial x₁", entradaB, "Segunda aproximación (distinta de x₀). No hace falta derivada ni cambio de signo") : null;
+    const campoDerivada = permiteSecante ? campo("Derivada f′(x) (opcional)", entradaDerivada, "Vacío = se calcula sola") : null;
+    const selectorVariante = permiteSecante ? crearSelectorVariante() : null;
+    const botonCalcular = el("button", { class: "btn", texto: cfg.boton, onclick: calcular });
+
+    function crearSelectorVariante() {
+      const opcion = (clave, nombre, detalle) => {
+        const radio = el("input", { type: "radio", name: "variante-nr", value: clave });
+        radio.checked = clave === "derivada";
+        radio.addEventListener("change", () => elegirVariante(clave === "secante"));
+        return el("label", { class: `metodo-opcion${clave === "derivada" ? " elegido" : ""}`, "data-variante": clave }, [
+          el("span", { class: "metodo-opcion-nombre" }, [radio, document.createTextNode(nombre)]),
+          el("span", { class: "metodo-opcion-costo", texto: detalle }),
+        ]);
+      };
+      return el("div", { class: "campo-ancho", role: "radiogroup", "aria-label": "Cómo resolver" }, [
+        el("div", { class: "bloque-funcion-titulo", texto: "¿Cómo quieres resolverlo?" }),
+        el("div", { class: "metodo-opciones" }, [
+          opcion("derivada", "Con la derivada (Newton-Raphson)", "Un valor inicial x₀ y la recta tangente; la derivada se calcula sola."),
+          opcion("secante", "Con la secante (sin derivada)", "Dos valores iniciales x₀ y x₁ y la recta secante por ambos puntos."),
+        ]),
+      ]);
+    }
+
+    function elegirVariante(secante) {
+      cfg = METODOS_RAICES[secante ? "secante" : "newton_raphson"];
+      tituloVista.textContent = cfg.titulo;
+      botonCalcular.textContent = cfg.boton;
+      campoX1.style.display = secante ? "" : "none";
+      campoDerivada.style.display = secante ? "none" : "";
+      campoX0.querySelector(".campo-ayuda").textContent = secante ? "Primera aproximación de partida" : "Una sola aproximación de partida";
+      for (const etiqueta of selectorVariante.querySelectorAll(".metodo-opcion")) {
+        const activa = etiqueta.dataset.variante === (secante ? "secante" : "derivada");
+        etiqueta.classList.toggle("elegido", activa);
+        etiqueta.querySelector("input").checked = activa;
+      }
+      panelResultado.innerHTML = "";      // el resultado anterior era de otra variante
+    }
+
+    const camposIntervalo = permiteSecante ? [selectorVariante, campoX0, campoDerivada, campoX1] : [
       campo("Extremo a", entradaA),
       campo("Extremo b", entradaB),
       avisoIntervalo,
@@ -5817,8 +5858,9 @@
       ...camposIntervalo,
       campo("Tolerancia E", entradaE, "Error relativo en fracción: 0.0001 = 0.01 %"),
       campo("Máx. iteraciones", entradaIter, "De 1 a 200"),
-      el("button", { class: "btn", texto: cfg.boton, onclick: calcular }),
+      botonCalcular,
     ]);
+    if (permiteSecante) campoX1.style.display = "none";
 
     actualizarVistaPrevia();
 
@@ -5827,6 +5869,7 @@
       const d = ejercicio.datos;
       entradaFuncion.value = d.funcion;
       extremosManuales = true;
+      if (permiteSecante && ejercicio.variante === "secante") elegirVariante(true);
       if (cfg.secante) {
         entradaA.value = d.x0;
         entradaB.value = d.x1;
@@ -5843,7 +5886,7 @@
     }
 
     return el("div", {}, [
-      el("div", { class: "titulo", texto: cfg.titulo }),
+      tituloVista,
       formulario,
       panelResultado,
     ]);
@@ -5952,6 +5995,7 @@
           el("div", { class: "ejercicio-info" }, [
             el("div", { class: "ejercicio-cabecera" }, [
               el("span", { class: "ejercicio-titulo", texto: ejercicio.titulo }),
+              ejercicio.variante ? el("span", { class: `etiqueta-variante variante-${ejercicio.variante}`, texto: ejercicio.variante === "secante" ? "Secante" : "Derivada" }) : null,
               el("span", { class: `dificultad dificultad-${nivel}`, texto: ejercicio.dificultad }),
             ]),
             el("p", { class: "ejercicio-descripcion", texto: ejercicio.descripcion }),

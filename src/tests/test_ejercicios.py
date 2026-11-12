@@ -173,7 +173,8 @@ class CatalogoTests(unittest.TestCase):
         self._raices_coinciden("falsa-posicion", falsa_posicion)
 
     def test_newton_raphson_coincide_con_el_motor(self):
-        lista = ejercicios.EJERCICIOS["newton-raphson"]
+        lista = [e for e in ejercicios.EJERCICIOS["newton-raphson"]
+                 if e.get("variante") != "secante"]
         self.assertGreaterEqual(len(lista), 5)
         self.assertEqual({e["dificultad"] for e in lista}, DIFICULTADES)
 
@@ -199,7 +200,8 @@ class CatalogoTests(unittest.TestCase):
                                  esperado.get("motivo", r["resultado"]["motivo"]))
 
     def test_secante_coincide_con_el_motor(self):
-        lista = ejercicios.EJERCICIOS["secante"]
+        lista = [e for e in ejercicios.EJERCICIOS["newton-raphson"]
+                 if e.get("variante") == "secante"]
         self.assertGreaterEqual(len(lista), 5)
         self.assertEqual({e["dificultad"] for e in lista}, DIFICULTADES)
 

@@ -25,8 +25,9 @@ Los de "newton-raphson" llevan en `datos` la `funcion`, la `derivada` (vacía =
 automática), `x0`, `tolerancia` y `max_iter`, y en `resultado_esperado` la
 `raiz` y las `iteraciones` (más `motivo`/`convergio` si no converge), o un
 `error` (fragmento del mensaje) cuando el método falla en la 1.ª iteración.
-Los de "secante" llevan en `datos` la `funcion`, `x0`, `x1`, `tolerancia` y
-`max_iter`, y en `resultado_esperado` la `raiz` y las `iteraciones` (más
+Todos los de "newton-raphson" llevan `variante` ("derivada" o "secante"; la
+web la muestra como etiqueta). Los de la secante llevan en `datos` la
+`funcion`, `x0`, `x1`, `tolerancia` y `max_iter`, y en `resultado_esperado` la `raiz` y las `iteraciones` (más
 `motivo`/`convergio` si no converge), o un `error` (fragmento del mensaje)
 cuando el método falla en la 1.ª iteración.
 Los ejercicios de "vectores-matrices" añaden `categoria`
@@ -48,7 +49,6 @@ METODOS_EJERCICIOS = [
     ("biseccion", "Bisección"),
     ("falsa-posicion", "Regula Falsi"),
     ("newton-raphson", "Newton-Raphson"),
-    ("secante", "Secante"),
 ]
 
 
@@ -122,6 +122,7 @@ def _newton(id, titulo, dificultad, descripcion, funcion, derivada, x0,
             tolerancia, max_iter, esperado):
     return {
         "id": id,
+        "variante": "derivada",
         "titulo": titulo,
         "dificultad": dificultad,
         "descripcion": descripcion,
@@ -135,6 +136,7 @@ def _secante(id, titulo, dificultad, descripcion, funcion, x0, x1,
              tolerancia, max_iter, esperado):
     return {
         "id": id,
+        "variante": "secante",
         "titulo": titulo,
         "dificultad": dificultad,
         "descripcion": descripcion,
@@ -657,14 +659,15 @@ EJERCICIOS = {
             "ln(x)", "", "3", "0.0001", "50",
             {"error": "fuera del dominio"},
         ),
-    ],
-    "secante": [
+        # --- mismo método, resuelto por la secante (sin derivada) ---
         _secante(
-            "sec-01", "Ejemplo guiado: x³ − x − 2", BASICO,
-            "El problema conductor de la clase con x₀ = 1 y x₁ = 2: no "
-            "necesita derivada. La primera iteración da x₂ = 1.333333333.",
-            "x^3 - x - 2", "1", "2", "0.000001", "50",
-            {"raiz": 1.521380, "iteraciones": 7},
+            "sec-01", "Ejemplo guiado: primera iteración", BASICO,
+            "El ejemplo del profesor: f(x) = x³ − x − 2 con x₀ = 1 y x₁ = 2, "
+            "f(1) = −2 y f(2) = 4. Primera iteración: x₂ = 2 − 4(2 − 1) / "
+            "(4 − (−2)) = 1.333333333, donde la secante corta el eje x. Con "
+            "E = 0.0001 la tabla llega a 1.521380 en 6 iteraciones.",
+            "x^3 - x - 2", "1", "2", "0.0001", "50",
+            {"raiz": 1.521380, "iteraciones": 6},
         ),
         _secante(
             "sec-02", "Actividad: x³ − 2x − 5", BASICO,
@@ -772,18 +775,18 @@ def vista_previa(clave, ejercicio):
             for fila in matriz
         )
 
+    if clave == "newton-raphson" and ejercicio.get("variante") == "secante":
+        return (
+            f"f(x) = {datos['funcion']}\n"
+            f"x₀ = {datos['x0']} · x₁ = {datos['x1']}\n"
+            f"E = {datos['tolerancia']} · máx. {datos['max_iter']} iteraciones"
+        )
+
     if clave == "newton-raphson":
         derivada = datos["derivada"] or "automática"
         return (
             f"f(x) = {datos['funcion']}\n"
             f"f'(x) = {derivada} · x₀ = {datos['x0']}\n"
-            f"E = {datos['tolerancia']} · máx. {datos['max_iter']} iteraciones"
-        )
-
-    if clave == "secante":
-        return (
-            f"f(x) = {datos['funcion']}\n"
-            f"x₀ = {datos['x0']} · x₁ = {datos['x1']}\n"
             f"E = {datos['tolerancia']} · máx. {datos['max_iter']} iteraciones"
         )
 
