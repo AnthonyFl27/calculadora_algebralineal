@@ -155,6 +155,26 @@ class ExportarEndpointTest(unittest.TestCase):
                 r.headers["Content-Disposition"],
                 rf'filename="metodo-de-newton-raphson-\d{{8}}-\d{{4}}\.{formato}"')
 
+    def test_secante_resuelve_y_exporta(self):
+        datos = {"funcion": "x^3 - x - 2", "x0": "1", "x1": "2",
+                 "tolerancia": "0.000001", "max_iter": 50}
+        bloque = server._resolver_secante(datos)
+        self.assertEqual(bloque["tipo"], "secante")
+        self.assertEqual(bloque["resultado"]["iteraciones"], 7)
+        self.assertEqual(bloque["resultado"]["raiz"], "1.521379707")
+        self.assertEqual(bloque["pasos"][0]["x_nuevo"], "1.333333333")
+        self.assertTrue(bloque["comprobacion"]["correcto"])
+        self.assertEqual(len(bloque["grafica"]["iteraciones"]), 7)
+        json.dumps(bloque)
+        for formato, mime in (("png", "image/png"), ("pdf", "application/pdf")):
+            r = self.enviar({"modulo": "secante", "formato": formato,
+                             "datos": datos})
+            self.assertEqual(r.status, 200)
+            self.assertEqual(r.headers["Content-Type"], mime)
+            self.assertRegex(
+                r.headers["Content-Disposition"],
+                rf'filename="metodo-de-la-secante-\d{{8}}-\d{{4}}\.{formato}"')
+
     def test_falsa_posicion_errores_son_json_400(self):
         for datos in ({"funcion": "x^2 + 1", "a": "0", "b": "2",
                        "tolerancia": "0.001"},

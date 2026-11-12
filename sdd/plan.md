@@ -200,6 +200,7 @@ en `sdd/task.md`.
 | 017 | `sdd/specs/v3/017-falsa-posicion.md` | Método de Regula Falsi (falsa posición) | implementado |
 | 018 | `sdd/specs/v3/018-buscador-intervalo.md` | Buscador de intervalo para bisección y Regula Falsi | implementado |
 | 019 | `sdd/specs/v3/019-newton-raphson.md` | Método de Newton-Raphson (método abierto, con derivada simbólica) | implementado |
+| 020 | `sdd/specs/v3/020-secante.md` | Método de la secante (método abierto, sin derivada, con dos valores iniciales) | implementado |
 | 021 | `sdd/specs/v3/021-intervalos-adaptables.md` | Búsqueda adaptable de intervalos | implementado |
 
 Esta tabla es el único seguimiento de módulos: se actualiza cada vez que se

@@ -42,6 +42,7 @@ from metodos.biseccion import (
 )
 from metodos.falsa_posicion import falsa_posicion
 from metodos.newton_raphson import newton_raphson
+from metodos.secante import secante
 from metodos.intervalos import buscar_intervalos
 from metodos.determinante import determinante, recomendar_metodo
 from metodos.escenas import (
@@ -647,6 +648,77 @@ def _resolver_newton_raphson(datos):
     return _armar_bloque_newton(resultado)
 
 
+def _armar_bloque_secante(resultado):
+    """Formatea el resultado de metodos/secante.secante(): todos los números
+    salen ya como texto (10 cifras significativas)."""
+
+    f = formatear_real
+    e = resultado["entradas"]
+    r = resultado["resultado"]
+    c = resultado["comprobacion"]
+    cont = resultado["continuidad"]
+
+    return {
+        "tipo": "secante",
+        "bloqueada": False,
+        "entradas": {
+            "funcion": e["funcion"], "x0": f(e["x0"]), "x1": f(e["x1"]),
+            "tolerancia": f(e["tolerancia"]),
+            "tolerancia_porcentaje": f(e["tolerancia"] * 100),
+            "max_iter": e["max_iter"],
+        },
+        "inicial": {"fx0": f(resultado["inicial"]["fx0"]),
+                    "fx1": f(resultado["inicial"]["fx1"])},
+        "pasos": [
+            {
+                "i": p["i"], "x_ant": f(p["x_ant"]), "f_ant": f(p["f_ant"]),
+                "x": f(p["x"]), "fx": f(p["fx"]), "den": f(p["den"]),
+                "x_nuevo": f(p["x_nuevo"]), "f_nuevo": f(p["f_nuevo"]),
+                "delta": f(p["delta"]), "error": f(p["error"], 6),
+                "decision": p["decision"],
+            }
+            for p in resultado["pasos"]
+        ],
+        "resultado": {
+            "raiz": f(r["raiz"]), "iteraciones": r["iteraciones"],
+            "fraiz": f(r["fraiz"]), "residuo": f(r["residuo"]),
+            "error": f(r["error"], 6), "convergio": r["convergio"],
+            "motivo": r["motivo"],
+        },
+        "continuidad": {
+            "muestras": cont["muestras"], "total": cont["total"],
+            "sin_senales": cont["sin_senales"],
+            "sospechas": [{"tipo": q["tipo"], "mensaje": q["mensaje"]}
+                          for q in cont["sospechas"]],
+        },
+        "grafica": resultado["grafica"],
+        "advertencias": resultado["advertencias"],
+        "comprobacion": {
+            "raiz": f(c["raiz"]), "fraiz": f(c["fraiz"]),
+            "residuo": f(c["residuo"]),
+            "tolerancia_alcanzada": c["tolerancia_alcanzada"],
+            "denominador_estable": c["denominador_estable"],
+            "discontinuidad": c["discontinuidad"], "correcto": c["correcto"],
+        },
+    }
+
+
+def _calcular_secante(datos):
+    resultado = secante(
+        datos.get("funcion", ""), datos.get("x0"), datos.get("x1"),
+        datos.get("tolerancia"),
+        datos.get("max_iter", ITERACIONES_POR_DEFECTO),
+    )
+
+    return "secante", resultado, "fraccion", None
+
+
+def _resolver_secante(datos):
+    _, resultado, _, _ = _calcular_secante(datos)
+
+    return _armar_bloque_secante(resultado)
+
+
 def _resolver_intervalos(datos):
     """Sugiere intervalos [a, b] con cambio de signo y f continua (todo sale
     ya como texto; la web solo los muestra y los copia a los campos a y b)."""
@@ -697,6 +769,7 @@ RUTAS = {
     "/api/biseccion": _resolver_biseccion,
     "/api/falsa-posicion": _resolver_falsa_posicion,
     "/api/newton-raphson": _resolver_newton_raphson,
+    "/api/secante": _resolver_secante,
     "/api/grafica": _resolver_grafica,
     "/api/intervalos": _resolver_intervalos,
 }
@@ -714,6 +787,7 @@ CALCULOS = {
     "biseccion": _calcular_biseccion,
     "falsa-posicion": _calcular_falsa_posicion,
     "newton-raphson": _calcular_newton_raphson,
+    "secante": _calcular_secante,
 }
 
 RUTA_EXPORTAR = "/api/exportar"
@@ -767,6 +841,7 @@ DESTINO = {
     "/api/biseccion": "metodos.biseccion.biseccion (+ continuidad)",
     "/api/falsa-posicion": "metodos.falsa_posicion.falsa_posicion (+ continuidad)",
     "/api/newton-raphson": "metodos.newton_raphson.newton_raphson (+ derivada simbólica)",
+    "/api/secante": "metodos.secante.secante",
     "/api/grafica": "metodos.grafica.curva_ventana",
     "/api/intervalos": "metodos.intervalos.buscar_intervalos",
     RUTA_EXPORTAR: "features.exportar.exportar",
@@ -886,6 +961,14 @@ def _descripcion_peticion(ruta, datos, resultado):
         return (DESTINO[ruta],
                 f"f(x)={datos.get('funcion')} · x0={datos.get('x0')} · "
                 f"E={datos.get('tolerancia')}",
+                f"raíz ≈ {r.get('raiz')} · {r.get('iteraciones')} iteraciones · "
+                f"residuo {r.get('residuo')} · {r.get('motivo')}")
+
+    if ruta == "/api/secante":
+        r = resultado.get("resultado", {})
+        return (DESTINO[ruta],
+                f"f(x)={datos.get('funcion')} · x0={datos.get('x0')} · "
+                f"x1={datos.get('x1')} · E={datos.get('tolerancia')}",
                 f"raíz ≈ {r.get('raiz')} · {r.get('iteraciones')} iteraciones · "
                 f"residuo {r.get('residuo')} · {r.get('motivo')}")
 

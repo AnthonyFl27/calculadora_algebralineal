@@ -45,6 +45,10 @@ ciclo, el bloque se borra y solo se conservan las tareas que sigan abiertas.
       confirmar con el profesor el criterio de paro (ε_a) y si se pide la
       secante (spec 020).
 
+- [ ] Spec 020 (secante): visto bueno visual en la máquina del usuario
+      (secante en la gráfica en claro/oscuro y móvil, y los PNG/PDF), y
+      confirmar con el profesor el criterio de paro (ε_a) y los ejercicios.
+
 - [ ] Spec 021 (intervalos adaptables): visto bueno visual en móvil y escritorio.
 
 ---

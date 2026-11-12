@@ -14,6 +14,7 @@ from metodos.conversion import resolver as convertir
 from metodos.determinante import determinante
 from metodos.falsa_posicion import falsa_posicion
 from metodos.newton_raphson import newton_raphson
+from metodos.secante import secante
 from metodos.escenas import (
     escena_determinante,
     escena_inversa,
@@ -212,6 +213,25 @@ class DocumentoTest(unittest.TestCase):
             for pasos in (True, False):
                 datos, _, _ = ex.exportar(
                     "newton_raphson", r, formato, incluir_pasos=pasos)
+                self.assertGreater(len(datos), 100)
+
+    def test_secante_con_y_sin_pasos(self):
+        r = secante("x^3 - x - 2", 1, 2, "0.000001")
+        con = texto_documento(ex.construir_documento(
+            "secante", r, "fraccion", True))
+        sin = texto_documento(ex.construir_documento(
+            "secante", r, "fraccion", False))
+        self.assertIn("secante", con)
+        self.assertIn("Tabla de iteraciones", con)
+        self.assertIn("Iteración 7", con)
+        self.assertNotIn("Tabla de iteraciones", sin)
+        self.assertIn("Raíz aproximada: x = 1.521379707", sin)
+        self.assertEqual(ex.titulo_documento("secante", r),
+                         "Método de la secante")
+        for formato in ("png", "pdf"):
+            for pasos in (True, False):
+                datos, _, _ = ex.exportar(
+                    "secante", r, formato, incluir_pasos=pasos)
                 self.assertGreater(len(datos), 100)
 
     def test_falsa_posicion_bloqueada(self):

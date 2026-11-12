@@ -25,6 +25,10 @@ Los de "newton-raphson" llevan en `datos` la `funcion`, la `derivada` (vacía =
 automática), `x0`, `tolerancia` y `max_iter`, y en `resultado_esperado` la
 `raiz` y las `iteraciones` (más `motivo`/`convergio` si no converge), o un
 `error` (fragmento del mensaje) cuando el método falla en la 1.ª iteración.
+Los de "secante" llevan en `datos` la `funcion`, `x0`, `x1`, `tolerancia` y
+`max_iter`, y en `resultado_esperado` la `raiz` y las `iteraciones` (más
+`motivo`/`convergio` si no converge), o un `error` (fragmento del mensaje)
+cuando el método falla en la 1.ª iteración.
 Los ejercicios de "vectores-matrices" añaden `categoria`
 ("vectores" | "matrices" | "ecuacion-matricial" | "inversa") y `operacion`
 (el nombre que usa el selector de la vista, cuando aplica).
@@ -44,6 +48,7 @@ METODOS_EJERCICIOS = [
     ("biseccion", "Bisección"),
     ("falsa-posicion", "Regula Falsi"),
     ("newton-raphson", "Newton-Raphson"),
+    ("secante", "Secante"),
 ]
 
 
@@ -121,6 +126,19 @@ def _newton(id, titulo, dificultad, descripcion, funcion, derivada, x0,
         "dificultad": dificultad,
         "descripcion": descripcion,
         "datos": {"funcion": funcion, "derivada": derivada, "x0": x0,
+                  "tolerancia": tolerancia, "max_iter": max_iter},
+        "resultado_esperado": esperado,
+    }
+
+
+def _secante(id, titulo, dificultad, descripcion, funcion, x0, x1,
+             tolerancia, max_iter, esperado):
+    return {
+        "id": id,
+        "titulo": titulo,
+        "dificultad": dificultad,
+        "descripcion": descripcion,
+        "datos": {"funcion": funcion, "x0": x0, "x1": x1,
                   "tolerancia": tolerancia, "max_iter": max_iter},
         "resultado_esperado": esperado,
     }
@@ -640,6 +658,75 @@ EJERCICIOS = {
             {"error": "fuera del dominio"},
         ),
     ],
+    "secante": [
+        _secante(
+            "sec-01", "Ejemplo guiado: x³ − x − 2", BASICO,
+            "El problema conductor de la clase con x₀ = 1 y x₁ = 2: no "
+            "necesita derivada. La primera iteración da x₂ = 1.333333333.",
+            "x^3 - x - 2", "1", "2", "0.000001", "50",
+            {"raiz": 1.521380, "iteraciones": 7},
+        ),
+        _secante(
+            "sec-02", "Actividad: x³ − 2x − 5", BASICO,
+            "La función de la actividad de Newton-Raphson, ahora sin "
+            "derivada: x₀ = 2 y x₁ = 3.",
+            "x^3 - 2x - 5", "2", "3", "0.000001", "50",
+            {"raiz": 2.094551, "iteraciones": 5},
+        ),
+        _secante(
+            "sec-03", "Raíz cuadrada de 2", BASICO,
+            "x² − 2 = 0 desde x₀ = 1 y x₁ = 2: compara las iteraciones con "
+            "las de Newton-Raphson (4) y bisección (13).",
+            "x^2 - 2", "1", "2", "0.0001", "50",
+            {"raiz": 1.414214, "iteraciones": 5},
+        ),
+        _secante(
+            "sec-04", "cos(x) = x", INTERMEDIO,
+            "cos(x) − x = 0 desde x₀ = 0 y x₁ = 1: raíz ≈ 0.739085. El "
+            "argumento va en radianes.",
+            "cos(x) - x", "0", "1", "0.00001", "50",
+            {"raiz": 0.739085, "iteraciones": 5},
+        ),
+        _secante(
+            "sec-05", "e⁻ˣ = x", INTERMEDIO,
+            "e^(−x) − x = 0 desde x₀ = 0 y x₁ = 1: raíz ≈ 0.5671433.",
+            "exp(-x) - x", "0", "1", "0.00001", "50",
+            {"raiz": 0.567143, "iteraciones": 5},
+        ),
+        _secante(
+            "sec-06", "Los dos puntos no encierran la raíz", INTERMEDIO,
+            "A diferencia de Regula Falsi, la secante no exige cambio de "
+            "signo: x³ − x − 2 con x₀ = 3 y x₁ = 4 (ambos a la derecha de la "
+            "raíz) también converge.",
+            "x^3 - x - 2", "3", "4", "0.000001", "50",
+            {"raiz": 1.521380, "iteraciones": 9},
+        ),
+        _secante(
+            "sec-07", "Sin convergencia", AVANZADO,
+            "x³ − 2x + 2 desde x₀ = 0 y x₁ = 1 salta de un lado a otro sin "
+            "estabilizarse (la raíz está en ≈ −1.769). Con valores iniciales "
+            "malos la secante no converge: mira el aviso y prueba x₀ = −2, "
+            "x₁ = −1.",
+            "x^3 - 2x + 2", "0", "1", "0.0001", "20",
+            {"raiz": -1.865081, "iteraciones": 20, "convergio": False,
+             "motivo": "max_iter"},
+        ),
+        _secante(
+            "sec-08", "Denominador cero", AVANZADO,
+            "x² − 4 con x₀ = −3 y x₁ = 3: f(x₀) = f(x₁), la recta secante es "
+            "horizontal y la fórmula no está definida (denominador cero). "
+            "Prueba con x₀ = 1 y x₁ = 3.",
+            "x^2 - 4", "-3", "3", "0.0001", "50",
+            {"error": "es cero"},
+        ),
+        _secante(
+            "sec-09", "Se sale del dominio: ln(x)", AVANZADO,
+            "ln(x) desde x₀ = 3 y x₁ = 4: la primera secante cae en x ≈ "
+            "−0.82, donde ln no existe. Con x₀ = 0.5 y x₁ = 1.5 sí converge a 1.",
+            "ln(x)", "3", "4", "0.0001", "50",
+            {"error": "fuera del dominio"},
+        ),
+    ],
 }
 
 
@@ -690,6 +777,13 @@ def vista_previa(clave, ejercicio):
         return (
             f"f(x) = {datos['funcion']}\n"
             f"f'(x) = {derivada} · x₀ = {datos['x0']}\n"
+            f"E = {datos['tolerancia']} · máx. {datos['max_iter']} iteraciones"
+        )
+
+    if clave == "secante":
+        return (
+            f"f(x) = {datos['funcion']}\n"
+            f"x₀ = {datos['x0']} · x₁ = {datos['x1']}\n"
             f"E = {datos['tolerancia']} · máx. {datos['max_iter']} iteraciones"
         )
 

@@ -9,6 +9,7 @@ from metodos.biseccion import biseccion
 from metodos.falsa_posicion import falsa_posicion
 from metodos.determinante import determinante
 from metodos.newton_raphson import newton_raphson
+from metodos.secante import secante
 from metodos.conversion import resolver as resolver_conversion
 from metodos.gauss_jordan import resolver as resolver_gauss_jordan
 from metodos.pivote import resolver as resolver_pivote
@@ -188,6 +189,32 @@ class CatalogoTests(unittest.TestCase):
                     self.assertIn(esperado["error"], str(cm.exception))
                     continue
                 r = newton_raphson(*args)
+                self.assertEqual(r["resultado"]["iteraciones"],
+                                 esperado["iteraciones"])
+                self.assertAlmostEqual(r["resultado"]["raiz"],
+                                       esperado["raiz"], places=3)
+                self.assertEqual(r["resultado"]["convergio"],
+                                 esperado.get("convergio", True))
+                self.assertEqual(r["resultado"]["motivo"],
+                                 esperado.get("motivo", r["resultado"]["motivo"]))
+
+    def test_secante_coincide_con_el_motor(self):
+        lista = ejercicios.EJERCICIOS["secante"]
+        self.assertGreaterEqual(len(lista), 5)
+        self.assertEqual({e["dificultad"] for e in lista}, DIFICULTADES)
+
+        for ejercicio in lista:
+            with self.subTest(ejercicio["id"]):
+                d = ejercicio["datos"]
+                esperado = ejercicio["resultado_esperado"]
+                args = (d["funcion"], d["x0"], d["x1"], d["tolerancia"],
+                        d["max_iter"])
+                if "error" in esperado:
+                    with self.assertRaises(ValueError) as cm:
+                        secante(*args)
+                    self.assertIn(esperado["error"], str(cm.exception))
+                    continue
+                r = secante(*args)
                 self.assertEqual(r["resultado"]["iteraciones"],
                                  esperado["iteraciones"])
                 self.assertAlmostEqual(r["resultado"]["raiz"],

@@ -1,0 +1,61 @@
+Estado: implementado
+
+# Spec 020 — Método de la secante
+
+Cuarto método de búsqueda de raíces de f(x) = 0 y segundo **método abierto**.
+Es la alternativa a Newton-Raphson cuando no se quiere calcular f′(x): usa dos
+aproximaciones y una recta secante. Toda la lógica vive en
+`src/metodos/secante.py`; la web, el PNG y el PDF solo presentan.
+
+## Método
+
+Se eligen x₀ y x₁ (distintos); la nueva aproximación es donde la recta secante
+por (x₀, f(x₀)) y (x₁, f(x₁)) corta el eje x:
+
+    x_{n+1} = x_n − f(x_n)·(x_n − x_{n−1}) / [f(x_n) − f(x_{n−1})]
+
+En cada iteración se desplazan las aproximaciones (x₀ ← x₁, x₁ ← x₂).
+
+- **Sin derivada ni intervalo:** no pide cambio de signo ni conserva un
+  intervalo que encierre la raíz.
+- **Criterio de paro:** el mismo que los demás métodos,
+  ε_a/100 < E con ε_a = |(x_{n+1} − x_n)/x_{n+1}|·100. Cada paso informa el
+  residuo |f(x_{n+1})| y el cambio |x_{n+1} − x_n|. También se detiene si
+  f(x_n) = 0 (raíz exacta) o al agotar `max_iter` (1–200).
+- **Precauciones del profesor:** si f(x_n) − f(x_{n−1}) = 0 (|·| < 1e-12) la
+  fórmula no está definida (`denominador_cero`); un denominador < 1e-6 produce
+  un aviso de paso inestable y la comprobación no da «correcta»; x₀ = x₁ es
+  error de entrada; salir del dominio y divergir (|x| > 1e12) se explican. Si
+  el fallo ocurre en la 1.ª iteración es `ValueError`; si ocurre después se
+  conservan los pasos hechos y `convergio` es `False` con su `motivo`.
+- **Continuidad:** solo **avisa** (no bloquea), como Newton-Raphson.
+
+## Presentación
+
+- **Servidor:** `POST /api/secante` con `funcion`, `x0`, `x1`, `tolerancia`,
+  `max_iter`; bloque `tipo: "secante"` (`_armar_bloque_secante`). Exportar:
+  `modulo: "secante"`.
+- **Gráfica:** misma ventana que Newton-Raphson; `grafica.intervalo` es `null`,
+  `inicio` es x₀ e `inicio2` es x₁; cada punto de `iteraciones` trae
+  `etiqueta` (`x2`, `x3`…) y `secante` (`[[xₙ₋₁, f(xₙ₋₁)], [xₙ₊₁, 0]]`).
+- **Web:** tarjeta de Inicio y entrada de sidebar «Secante». Reutiliza
+  `vistaRaices(…, "secante")` (campos x₀ y x₁, sin derivada) y `renderSecante`:
+  gráfica, continuidad, tabla (n, xₙ₋₁, xₙ, f(xₙ₋₁), f(xₙ), xₙ₊₁, |Δx|, εa),
+  paso a paso con el desplazamiento de las aproximaciones, veredicto y
+  comprobación.
+- **PNG/PDF:** `exportar.py` (`_documento_secante`), con y sin pasos.
+- **Ejercicios:** `sec-01` … `sec-09` (x³ − x − 2 con x₀ = 1, x₁ = 2; sin
+  cambio de signo; sin convergencia; denominador cero; fuera del dominio).
+
+## Decisiones
+
+- Se hizo como **módulo aparte** (no como opción dentro de Newton-Raphson),
+  igual que Regula Falsi y bisección, para que cada método tenga su vista,
+  ejercicios y exportación.
+- Caso de referencia: x³ − x − 2, x₀ = 1, x₁ = 2 → x₂ = 1.333333333, raíz
+  1.521379707 en 7 iteraciones (E = 1e-6).
+
+## Pruebas
+
+`src/tests/test_secante.py`, `test_ejercicios.py`, y
+`src/features/tests/test_exportar.py` y `test_server_exportar.py`.
